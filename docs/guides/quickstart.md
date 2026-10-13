@@ -42,6 +42,8 @@ make dq-down && make airflow-dq-down        # stop; volumes are kept
 
 ## What next
 
+- Every test tier, make target and benchmark, from a fresh clone: [running and testing](running-and-testing.md).
+
 - Read a report: `reports/<run>_retail_<layer>.md` lists every check and the reasons for a block.
 - Write or change a check: [contracts guide](contracts.md).
 - All commands and settings: [configuration](configuration.md).

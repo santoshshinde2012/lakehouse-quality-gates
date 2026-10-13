@@ -51,7 +51,7 @@ do not block.
   DAG, which is left untouched. An `inject_bad_batch` switch shows a gate blocking for real.
 - 🐳 **Hardened runner container.** Non-root, read-only root filesystem, `cap_drop: ALL`, digest-pinned base images.
 - 🧱 **Clean architecture.** Ports and adapters with a single composition root. ruff, `mypy --strict`,
-  107 tests at 99% coverage.
+  108 tests at 99% coverage.
 
 ## Architecture
 
@@ -152,7 +152,7 @@ Against the live lakehouse (DuckDB or Trino), in the runner container or in Airf
 | Verified on macOS, 2026-10-13 | Result |
 |---|---|
 | ruff · mypy --strict · markdownlint · link check | ✅ clean |
-| pytest | ✅ 107 passed, 99% coverage |
+| pytest | ✅ 108 passed, 99% coverage |
 | Good / bad batch, no Docker | ✅ 3/3 gates passed / 3/3 blocked |
 | Live DuckDB and Trino 483 on Lakekeeper Iceberg | ✅ 46/46 checks passed · bad batch blocked |
 | Runner container and Airflow DAG | ✅ good run succeeds · bad run stops at `dq_bronze` |
@@ -183,7 +183,7 @@ Start at the **[documentation hub](docs/README.md)**: it says who should read wh
 |---|---|
 | Understand the problem | [Use case](docs/overview/use-case.md) · [Glossary](docs/overview/glossary.md) |
 | See the design | [System design](docs/system-design.md) · [Architecture pages](docs/architecture/README.md) · [ADRs](docs/adr/README.md) |
-| Run and operate it | [Quickstart](docs/guides/quickstart.md) · [Contracts](docs/guides/contracts.md) · [Runbook](docs/guides/runbook.md) · [Troubleshooting](docs/guides/troubleshooting.md) |
+| Run and operate it | [Quickstart](docs/guides/quickstart.md) · [Running and testing](docs/guides/running-and-testing.md) · [Contracts](docs/guides/contracts.md) · [Runbook](docs/guides/runbook.md) · [Troubleshooting](docs/guides/troubleshooting.md) |
 | Check the numbers | [Benchmarks](docs/benchmarks/README.md) · [Research](docs/research/README.md) |
 
 ## Roadmap

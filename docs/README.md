@@ -18,6 +18,7 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 | You are | Start with | Then |
 |---|---|---|
 | New to the project | [Use case](overview/use-case.md) | [Quickstart](guides/quickstart.md), [Glossary](overview/glossary.md) |
+| Contributor running the tests | [Running and testing](guides/running-and-testing.md) | [Contributing](../CONTRIBUTING.md), [Benchmarks](benchmarks/results.md) |
 | Data engineer writing checks | [Contracts guide](guides/contracts.md) | [Data flow](architecture/data-flow.md), [Runbook](guides/runbook.md) |
 | On call, a gate just blocked | [Runbook](guides/runbook.md#a-gate-blocked-triage) | [Troubleshooting](guides/troubleshooting.md) |
 | Architect or reviewer | [System design](system-design.md) | [ADRs](adr/README.md), [Research](research/README.md) |
@@ -53,6 +54,7 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 | Document | What it covers |
 |---|---|
 | [Quickstart](guides/quickstart.md) | Run the gates in a minute without Docker, then against the live lakehouse |
+| [Running and testing](guides/running-and-testing.md) | Prerequisites, setup, the four test tiers, every make target, benchmarks, regenerating docs |
 | [Contracts](guides/contracts.md) | Contract conventions, every check per layer, and how to add one |
 | [Configuration](guides/configuration.md) | CLI commands, exit codes and every `DQ_*` setting |
 | [Runbook](guides/runbook.md) | Daily operation, triaging a blocked gate, the verified macOS walkthrough |

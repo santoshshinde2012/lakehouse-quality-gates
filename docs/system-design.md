@@ -128,7 +128,7 @@ snapshots carry the problem.
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | [Security](architecture/security.md) |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
-| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 107 tests at 99% coverage |
+| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 108 tests at 99% coverage |
 
 ## 4. Background and tool selection
 
@@ -440,15 +440,16 @@ step-by-step design and rollback are in [write-audit-publish](architecture/write
 
 ## 14. Testing strategy
 
-| Tier | Scope | Where | Runs in |
-|---|---|---|---|
-| T0 | Static: ruff (lint + format), `mypy --strict` (package, benchmarks, scripts), contract syntax (`soda-dq validate`), Mermaid sync | `make lint typecheck validate`, `tests/unit/test_diagrams.py` | pre-commit, CI |
-| T1 | Unit: policy, models, repository rendering, sinks, notifiers, settings, CLI, DAG wiring, Soda result mapping (fakes for every port) | `tests/unit/` | CI |
-| T2 | Integration: real Soda Core against in-memory DuckDB built from fixtures; good batch passes 46/46, bad batch blocks every layer; CLI end to end | `tests/integration/`, `make demo` | CI |
-| T3 | Live: DuckDB, Trino and container gates on the running lakehouse; Airflow good and bad runs; scale and accuracy benchmarks | `make bench`, [results](results/README.md) | Manual on the reference Mac |
+| Tier | Marker | Scope | Where | Runs in |
+|---|---|---|---|---|
+| T0 | `unit` | Static checks (ruff, `mypy --strict`, `soda-dq validate`, Mermaid and snippet sync) and unit tests: policy, models, repository rendering, sinks, notifiers, settings, CLI, DAG wiring, Soda result mapping, with fakes for every port | `make lint typecheck validate test-unit`, `tests/unit/` | pre-commit, CI |
+| T1 | `integration` | Real Soda Core against in-memory DuckDB built from fixtures; good batch passes 46/46, bad batch blocks every layer; CLI end to end | `make test-integration demo`, `tests/integration/` | CI |
+| T2 | `live` | Host DuckDB gates on the running light lakehouse: good batch passes, bad batch blocks every layer | `make e2e-live`, `tests/live/test_live_gates.py` | Manual, Docker |
+| T3 | `full` | Spark pipeline, Trino gates, the `ldl-soda` container, Airflow good and bad runs; scale and accuracy benchmarks | `make e2e-full`, `make bench*`, `tests/live/test_full_stack.py` | Manual, Docker |
 
-Coverage: 107 tests, 99% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo
-gates inside it.
+`make test-all` runs T0 and T1. Commands, expected output and pass criteria for every tier:
+[running and testing](guides/running-and-testing.md). Coverage: 108 tests in T0 and T1 plus 7 live and full tests,
+99% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
 
 ## 15. References
 
