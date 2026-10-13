@@ -133,3 +133,13 @@ def _forget_lakehouse_client():
     sys.modules.pop("lakehouse_client", None)
     yield
     sys.modules.pop("lakehouse_client", None)
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Mark tests by folder: unit and integration (tests/live marks itself as live or full)."""
+    for item in items:
+        parts = Path(str(item.fspath)).parts
+        if "unit" in parts:
+            item.add_marker(pytest.mark.unit)
+        elif "integration" in parts:
+            item.add_marker(pytest.mark.integration)

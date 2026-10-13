@@ -38,7 +38,7 @@ packages = ["src/soda_lakehouse_dq"]
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["docs/research"]
+extend-exclude = ["docs/research", "benchmarks/tools/tiny/scripts"]  # research scripts kept as run
 force-exclude = true
 
 [tool.ruff.lint]
@@ -72,5 +72,11 @@ disallow_untyped_calls = false
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-markers = ["integration: runs real Soda verification against DuckDB (no containers)"]
-addopts = "-ra"
+markers = [
+    "unit: T0, pure Python with fakes (tests/unit)",
+    "integration: T1, real Soda verification against DuckDB on CSV fixtures, no containers (tests/integration)",
+    "live: T2, gates against the running light lakehouse; skipped when it is not up (tests/live)",
+    "full: T3, Trino, the ldl-soda container and Airflow; skipped when they are not up (tests/live)",
+]
+# live and full need Docker; select them explicitly with -m (the last -m wins), see docs/guides/running-and-testing.md
+addopts = "-ra -m 'not live and not full'"
