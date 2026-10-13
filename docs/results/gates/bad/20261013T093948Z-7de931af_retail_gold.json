@@ -1,19 +1,22 @@
 {
-  "run_id": "20261013T074710Z-ac5f28d7",
+  "run_id": "20261013T093948Z-7de931af",
   "pipeline": "retail",
   "layer": "gold",
   "engine": "duckdb",
-  "status": "passed",
-  "created_at": "2026-10-13T07:47:10.954411+00:00",
+  "status": "blocked",
+  "created_at": "2026-10-13T09:39:48.908063+00:00",
   "summary": {
-    "passed": 11,
-    "warned": 0,
-    "failed": 0,
+    "passed": 9,
+    "warned": 1,
+    "failed": 1,
     "not_evaluated": 0,
     "excluded": 0,
     "total": 11
   },
-  "reasons": [],
+  "reasons": [
+    "retail.gold.daily_order_metrics: failed: No metrics for future days",
+    "retail.gold.daily_order_metrics: warned: avg_order_value: Average order value is plausible"
+  ],
   "contracts": [
     {
       "name": "retail.gold.daily_order_metrics",
@@ -37,8 +40,8 @@
           "column": null,
           "outcome": "passed",
           "metrics": {
-            "check_rows_tested": 2,
-            "dataset_rows_tested": 2
+            "check_rows_tested": 4,
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -50,8 +53,8 @@
           "metrics": {
             "failed_rows_count": 0,
             "failed_rows_percent": 0.0,
-            "dataset_rows_tested": 2,
-            "check_rows_tested": 2
+            "dataset_rows_tested": 4,
+            "check_rows_tested": 4
           },
           "details": []
         },
@@ -59,12 +62,12 @@
           "name": "No metrics for future days",
           "type": "failed_rows",
           "column": null,
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "failed_rows_count": 0,
-            "failed_rows_percent": 0.0,
-            "dataset_rows_tested": 2,
-            "check_rows_tested": 2
+            "failed_rows_count": 1,
+            "failed_rows_percent": 25.0,
+            "dataset_rows_tested": 4,
+            "check_rows_tested": 4
           },
           "details": []
         },
@@ -74,7 +77,7 @@
           "column": null,
           "outcome": "passed",
           "metrics": {
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -86,8 +89,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 2,
-            "dataset_rows_tested": 2
+            "check_rows_tested": 4,
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -99,9 +102,9 @@
           "metrics": {
             "duplicate_count": 0,
             "duplicate_percent": 0.0,
-            "check_rows_tested": 2,
+            "check_rows_tested": 4,
             "missing_count": 0,
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -113,9 +116,9 @@
           "metrics": {
             "invalid_count": 0,
             "invalid_percent": 0.0,
-            "check_rows_tested": 2,
+            "check_rows_tested": 4,
             "missing_count": 0,
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -127,9 +130,9 @@
           "metrics": {
             "invalid_count": 0,
             "invalid_percent": 0.0,
-            "check_rows_tested": 2,
+            "check_rows_tested": 4,
             "missing_count": 0,
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -141,9 +144,9 @@
           "metrics": {
             "invalid_count": 0,
             "invalid_percent": 0.0,
-            "check_rows_tested": 2,
+            "check_rows_tested": 4,
             "missing_count": 0,
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         },
@@ -151,13 +154,13 @@
           "name": "Average order value is plausible",
           "type": "invalid",
           "column": "avg_order_value",
-          "outcome": "passed",
+          "outcome": "warned",
           "metrics": {
-            "invalid_count": 0,
-            "invalid_percent": 0.0,
-            "check_rows_tested": 2,
+            "invalid_count": 1,
+            "invalid_percent": 25.0,
+            "check_rows_tested": 4,
             "missing_count": 0,
-            "dataset_rows_tested": 2
+            "dataset_rows_tested": 4
           },
           "details": []
         }

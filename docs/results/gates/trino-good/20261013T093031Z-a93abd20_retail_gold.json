@@ -1,10 +1,10 @@
 {
-  "run_id": "20261013T065930Z-02355aa0",
+  "run_id": "20261013T093031Z-a93abd20",
   "pipeline": "retail",
   "layer": "gold",
   "engine": "trino",
   "status": "passed",
-  "created_at": "2026-10-13T06:59:38.434168+00:00",
+  "created_at": "2026-10-13T09:30:44.291970+00:00",
   "summary": {
     "passed": 11,
     "warned": 0,
@@ -18,7 +18,7 @@
     {
       "name": "retail.gold.daily_order_metrics",
       "dataset": "lakehouse_trino/lakehouse/gold/daily_order_metrics",
-      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/gold/daily_order_metrics.yml",
+      "source": "/private/tmp/lqg-final/contracts/retail/gold/daily_order_metrics.yml",
       "errors": [],
       "checks": [
         {

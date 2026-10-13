@@ -1,10 +1,10 @@
 {
-  "run_id": "20261013T065930Z-02355aa0",
+  "run_id": "20261013T093027Z-ab4c8f52",
   "pipeline": "retail",
   "layer": "silver",
-  "engine": "trino",
+  "engine": "duckdb",
   "status": "passed",
-  "created_at": "2026-10-13T06:59:37.630204+00:00",
+  "created_at": "2026-10-13T09:30:30.712100+00:00",
   "summary": {
     "passed": 21,
     "warned": 0,
@@ -17,8 +17,8 @@
   "contracts": [
     {
       "name": "retail.silver.customers",
-      "dataset": "lakehouse_trino/lakehouse/silver/customers",
-      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/silver/customers.yml",
+      "dataset": "lakehouse_duckdb/silver/customers",
+      "source": "/private/tmp/lqg-final/contracts/retail/silver/customers.yml",
       "errors": [],
       "checks": [
         {
@@ -140,8 +140,8 @@
     },
     {
       "name": "retail.silver.orders",
-      "dataset": "lakehouse_trino/lakehouse/silver/orders",
-      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/silver/orders.yml",
+      "dataset": "lakehouse_duckdb/silver/orders",
+      "source": "/private/tmp/lqg-final/contracts/retail/silver/orders.yml",
       "errors": [],
       "checks": [
         {

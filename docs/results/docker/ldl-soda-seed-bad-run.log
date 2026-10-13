@@ -4,11 +4,11 @@ silver.customers                 12 rows
 silver.orders                    24 rows
 gold.daily_order_metrics          4 rows
 exit=0
-{"pipeline": "retail", "layer": "bronze", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T07:25:00.085709Z"}
-{"contract": "retail.bronze.customers_raw", "dataset": "lakehouse_duckdb/bronze/customers_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:00.631641Z"}
-{"contract": "retail.bronze.orders_raw", "dataset": "lakehouse_duckdb/bronze/orders_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:00.807652Z"}
-{"reasons": ["retail.bronze.orders_raw: failed: No order duplicated inside one source file", "retail.bronze.orders_raw: failed: customer_id: Every order has a customer", "retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)", "retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)"], "pipeline": "retail", "layer": "bronze", "run_id": "20261013T072500Z-5a1dd48c", "status": "blocked", "passed": 10, "warned": 2, "failed": 2, "event": "dq.gate.blocked", "level": "error", "timestamp": "2026-10-13T07:25:00.892124Z"}
-{"pipeline": "retail", "layer": "bronze", "status": "blocked", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T07:25:00.892213Z"}
-{"layer": "bronze", "run_id": "20261013T072500Z-5a1dd48c", "event": "dq.medallion.blocked", "level": "error", "timestamp": "2026-10-13T07:25:00.892233Z"}
-retail/bronze: blocked (14 checks, run 20261013T072500Z-5a1dd48c)
+{"pipeline": "retail", "layer": "bronze", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T09:32:11.204779Z"}
+{"contract": "retail.bronze.customers_raw", "dataset": "lakehouse_duckdb/bronze/customers_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T09:32:11.643416Z"}
+{"contract": "retail.bronze.orders_raw", "dataset": "lakehouse_duckdb/bronze/orders_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T09:32:11.766184Z"}
+{"reasons": ["retail.bronze.orders_raw: failed: No order duplicated inside one source file", "retail.bronze.orders_raw: failed: customer_id: Every order has a customer", "retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)", "retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)"], "pipeline": "retail", "layer": "bronze", "run_id": "20261013T093211Z-697f1cbd", "status": "blocked", "passed": 10, "warned": 2, "failed": 2, "event": "dq.gate.blocked", "level": "error", "timestamp": "2026-10-13T09:32:11.831108Z"}
+{"pipeline": "retail", "layer": "bronze", "status": "blocked", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T09:32:11.831172Z"}
+{"layer": "bronze", "run_id": "20261013T093211Z-697f1cbd", "event": "dq.medallion.blocked", "level": "error", "timestamp": "2026-10-13T09:32:11.831191Z"}
+retail/bronze: blocked (14 checks, run 20261013T093211Z-697f1cbd)
 exit=1

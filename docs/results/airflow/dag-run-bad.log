@@ -1,18 +1,17 @@
 cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_dq '{"inject_bad_batch": true}'
 ==> Waiting for lakehouse_retail_medallion_dq to be parsed…
-==> Triggering lakehouse_retail_medallion_dq (manual__ldl_20261013T073406)
+==> Triggering lakehouse_retail_medallion_dq (manual__ldl_20261013T093637)
   [5s] state=running
   [35s] state=running
-  [65s] state=failed
 ==> lakehouse_retail_medallion_dq failed
 dag_id                         logical_date    task_id           state            start_date                        end_date
-lakehouse_retail_medallion_dq                  land_smoke        success          2026-10-13T07:34:12.378751+00:00  2026-10-13T07:35:02.495837+00:00
-lakehouse_retail_medallion_dq                  bronze            success          2026-10-13T07:35:08.697042+00:00  2026-10-13T07:37:08.599484+00:00
-lakehouse_retail_medallion_dq                  inject_bad_batch  success          2026-10-13T07:37:09.866261+00:00  2026-10-13T07:37:13.806545+00:00
-lakehouse_retail_medallion_dq                  dq_bronze         failed           2026-10-13T07:37:14.431581+00:00  2026-10-13T07:37:17.867311+00:00
-lakehouse_retail_medallion_dq                  silver            upstream_failed  2026-10-13T07:37:18.618485+00:00  2026-10-13T07:37:18.618485+00:00
-lakehouse_retail_medallion_dq                  dq_silver         upstream_failed  2026-10-13T07:37:19.708357+00:00  2026-10-13T07:37:19.708357+00:00
-lakehouse_retail_medallion_dq                  gold              upstream_failed  2026-10-13T07:37:20.764869+00:00  2026-10-13T07:37:20.764869+00:00
-lakehouse_retail_medallion_dq                  dq_gold           upstream_failed  2026-10-13T07:37:21.824578+00:00  2026-10-13T07:37:21.824578+00:00
-lakehouse_retail_medallion_dq                  query_timetravel  upstream_failed  2026-10-13T07:37:22.859023+00:00  2026-10-13T07:37:22.859023+00:00
+lakehouse_retail_medallion_dq                  query_timetravel  upstream_failed  2026-10-13T09:37:44.829845+00:00  2026-10-13T09:37:44.829845+00:00
+lakehouse_retail_medallion_dq                  land_smoke        success          2026-10-13T09:36:41.254728+00:00  2026-10-13T09:37:05.175285+00:00
+lakehouse_retail_medallion_dq                  bronze            success          2026-10-13T09:37:05.714379+00:00  2026-10-13T09:37:33.910726+00:00
+lakehouse_retail_medallion_dq                  inject_bad_batch  success          2026-10-13T09:37:35.280196+00:00  2026-10-13T09:37:37.835804+00:00
+lakehouse_retail_medallion_dq                  dq_bronze         failed           2026-10-13T09:37:38.791460+00:00  2026-10-13T09:37:41.277706+00:00
+lakehouse_retail_medallion_dq                  silver            upstream_failed  2026-10-13T09:37:41.835360+00:00  2026-10-13T09:37:41.835360+00:00
+lakehouse_retail_medallion_dq                  dq_silver         upstream_failed  2026-10-13T09:37:42.531612+00:00  2026-10-13T09:37:42.531612+00:00
+lakehouse_retail_medallion_dq                  gold              upstream_failed  2026-10-13T09:37:42.741680+00:00  2026-10-13T09:37:42.741680+00:00
+lakehouse_retail_medallion_dq                  dq_gold           upstream_failed  2026-10-13T09:37:43.786161+00:00  2026-10-13T09:37:43.786161+00:00
 make: *** [airflow-dq-trigger-bad] Error 1

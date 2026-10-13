@@ -1,4 +1,6 @@
 dag_id                         run_id                       state    run_after                         logical_date    start_date                        end_date
+lakehouse_retail_medallion_dq  manual__ldl_20261013T093637  failed   2026-10-13T09:36:40.238172+00:00                  2026-10-13T09:36:41.025075+00:00  2026-10-13T09:37:45.938145+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T093306  success  2026-10-13T09:33:08.678913+00:00                  2026-10-13T09:33:09.387233+00:00  2026-10-13T09:36:28.591978+00:00
 lakehouse_retail_medallion_dq  manual__ldl_20261013T073733  success  2026-10-13T07:37:36.314248+00:00                  2026-10-13T07:37:36.584272+00:00  2026-10-13T07:44:50.965887+00:00
 lakehouse_retail_medallion_dq  manual__ldl_20261013T073406  failed   2026-10-13T07:34:10.889049+00:00                  2026-10-13T07:34:11.099421+00:00  2026-10-13T07:37:23.905055+00:00
 lakehouse_retail_medallion_dq  manual__ldl_20261013T072545  success  2026-10-13T07:25:47.895808+00:00                  2026-10-13T07:25:48.286456+00:00  2026-10-13T07:33:42.008723+00:00

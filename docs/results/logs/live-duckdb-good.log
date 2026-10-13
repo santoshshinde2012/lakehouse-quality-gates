@@ -1,18 +1,18 @@
-2026-10-13T06:59:28.605805Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
-2026-10-13T06:59:29.230360Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
-2026-10-13T06:59:29.462294Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
-2026-10-13T06:59:29.586243Z [info     ] dq.gate.passed                 failed=0 layer=bronze passed=14 pipeline=retail run_id=20261013T065928Z-a6e4a47d status=passed warned=0
-2026-10-13T06:59:29.586300Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=passed
-2026-10-13T06:59:29.592882Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
-2026-10-13T06:59:29.647882Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
-2026-10-13T06:59:29.735179Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
-2026-10-13T06:59:29.829418Z [info     ] dq.gate.passed                 failed=0 layer=silver passed=21 pipeline=retail run_id=20261013T065928Z-a6e4a47d status=passed warned=0
-2026-10-13T06:59:29.829472Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=passed
-2026-10-13T06:59:29.832498Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
-2026-10-13T06:59:29.887333Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
-2026-10-13T06:59:29.997371Z [info     ] dq.gate.passed                 failed=0 layer=gold passed=11 pipeline=retail run_id=20261013T065928Z-a6e4a47d status=passed warned=0
-2026-10-13T06:59:29.997427Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=passed
-retail/bronze: passed (14 checks, run 20261013T065928Z-a6e4a47d)
-retail/silver: passed (21 checks, run 20261013T065928Z-a6e4a47d)
-retail/gold: passed (11 checks, run 20261013T065928Z-a6e4a47d)
+2026-10-13T09:30:27.718494Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-13T09:30:28.352143Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-13T09:30:28.906280Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-13T09:30:29.077151Z [info     ] dq.gate.passed                 failed=0 layer=bronze passed=14 pipeline=retail run_id=20261013T093027Z-ab4c8f52 status=passed warned=0
+2026-10-13T09:30:29.077216Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=passed
+2026-10-13T09:30:29.094875Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-13T09:30:29.321957Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-13T09:30:30.611080Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-13T09:30:30.713716Z [info     ] dq.gate.passed                 failed=0 layer=silver passed=21 pipeline=retail run_id=20261013T093027Z-ab4c8f52 status=passed warned=0
+2026-10-13T09:30:30.713777Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=passed
+2026-10-13T09:30:30.717170Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-13T09:30:30.796392Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-13T09:30:31.000587Z [info     ] dq.gate.passed                 failed=0 layer=gold passed=11 pipeline=retail run_id=20261013T093027Z-ab4c8f52 status=passed warned=0
+2026-10-13T09:30:31.000649Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=passed
+retail/bronze: passed (14 checks, run 20261013T093027Z-ab4c8f52)
+retail/silver: passed (21 checks, run 20261013T093027Z-ab4c8f52)
+retail/gold: passed (11 checks, run 20261013T093027Z-ab4c8f52)
 exit=0

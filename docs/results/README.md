@@ -1,4 +1,4 @@
-# Verification results (v0.2.0)
+# Verification results (v0.2.1)
 
 These are real artefacts from runs on macOS (arm64, Docker Desktop) on 2026-10-13, using Soda Core 4.26.0 and Python 3.12.
 Every file in this folder was produced by the commands below; only this README was written by hand.
@@ -19,7 +19,7 @@ Live runs used local-data-lakehouse (Lakekeeper Iceberg REST, RustFS, Spark 4.1.
 | Live DuckDB, bad | `soda-dq seed fixtures/bad_batch --yes` then `run` | ✅ blocked at bronze | [seed](logs/live-seed-bad.log) · [run](logs/live-duckdb-bad.log) |
 | Trino, good | `soda-dq run -e trino` | ✅ 46/46 passed | [run](logs/trino-good.log) |
 | Trino, bad | same, after the bad seed | ✅ blocked at bronze | [run](logs/trino-bad.log) |
-| Docker image | `make dq-up` | ✅ `lakehouse-quality-gates:0.2.0`, user `dq`, read-only root, `cap_drop: ALL`, healthy | [build](docker/build-and-up.log) · [image](docker/image.txt) |
+| Docker image | `make dq-up` | ✅ `lakehouse-quality-gates:0.2.0` (built just before the 0.2.1 bump; the image contents are identical apart from the seed fix), user `dq`, read-only root, `cap_drop: ALL`, healthy | [build](docker/build-and-up.log) · [image](docker/image.txt) |
 | `ldl-soda`, bad then good | `docker exec ldl-soda soda-dq seed … && soda-dq run` | ✅ bad blocked at bronze; good passed 46/46 | [bad](docker/ldl-soda-seed-bad-run.log) · [good](docker/ldl-soda-run-good.log) |
 | Airflow, good data | `make airflow-dq-trigger` (port 8090) | ✅ all 9 tasks succeeded | [run](airflow/dag-run-good.log) · [tasks](airflow/task-states-good.txt) |
 | Airflow, bad data | `make airflow-dq-trigger-bad` | ✅ `dq_bronze` failed; every downstream task `upstream_failed` | [run](airflow/dag-run-bad.log) · [tasks](airflow/task-states-bad.txt) |
@@ -32,17 +32,17 @@ in the no-Docker bad batch below, which verifies each layer on its own.
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `passed` | 14 | 0 | 0 | [json](gates/good/20261013T074710Z-ac5f28d7_retail_bronze.json) · [md](gates/good/20261013T074710Z-ac5f28d7_retail_bronze.md) · [junit](gates/good/20261013T074710Z-ac5f28d7_retail_bronze.xml) |
-| silver | `passed` | 21 | 0 | 0 | [json](gates/good/20261013T074710Z-ac5f28d7_retail_silver.json) · [md](gates/good/20261013T074710Z-ac5f28d7_retail_silver.md) · [junit](gates/good/20261013T074710Z-ac5f28d7_retail_silver.xml) |
-| gold | `passed` | 11 | 0 | 0 | [json](gates/good/20261013T074710Z-ac5f28d7_retail_gold.json) · [md](gates/good/20261013T074710Z-ac5f28d7_retail_gold.md) · [junit](gates/good/20261013T074710Z-ac5f28d7_retail_gold.xml) |
+| bronze | `passed` | 14 | 0 | 0 | [json](gates/good/20261013T093946Z-bba130b8_retail_bronze.json) · [md](gates/good/20261013T093946Z-bba130b8_retail_bronze.md) · [junit](gates/good/20261013T093946Z-bba130b8_retail_bronze.xml) |
+| silver | `passed` | 21 | 0 | 0 | [json](gates/good/20261013T093946Z-bba130b8_retail_silver.json) · [md](gates/good/20261013T093946Z-bba130b8_retail_silver.md) · [junit](gates/good/20261013T093946Z-bba130b8_retail_silver.xml) |
+| gold | `passed` | 11 | 0 | 0 | [json](gates/good/20261013T093946Z-bba130b8_retail_gold.json) · [md](gates/good/20261013T093946Z-bba130b8_retail_gold.md) · [junit](gates/good/20261013T093946Z-bba130b8_retail_gold.xml) |
 
 ## Bad batch (duckdb-local): every gate blocks
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `blocked` | 10 | 2 | 2 | [json](gates/bad/20261013T074711Z-2973a159_retail_bronze.json) · [md](gates/bad/20261013T074711Z-2973a159_retail_bronze.md) · [junit](gates/bad/20261013T074711Z-2973a159_retail_bronze.xml) |
-| silver | `blocked` | 14 | 1 | 6 | [json](gates/bad/20261013T074712Z-8fa9b03a_retail_silver.json) · [md](gates/bad/20261013T074712Z-8fa9b03a_retail_silver.md) · [junit](gates/bad/20261013T074712Z-8fa9b03a_retail_silver.xml) |
-| gold | `blocked` | 9 | 1 | 1 | [json](gates/bad/20261013T074712Z-1fe5740a_retail_gold.json) · [md](gates/bad/20261013T074712Z-1fe5740a_retail_gold.md) · [junit](gates/bad/20261013T074712Z-1fe5740a_retail_gold.xml) |
+| bronze | `blocked` | 10 | 2 | 2 | [json](gates/bad/20261013T093947Z-583cad67_retail_bronze.json) · [md](gates/bad/20261013T093947Z-583cad67_retail_bronze.md) · [junit](gates/bad/20261013T093947Z-583cad67_retail_bronze.xml) |
+| silver | `blocked` | 14 | 1 | 6 | [json](gates/bad/20261013T093948Z-20ee869b_retail_silver.json) · [md](gates/bad/20261013T093948Z-20ee869b_retail_silver.md) · [junit](gates/bad/20261013T093948Z-20ee869b_retail_silver.xml) |
+| gold | `blocked` | 9 | 1 | 1 | [json](gates/bad/20261013T093948Z-7de931af_retail_gold.json) · [md](gates/bad/20261013T093948Z-7de931af_retail_gold.md) · [junit](gates/bad/20261013T093948Z-7de931af_retail_gold.xml) |
 
 | Layer | Why it blocked |
 |---|---|
@@ -66,15 +66,15 @@ Good:
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `passed` | 14 | 0 | 0 | [json](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_bronze.json) · [md](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_bronze.md) · [junit](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_bronze.xml) |
-| silver | `passed` | 21 | 0 | 0 | [json](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_silver.json) · [md](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_silver.md) · [junit](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_silver.xml) |
-| gold | `passed` | 11 | 0 | 0 | [json](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_gold.json) · [md](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_gold.md) · [junit](gates/live-duckdb-good/20261013T065928Z-a6e4a47d_retail_gold.xml) |
+| bronze | `passed` | 14 | 0 | 0 | [json](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_bronze.json) · [md](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_bronze.md) · [junit](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_bronze.xml) |
+| silver | `passed` | 21 | 0 | 0 | [json](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_silver.json) · [md](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_silver.md) · [junit](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_silver.xml) |
+| gold | `passed` | 11 | 0 | 0 | [json](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_gold.json) · [md](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_gold.md) · [junit](gates/live-duckdb-good/20261013T093027Z-ab4c8f52_retail_gold.xml) |
 
 Bad:
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `blocked` | 10 | 2 | 2 | [json](gates/live-duckdb-bad/20261013T065940Z-48c0f4a6_retail_bronze.json) · [md](gates/live-duckdb-bad/20261013T065940Z-48c0f4a6_retail_bronze.md) · [junit](gates/live-duckdb-bad/20261013T065940Z-48c0f4a6_retail_bronze.xml) |
+| bronze | `blocked` | 10 | 2 | 2 | [json](gates/live-duckdb-bad/20261013T093817Z-a7c9cb34_retail_bronze.json) · [md](gates/live-duckdb-bad/20261013T093817Z-a7c9cb34_retail_bronze.md) · [junit](gates/live-duckdb-bad/20261013T093817Z-a7c9cb34_retail_bronze.xml) |
 
 ## Live lakehouse: Trino 483
 
@@ -82,19 +82,19 @@ Good:
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `passed` | 14 | 0 | 0 | [json](gates/trino-good/20261013T065930Z-02355aa0_retail_bronze.json) · [md](gates/trino-good/20261013T065930Z-02355aa0_retail_bronze.md) · [junit](gates/trino-good/20261013T065930Z-02355aa0_retail_bronze.xml) |
-| silver | `passed` | 21 | 0 | 0 | [json](gates/trino-good/20261013T065930Z-02355aa0_retail_silver.json) · [md](gates/trino-good/20261013T065930Z-02355aa0_retail_silver.md) · [junit](gates/trino-good/20261013T065930Z-02355aa0_retail_silver.xml) |
-| gold | `passed` | 11 | 0 | 0 | [json](gates/trino-good/20261013T065930Z-02355aa0_retail_gold.json) · [md](gates/trino-good/20261013T065930Z-02355aa0_retail_gold.md) · [junit](gates/trino-good/20261013T065930Z-02355aa0_retail_gold.xml) |
+| bronze | `passed` | 14 | 0 | 0 | [json](gates/trino-good/20261013T093031Z-a93abd20_retail_bronze.json) · [md](gates/trino-good/20261013T093031Z-a93abd20_retail_bronze.md) · [junit](gates/trino-good/20261013T093031Z-a93abd20_retail_bronze.xml) |
+| silver | `passed` | 21 | 0 | 0 | [json](gates/trino-good/20261013T093031Z-a93abd20_retail_silver.json) · [md](gates/trino-good/20261013T093031Z-a93abd20_retail_silver.md) · [junit](gates/trino-good/20261013T093031Z-a93abd20_retail_silver.xml) |
+| gold | `passed` | 11 | 0 | 0 | [json](gates/trino-good/20261013T093031Z-a93abd20_retail_gold.json) · [md](gates/trino-good/20261013T093031Z-a93abd20_retail_gold.md) · [junit](gates/trino-good/20261013T093031Z-a93abd20_retail_gold.xml) |
 
 Bad:
 
 | Layer | Gate | Passed | Warned | Failed | Reports |
 |---|---|---|---|---|---|
-| bronze | `blocked` | 10 | 2 | 2 | [json](gates/trino-bad/20261013T065940Z-26999d46_retail_bronze.json) · [md](gates/trino-bad/20261013T065940Z-26999d46_retail_bronze.md) · [junit](gates/trino-bad/20261013T065940Z-26999d46_retail_bronze.xml) |
+| bronze | `blocked` | 10 | 2 | 2 | [json](gates/trino-bad/20261013T093818Z-cbd0abbe_retail_bronze.json) · [md](gates/trino-bad/20261013T093818Z-cbd0abbe_retail_bronze.md) · [junit](gates/trino-bad/20261013T093818Z-cbd0abbe_retail_bronze.xml) |
 
 ## Airflow DAG `lakehouse_retail_medallion_dq`
 
-Good run `manual__ldl_20261013T072545`:
+Good run `manual__ldl_20261013T093306`:
 
 | Task | State |
 |---|---|
@@ -108,7 +108,7 @@ Good run `manual__ldl_20261013T072545`:
 | `dq_gold` | success |
 | `query_timetravel` | success |
 
-Bad run `manual__ldl_20261013T073406` (conf `{"inject_bad_batch": true}`):
+Bad run `manual__ldl_20261013T093637` (conf `{"inject_bad_batch": true}`):
 
 | Task | State |
 |---|---|

@@ -1,19 +1,27 @@
 {
-  "run_id": "20261013T065928Z-a6e4a47d",
+  "run_id": "20261013T093948Z-20ee869b",
   "pipeline": "retail",
   "layer": "silver",
   "engine": "duckdb",
-  "status": "passed",
-  "created_at": "2026-10-13T06:59:29.827950+00:00",
+  "status": "blocked",
+  "created_at": "2026-10-13T09:39:48.279566+00:00",
   "summary": {
-    "passed": 21,
-    "warned": 0,
-    "failed": 0,
+    "passed": 14,
+    "warned": 1,
+    "failed": 6,
     "not_evaluated": 0,
     "excluded": 0,
     "total": 21
   },
-  "reasons": [],
+  "reasons": [
+    "retail.silver.customers: failed: email: Email is well-formed",
+    "retail.silver.customers: failed: email: Email unique",
+    "retail.silver.orders: failed: No order timestamped in the future",
+    "retail.silver.orders: failed: customer_id: Customer id present",
+    "retail.silver.orders: failed: customer_id: Customer exists in silver.customers",
+    "retail.silver.orders: failed: amount: Amount is not negative",
+    "retail.silver.orders: warned: amount: Amount below the outlier ceiling"
+  ],
   "contracts": [
     {
       "name": "retail.silver.customers",
@@ -37,8 +45,8 @@
           "column": null,
           "outcome": "passed",
           "metrics": {
-            "check_rows_tested": 10,
-            "dataset_rows_tested": 10
+            "check_rows_tested": 12,
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -50,8 +58,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 10,
-            "dataset_rows_tested": 10
+            "check_rows_tested": 12,
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -63,9 +71,9 @@
           "metrics": {
             "duplicate_count": 0,
             "duplicate_percent": 0.0,
-            "check_rows_tested": 10,
+            "check_rows_tested": 12,
             "missing_count": 0,
-            "dataset_rows_tested": 10
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -77,8 +85,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 10,
-            "dataset_rows_tested": 10
+            "check_rows_tested": 12,
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -90,8 +98,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 10,
-            "dataset_rows_tested": 10
+            "check_rows_tested": 12,
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -99,13 +107,13 @@
           "name": "Email is well-formed",
           "type": "invalid",
           "column": "email",
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "invalid_count": 0,
-            "invalid_percent": 0.0,
-            "check_rows_tested": 10,
+            "invalid_count": 1,
+            "invalid_percent": 8.333333333333334,
+            "check_rows_tested": 12,
             "missing_count": 0,
-            "dataset_rows_tested": 10
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -113,13 +121,13 @@
           "name": "Email unique",
           "type": "duplicate",
           "column": "email",
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "duplicate_count": 0,
-            "duplicate_percent": 0.0,
-            "check_rows_tested": 10,
+            "duplicate_count": 1,
+            "duplicate_percent": 8.333333333333334,
+            "check_rows_tested": 12,
             "missing_count": 0,
-            "dataset_rows_tested": 10
+            "dataset_rows_tested": 12
           },
           "details": []
         },
@@ -131,8 +139,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 10,
-            "dataset_rows_tested": 10
+            "check_rows_tested": 12,
+            "dataset_rows_tested": 12
           },
           "details": []
         }
@@ -160,8 +168,8 @@
           "column": null,
           "outcome": "passed",
           "metrics": {
-            "check_rows_tested": 19,
-            "dataset_rows_tested": 19
+            "check_rows_tested": 24,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -169,12 +177,12 @@
           "name": "No order timestamped in the future",
           "type": "failed_rows",
           "column": null,
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "failed_rows_count": 0,
-            "failed_rows_percent": 0.0,
-            "dataset_rows_tested": 19,
-            "check_rows_tested": 19
+            "failed_rows_count": 1,
+            "failed_rows_percent": 4.166666666666667,
+            "dataset_rows_tested": 24,
+            "check_rows_tested": 24
           },
           "details": []
         },
@@ -186,8 +194,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 19,
-            "dataset_rows_tested": 19
+            "check_rows_tested": 24,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -199,9 +207,9 @@
           "metrics": {
             "duplicate_count": 0,
             "duplicate_percent": 0.0,
-            "check_rows_tested": 19,
+            "check_rows_tested": 24,
             "missing_count": 0,
-            "dataset_rows_tested": 19
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -209,12 +217,12 @@
           "name": "Customer id present",
           "type": "missing",
           "column": "customer_id",
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "missing_count": 0,
-            "missing_percent": 0.0,
-            "check_rows_tested": 19,
-            "dataset_rows_tested": 19
+            "missing_count": 1,
+            "missing_percent": 4.166666666666667,
+            "check_rows_tested": 24,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -222,13 +230,13 @@
           "name": "Customer exists in silver.customers",
           "type": "invalid",
           "column": "customer_id",
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "invalid_count": 0,
-            "invalid_percent": 0.0,
-            "check_rows_tested": 19,
-            "missing_count": 0,
-            "dataset_rows_tested": 19
+            "invalid_count": 1,
+            "invalid_percent": 4.166666666666667,
+            "check_rows_tested": 24,
+            "missing_count": 1,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -240,8 +248,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 19,
-            "dataset_rows_tested": 19
+            "check_rows_tested": 24,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -253,9 +261,9 @@
           "metrics": {
             "invalid_count": 0,
             "invalid_percent": 0.0,
-            "check_rows_tested": 19,
+            "check_rows_tested": 24,
             "missing_count": 0,
-            "dataset_rows_tested": 19
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -267,8 +275,8 @@
           "metrics": {
             "missing_count": 0,
             "missing_percent": 0.0,
-            "check_rows_tested": 19,
-            "dataset_rows_tested": 19
+            "check_rows_tested": 24,
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -276,13 +284,13 @@
           "name": "Amount is not negative",
           "type": "invalid",
           "column": "amount",
-          "outcome": "passed",
+          "outcome": "failed",
           "metrics": {
-            "invalid_count": 0,
-            "invalid_percent": 0.0,
-            "check_rows_tested": 19,
+            "invalid_count": 1,
+            "invalid_percent": 4.166666666666667,
+            "check_rows_tested": 24,
             "missing_count": 0,
-            "dataset_rows_tested": 19
+            "dataset_rows_tested": 24
           },
           "details": []
         },
@@ -290,13 +298,13 @@
           "name": "Amount below the outlier ceiling",
           "type": "invalid",
           "column": "amount",
-          "outcome": "passed",
+          "outcome": "warned",
           "metrics": {
-            "invalid_count": 0,
-            "invalid_percent": 0.0,
-            "check_rows_tested": 19,
+            "invalid_count": 1,
+            "invalid_percent": 4.166666666666667,
+            "check_rows_tested": 24,
             "missing_count": 0,
-            "dataset_rows_tested": 19
+            "dataset_rows_tested": 24
           },
           "details": []
         }
