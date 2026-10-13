@@ -1,3 +1,4 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart TB
   subgraph HOST["Developer Mac (Docker Desktop)"]
     subgraph NET["docker network ldl-net"]
@@ -19,8 +20,10 @@ flowchart TB
   LK --> PG
   LK --> OS
   TR --> LK
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  style HOST fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style NET fill:#f8fafc,stroke:#94a3b8,color:#0f172a

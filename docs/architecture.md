@@ -1,12 +1,87 @@
 # Architecture
 
-Every diagram below is also checked in as Mermaid source and a rendered SVG in [`diagrams/`](diagrams/).
-Re-render with `npx -y @mermaid-js/mermaid-cli -i docs/diagrams/<name>.mmd -o docs/diagrams/<name>.svg -b white`.
-Colours: blue = this project, grey = lakehouse / external, yellow = data stores, green = gates and the happy path, red = failure.
+Mermaid renders every diagram natively on GitHub. The sources (`.mmd`) and rendered SVGs live in [`diagrams/`](diagrams/).
+Re-render with `npx -y @mermaid-js/mermaid-cli -i docs/diagrams/<name>.mmd -o docs/diagrams/<name>.svg -b transparent`.
 
-## 1. System context
+**Palette** (it uses the `base` theme with explicit node colours, so it reads the same in GitHub light and dark mode):
+
+| Colour | Meaning |
+|---|---|
+| 🟦 indigo | lakehouse platform and external systems |
+| 🟦 sky | this project (soda-dq) and outputs |
+| 🟪 violet | data stores |
+| 🟩 green | quality gates and the happy path |
+| 🟨 amber | sources |
+| 🟪 fuchsia | orchestration |
+| 🟥 red | failure paths |
+
+## 0. Overview (README hero)
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "15px", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "edgeLabelBackground": "#f8fafc"}}}%%
+flowchart TB
+  subgraph SRC["① Sources"]
+    direction LR
+    CSV[/"Retail CSV batches<br/>orders · customers"/]:::src
+    AF["Airflow 3 · orchestration<br/>lakehouse_retail_medallion_dq"]:::orch
+  end
+
+  subgraph PLAT["② Lakehouse platform · local-data-lakehouse"]
+    direction LR
+    SPARK["Apache Spark 4.1<br/>bronze · silver · gold"]:::plat
+    LK["Lakekeeper<br/>Iceberg REST catalog"]:::plat
+    S3[("RustFS (S3)<br/>Apache Iceberg tables")]:::store
+    DUCK["DuckDB 1.5<br/>default engine"]:::plat
+    TRINO["Trino 483<br/>optional engine"]:::plat
+    SPARK -- writes --> LK
+    LK --- S3
+    DUCK -- reads --> LK
+    TRINO -- reads --> LK
+  end
+
+  subgraph QG["③ Quality gates · lakehouse-quality-gates"]
+    direction LR
+    C[/"Soda contracts · YAML<br/>5 contracts · 46 checks"/]:::gate
+    V["SodaContractVerifier<br/>Soda Core 4.26"]:::gate
+    P{"GatePolicy<br/>pass · warn · block"}:::gate
+    C --> V --> P
+  end
+
+  subgraph OUT["④ Outputs"]
+    direction LR
+    BI(["Trusted gold<br/>promoted only on pass"]):::out
+    REP[("Reports · JSON · JUnit · Markdown<br/>ops.dq_results (optional)")]:::out
+    NOTE(["Console · Slack alerts"]):::out
+  end
+
+  CSV --> SPARK
+  AF -- "1 · docker exec ldl-spark" --> SPARK
+  AF -- "2 · docker exec ldl-soda soda-dq verify" --> V
+  DUCK -- "SQL" --> V
+  TRINO -. "SQL" .-> V
+  P --> BI
+  P --> REP
+  P --> NOTE
+
+  classDef src fill:#fef3c7,stroke:#b45309,stroke-width:1.5px,color:#451a03
+  classDef plat fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef orch fill:#fae8ff,stroke:#a21caf,stroke-width:1.5px,color:#3b0764
+  classDef out fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  style SRC fill:#fffbeb,stroke:#f59e0b,color:#78350f
+  style PLAT fill:#eef2ff,stroke:#6366f1,color:#312e81
+  style QG fill:#f0fdf4,stroke:#22c55e,color:#14532d
+
+  style OUT fill:#f0f9ff,stroke:#0ea5e9,color:#0c4a6e
+```
+
+SVG: [00-architecture-hero.svg](diagrams/00-architecture-hero.svg)
+
+## 1. C4 level 1: System context
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart LR
   ENG(["Data engineer"]):::ext
   SL(["Slack"]):::ext
@@ -31,18 +106,21 @@ flowchart LR
   LK --> OS
   CLI --> REP
   CLI -. "webhook on block" .-> SL
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  style LDL fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style DQ fill:#f8fafc,stroke:#94a3b8,color:#0f172a
 ```
 
-Rendered: [diagrams/01-system-context.svg](diagrams/01-system-context.svg)
+SVG: [01-system-context.svg](diagrams/01-system-context.svg)
 
-## 2. Containers and components (ports and adapters)
+## 2. C4 level 2/3: Containers and components (ports and adapters)
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart TB
   subgraph COMP["Composition root"]
     CLI["cli.py (Typer)"]:::dq
@@ -79,18 +157,23 @@ flowchart TB
   SV --> DP
   SV --> TP
   SV --> SODA
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  style COMP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style APP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style DOM fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style ADP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
 ```
 
-Rendered: [diagrams/02-components.svg](diagrams/02-components.svg)
+SVG: [02-components.svg](diagrams/02-components.svg)
 
 ## 3. Medallion data flow with quality gates
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart LR
   SRC[("Sample CSV / bad batch")]:::store
   B["bronze.orders<br/>bronze.customers"]:::store
@@ -108,18 +191,19 @@ flowchart LR
   GB -- fail --> X
   GS -- fail --> X
   GG -- fail --> X
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
 ```
 
-Rendered: [diagrams/03-medallion-flow.svg](diagrams/03-medallion-flow.svg)
+SVG: [03-medallion-flow.svg](diagrams/03-medallion-flow.svg)
 
 ## 4. Gate run sequence
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 sequenceDiagram
   autonumber
   actor U as Airflow task / engineer
@@ -151,37 +235,40 @@ sequenceDiagram
   end
 ```
 
-Rendered: [diagrams/04-gate-sequence.svg](diagrams/04-gate-sequence.svg)
+SVG: [04-gate-sequence.svg](diagrams/04-gate-sequence.svg)
 
 ## 5. Airflow DAG `lakehouse_retail_medallion_dq`
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart LR
   ST["land_smoke<br/>(ldl-spark)"]:::ext
   BR["bronze"]:::ext
+  IN["inject_bad_batch<br/>no-op unless conf flag"]:::dq
   DB{"dq_bronze<br/>(ldl-soda)"}:::gate
   SI["silver"]:::ext
   DS{"dq_silver"}:::gate
   GO["gold"]:::ext
   DG{"dq_gold"}:::gate
   EN["query_timetravel"]:::gate
-  FX(["DAG run failed<br/>later tasks: upstream_failed"]):::fail
-  ST --> BR --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
+  FX(["DAG run failed<br/>downstream: upstream_failed"]):::fail
+  ST --> BR --> IN --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
   DB -->|exit 1| FX
   DS -->|exit 1| FX
   DG -->|exit 1| FX
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
 ```
 
-Rendered: [diagrams/05-airflow-dag.svg](diagrams/05-airflow-dag.svg)
+SVG: [05-airflow-dag.svg](diagrams/05-airflow-dag.svg)
 
-## 6. Deployment (Docker network `ldl-net`, ports verified on macOS)
+## 6. Deployment: Docker network `ldl-net`, ports verified on macOS
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 flowchart TB
   subgraph HOST["Developer Mac (Docker Desktop)"]
     subgraph NET["docker network ldl-net"]
@@ -203,18 +290,21 @@ flowchart TB
   LK --> PG
   LK --> OS
   TR --> LK
-  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
-  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
-  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
-  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
+  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
+  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
+  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
+  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  style HOST fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  style NET fill:#f8fafc,stroke:#94a3b8,color:#0f172a
 ```
 
-Rendered: [diagrams/06-deployment.svg](diagrams/06-deployment.svg)
+SVG: [06-deployment.svg](diagrams/06-deployment.svg)
 
 ## 7. Domain model and ports
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
 classDiagram
   direction LR
   class ContractSpec { +pipeline +layer +name +dataset +path +references +datasets() }
@@ -244,7 +334,7 @@ classDiagram
   SlackWebhookNotifier ..|> Notifier
 ```
 
-Rendered: [diagrams/07-domain-classes.svg](diagrams/07-domain-classes.svg)
+SVG: [07-domain-classes.svg](diagrams/07-domain-classes.svg)
 
 ## Layering rules
 

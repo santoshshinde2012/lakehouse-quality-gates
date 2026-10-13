@@ -21,3 +21,4 @@ readme.original.md.bak
 # keep the verification artefacts in docs/results
 !docs/results/**
 .verify-progress.md
+.preview/
