@@ -75,7 +75,8 @@ def test_seed_writes_counts_through_repo_client(monkeypatch, tmp_path):
         "    return con\n"
     )
     monkeypatch.setenv("DQ_LDL_REPO_PATH", str(tmp_path))
-    result = runner.invoke(app, ["seed", str(PROJECT_ROOT / "fixtures" / "bad_batch"), "--yes"])
+    monkeypatch.chdir(PROJECT_ROOT)  # relative path, as in the README: soda-dq seed fixtures/bad_batch --yes
+    result = runner.invoke(app, ["seed", "fixtures/bad_batch", "--yes"])
     assert result.exit_code == 0, result.output
     assert "bronze.orders_raw" in result.output
     assert "29 rows" in result.output

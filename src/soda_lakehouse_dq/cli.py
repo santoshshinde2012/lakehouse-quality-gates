@@ -123,8 +123,9 @@ def seed(
             apply_session_settings(con, settings.duckdb_httpfs_client, settings.duckdb_temp_directory)
             # DuckDB's Iceberg writer creates a scratch ./data directory; keep it out of the project
             # (and off a read-only container root filesystem).
+            source = sample_dir.resolve()  # before chdir: a relative path is relative to the caller
             with tempfile.TemporaryDirectory() as scratch, contextlib.chdir(scratch):
-                counts = load_medallion(con, sample_dir.resolve())
+                counts = load_medallion(con, source)
         finally:
             con.close()
     except DataQualityError as exc:
