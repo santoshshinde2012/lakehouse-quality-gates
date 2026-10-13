@@ -1,0 +1,48 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart LR
+  subgraph LOAD["Load"]
+    direction TB
+    ST[["land_smoke"]]:::node
+    BR[["bronze"]]:::node
+    IN[["inject_bad_batch<br/><small>no-op by default</small>"]]:::node
+    ST --> BR --> IN
+  end
+  subgraph QB["Bronze gate"]
+    direction TB
+    DB("dq_bronze"):::ours
+    F1(["Run failed"]):::blocked
+    DB -. exit 1 .-> F1
+  end
+  subgraph QS["Silver"]
+    direction TB
+    SI[["silver"]]:::node
+    DS("dq_silver"):::ours
+    F2(["Run failed"]):::blocked
+    SI --> DS
+    DS -. exit 1 .-> F2
+  end
+  subgraph QG["Gold"]
+    direction TB
+    GO[["gold"]]:::node
+    DG("dq_gold"):::ours
+    F3(["Run failed"]):::blocked
+    GO --> DG
+    DG -. exit 1 .-> F3
+  end
+  EN(["query_timetravel"]):::pass
+  LOAD --> QB
+  QB -->|exit 0| QS
+  QS -->|exit 0| QG
+  QG -->|exit 0| EN
+  classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
+  classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
+  classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  style LOAD fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style QB fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style QS fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style QG fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  linkStyle 2,4,6 stroke:#dc2626,stroke-width:1.5px
+  linkStyle 8,9,10 stroke:#16a34a,stroke-width:2px

@@ -1,0 +1,55 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart TB
+  subgraph ORCH["Orchestration"]
+    direction LR
+    AF(["Airflow 3<br/><small>gated DAG</small>"]):::actor
+  end
+  subgraph FLOW["Data pipeline"]
+    direction LR
+    subgraph SRC["Sources"]
+      direction TB
+      CSV[("Good batch<br/><small>clean sample CSV</small>")]:::store
+      BAD[("Bad batch<br/><small>injected defects</small>")]:::store
+      CSV ~~~ BAD
+    end
+    subgraph LAKE["Lakehouse platform"]
+      direction TB
+      JOB[["Spark jobs<br/><small>medallion transforms</small>"]]:::node
+      TBL[("Iceberg tables<br/><small>medallion on RustFS</small>")]:::store
+      CAT["Lakekeeper<br/><small>REST catalog</small>"]:::node
+      JOB -->|write| TBL
+      TBL --- CAT
+    end
+    subgraph DQ["Quality gates"]
+      direction TB
+      SODA["Soda contracts<br/><small>46 checks</small>"]:::ours
+      GATE("Gate decision<br/><small>pass or block</small>"):::ours
+      BLK(["Run blocked<br/><small>downstream skipped</small>"]):::blocked
+      SODA --> GATE
+      GATE -. fail .-> BLK
+    end
+    subgraph OUT["Outputs"]
+      direction TB
+      REP[("Gate reports<br/><small>JSON, JUnit, MD</small>")]:::store
+      DQR[("dq_results<br/><small>Iceberg table</small>")]:::store
+      SLK(["Slack alerts<br/><small>on block</small>"]):::actor
+      REP ~~~ DQR ~~~ SLK
+    end
+    SRC -->|ingest| LAKE
+    LAKE -->|read| DQ
+    DQ -->|publish| OUT
+  end
+  ORCH -. schedules every step .-> FLOW
+  classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
+  classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
+  classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  style ORCH fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style FLOW fill:#ffffff,stroke:#e2e8f0,stroke-width:1px,stroke-dasharray:4 4,color:#64748b
+  style SRC fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style LAKE fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style DQ fill:#f5f7ff,stroke:#a5b4fc,stroke-width:1.5px,color:#3730a3
+  style OUT fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  linkStyle 4 stroke:#dc2626,stroke-width:1.5px

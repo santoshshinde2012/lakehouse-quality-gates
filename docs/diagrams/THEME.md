@@ -1,66 +1,69 @@
 # Diagram theme
 
 Every diagram in this repo is a native Mermaid block that GitHub renders inline. The sources live in
-this folder as `.mmd` files and are copied into `README.md` and `docs/architecture.md` by
-`make diagrams`; `make diagrams-check` (also run by `pytest`) fails if a copy is stale.
+this folder as `.mmd` files. `make diagrams` copies them into `README.md` and `docs/architecture.md`;
+`make diagrams-check` (and `pytest`) fails if a copy is stale.
 
-## Design rules
+## Principles
 
-- **One shared init directive** on the first line of every block: the `base` theme with explicit colours,
-  so GitHub doesn't swap in its own dark palette.
-- **Explicit light fills with dark text and a darker border on every node and band.** The diagram
-  background is transparent, so this is what keeps it readable on GitHub light *and* dark.
-- Edge labels sit on a white `edgeLabelBackground`; edges use slate `#64748b`, which shows up on both
-  backgrounds. Sequence diagrams wrap their messages in a light `rect` panel for the same reason.
-- **One accent per layer** (below), reused across every diagram, so a colour always means the same thing.
-- Pass edges are thick green; fail edges are dashed red and point to a red **Blocked** node.
-- Font: Inter, falling back to `system-ui`; 14px.
+- **Restrained.** White and very light grey zones with thin slate borders. One accent, indigo, marks
+  this project's components. Red is used only for *blocked*, green only for *pass*.
+- **System first.** The README hero shows systems and data flow, not classes. Code structure has its
+  own diagram, and details go in tables below the diagrams, not inside boxes.
+- **Short labels.** At most three words, plus an optional small second line. No class names in
+  system views.
+- **Readable on GitHub light and dark.** Every node and zone has an explicit light fill, dark text and a
+  border; edge labels sit on white. The canvas itself is transparent.
+- **Shapes carry meaning.** Cylinders are storage, stadiums are people, alerts and outcomes, and
+  double-bordered boxes are jobs or containers.
+- **Layout.** Group with subgraphs and link zone to zone (`SRC --> LAKE`) instead of node to node. This
+  keeps each zone's internal `direction`, makes the zones line up, and avoids crossings. `linkStyle`
+  indexes count every link, invisible `~~~` ones included.
 
 ## Palette
 
-| Role | classDef | Fill | Border | Text |
+| Role | classDef / style | Fill | Border | Text |
 |---|---|---|---|---|
-| Entry points | `entry` | `#e0f2fe` sky-100 | `#0284c7` sky-600 | `#0c4a6e` |
-| Composition root | `root` | `#e2e8f0` slate-200 | `#475569` slate-600 | `#0f172a` |
-| Application | `app` | `#e0e7ff` indigo-100 | `#4f46e5` indigo-600 | `#1e1b4b` |
-| Domain | `domain` | `#ede9fe` violet-100 | `#7c3aed` violet-600 | `#2e1065` |
-| Adapters | `adapter` | `#ccfbf1` teal-100 | `#0d9488` teal-600 | `#134e4a` |
-| Data platform | `platform` | `#fef3c7` amber-100 | `#d97706` amber-600 | `#451a03` |
-| Cross-cutting | `xcut` | `#f1f5f9` slate-100, dashed | `#64748b` slate-500 | `#1e293b` |
-| Pass / published | `pass` | `#dcfce7` green-100 | `#16a34a` green-600 | `#14532d` |
-| Fail / blocked | `fail` | `#fee2e2` red-100 | `#dc2626` red-600 | `#7f1d1d` |
+| Component | `node` | `#ffffff` | `#94a3b8` slate-400 | `#0f172a` |
+| Storage | `store` | `#f1f5f9` slate-100 | `#64748b` slate-500 | `#0f172a` |
+| Person, alert, outcome | `actor` | `#ffffff` | `#64748b` slate-500 | `#0f172a` |
+| This project | `ours` | `#eef2ff` indigo-50 | `#4f46e5` indigo-600 | `#1e1b4b` |
+| Pass | `pass` | `#f0fdf4` green-50 | `#16a34a` green-600 | `#14532d` |
+| Blocked | `blocked` | `#fef2f2` red-50 | `#dc2626` red-600 | `#7f1d1d` |
+| Zone | `style X …` | `#f8fafc` slate-50 | `#cbd5e1` slate-300 | `#334155` |
+| Our zone | `style X …` | `#f5f7ff` | `#a5b4fc` indigo-300 | `#3730a3` |
 
-Bands (subgraphs) use the 50-shade of their layer colour as the fill and the 600-shade as the border.
+Edges use `#64748b`. Pass edges are 2px green `#16a34a`; fail edges are dotted, 1.5px red `#dc2626`.
+The font is Inter, falling back to `system-ui`, at 14px.
 
 ## Reusable snippet
 
-Paste the first line unchanged, then pick the classDefs you need:
-
 ````text
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
-flowchart TB
-  subgraph APP["Application"]
-    direction LR
-    A1["VerifyLayerUseCase"]:::app
-    A2["GatePolicy"]:::app
-    A1 ~~~ A2
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart LR
+  subgraph A["Zone A"]
+    direction TB
+    N1["Component"]:::node
+    N2[("Storage")]:::store
+    N1 --> N2
   end
-  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
-  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
-  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
-  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
-  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
-  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
-  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
-  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
-  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
-  style APP fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
-  linkStyle 0 stroke:#16a34a,stroke-width:2.5px
+  subgraph B["Our zone"]
+    direction TB
+    N3("Our component"):::ours
+    N4(["Blocked"]):::blocked
+    N3 -. fail .-> N4
+  end
+  A -->|read| B
+  classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
+  classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
+  classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  style A fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155
+  style B fill:#f5f7ff,stroke:#a5b4fc,stroke-width:1.5px,color:#3730a3
+  linkStyle 1 stroke:#dc2626,stroke-width:1.5px
 ````
-
-Layout tips used here: put `direction LR` inside each band and chain its nodes with invisible links
-(`A ~~~ B`) so they stay in one row, link band to band (`ENTRY ==> ROOT`) instead of node to node to
-avoid crossings, and remember that `linkStyle` indexes count invisible links too.
 
 ## Rendering locally
 

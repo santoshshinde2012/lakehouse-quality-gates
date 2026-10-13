@@ -1,0 +1,110 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+classDiagram
+  direction LR
+  namespace domain {
+    class ContractSpec {
+      +pipeline
+      +layer
+      +name
+      +dataset
+      +path
+      +datasets()
+    }
+    class CheckResult {
+      +name
+      +outcome
+      +details
+    }
+    class ContractResult {
+      +contract
+      +checks
+      +outcome
+    }
+    class GateReport {
+      +run_id
+      +layer
+      +decision
+      +results
+    }
+    class ContractRepository {
+      <<Protocol>>
+      +list_contracts(pipeline, layer)
+    }
+    class ContractVerifier {
+      <<Protocol>>
+      +verify(contracts, variables)
+    }
+    class ResultSink {
+      <<Protocol>>
+      +write(report)
+    }
+    class Notifier {
+      <<Protocol>>
+      +notify(report)
+    }
+    class Clock {
+      <<Protocol>>
+      +now()
+    }
+  }
+  namespace application {
+    class GateDecision {
+      +status
+      +reasons
+    }
+    class GatePolicy {
+      +fail_on_warn
+      +decide(results) GateDecision
+    }
+    class VerifyLayerUseCase {
+      +execute(pipeline, layer, variables) GateReport
+    }
+  }
+  namespace adapters {
+    class SodaContractVerifier
+    class DataSourceProvider {
+      <<Protocol>>
+      +open() SodaDataSources
+    }
+    class DuckDBProvider
+    class TrinoProvider
+    class FileContractRepository
+    class JsonFileSink
+    class SlackWebhookNotifier
+  }
+  ContractResult o-- CheckResult
+  ContractResult --> ContractSpec
+  GateReport o-- ContractResult
+  GatePolicy ..> GateDecision
+  VerifyLayerUseCase --> ContractRepository
+  VerifyLayerUseCase --> ContractVerifier
+  VerifyLayerUseCase --> GatePolicy
+  VerifyLayerUseCase --> ResultSink
+  VerifyLayerUseCase --> Notifier
+  VerifyLayerUseCase --> Clock
+  SodaContractVerifier ..|> ContractVerifier
+  SodaContractVerifier --> DataSourceProvider
+  DuckDBProvider ..|> DataSourceProvider
+  TrinoProvider ..|> DataSourceProvider
+  FileContractRepository ..|> ContractRepository
+  JsonFileSink ..|> ResultSink
+  SlackWebhookNotifier ..|> Notifier
+  style ContractSpec fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style CheckResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ContractResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style GateReport fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ContractRepository fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ContractVerifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ResultSink fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style Notifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style Clock fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style GateDecision fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style GatePolicy fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style VerifyLayerUseCase fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style SodaContractVerifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style DataSourceProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style DuckDBProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style TrinoProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style FileContractRepository fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style JsonFileSink fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style SlackWebhookNotifier fill:#ffffff,stroke:#94a3b8,color:#0f172a

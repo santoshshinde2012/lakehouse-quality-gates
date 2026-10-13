@@ -1,0 +1,36 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+sequenceDiagram
+  autonumber
+  participant U as Airflow task / engineer
+  participant C as soda-dq CLI
+  participant V as VerifyLayerUseCase
+  participant R as FileContractRepository
+  participant S as SodaContractVerifier
+  participant D as DuckDBProvider
+  participant L as Lakekeeper (Iceberg)
+  participant P as GatePolicy
+  participant K as Sinks, Notifiers
+  rect rgb(248, 250, 252)
+    U->>C: soda-dq verify silver
+    C->>+V: execute(retail, silver, variables)
+    V->>R: list_contracts(retail, silver)
+    R-->>V: ContractSpec[]
+    V->>+S: verify(contracts, variables)
+    S->>D: open()
+    D->>L: ATTACH catalog
+    S->>S: verify_contract_locally()
+    S-->>-V: ContractResult[]
+    V->>P: decide(results)
+    P-->>V: GateDecision
+    V->>K: write(report), notify(report)
+    V-->>-C: GateReport
+    alt blocked
+      rect rgb(254, 242, 242)
+        C-->>U: exit 1, task fails, downstream skipped
+      end
+    else passed or warned
+      rect rgb(240, 253, 244)
+        C-->>U: exit 0, promote layer
+      end
+    end
+  end

@@ -3,6 +3,14 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.2.3] - 2026-10-13
+
+### Changed
+
+- The README hero is now a system architecture diagram: Orchestration above Sources, Lakehouse platform, Quality gates and Outputs, with short labels, a restrained palette (light zones, one indigo accent, red only for blocked) and no crossings.
+- New code architecture (hexagonal) diagram, collapsible in the README and in docs/architecture.md, with the class names moved into a table below it.
+- Medallion flow, deployment and Airflow DAG are redrawn as equal stage zones with single-line labels. Every source shares the new theme; docs/diagrams/THEME.md is updated.
+
 ## [0.2.2] - 2026-10-13
 
 ### Changed
