@@ -13,29 +13,58 @@ export AIRFLOW_API_PORT
 LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
 	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml --profile full
 
-.PHONY: bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
+.PHONY: test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
 	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check docs docs-check clean dist
 
 help:
-	@echo "lakehouse-quality-gates (Soda Core 4.26 data contracts as medallion quality gates)"
+	@echo "lakehouse-quality-gates: Soda Core data contracts as medallion quality gates"
+	@echo "Full guide: docs/guides/running-and-testing.md"
+	@echo ""
+	@echo "Setup"
+	@echo "  make env                .env from .env.example (set DQ_LDL_REPO_PATH for the live tiers)"
 	@echo "  make venv               uv sync (all extras + dev group) into .venv"
-	@echo "  make check              ruff + mypy --strict + pytest (what CI runs)"
+	@echo "  make lock               refresh uv.lock"
+	@echo "  make pre-commit         every pre-commit hook on all files"
+	@echo ""
+	@echo "Quality and tests (no Docker)"
+	@echo "  make fmt | lint         ruff format/fix | ruff format --check + ruff check"
+	@echo "  make typecheck          mypy --strict"
+	@echo "  make test-unit          T0: unit tests (-m unit)"
+	@echo "  make test-integration   T1: real Soda verification on DuckDB + CSV fixtures"
+	@echo "  make test               T0+T1 with coverage (what CI runs)"
+	@echo "  make test-all           lint + typecheck + T0 + T1 + validate + demo"
+	@echo "  make check              lint + typecheck + test"
 	@echo "  make validate           parse every contract with Soda (no data access)"
-	@echo "  make demo               good batch passes, bad batch is blocked (DuckDB on CSVs, no Docker)"
+	@echo "  make demo               good batch passes, bad batch is blocked (DuckDB on CSVs)"
+	@echo ""
+	@echo "Live lakehouse (Docker, DQ_LDL_REPO_PATH)"
+	@echo "  make e2e-live           T2: light stack, gates on good + bad data, pytest -m live (scripts/e2e.sh)"
+	@echo "  make e2e-full           T3: full stack + Trino + ldl-soda + Airflow, pytest -m 'live or full'"
+	@echo "  make test-live | test-full   only the pytest tiers, against a stack that is already up"
+	@echo "  make list [ENGINE=...]  contracts and the datasets they resolve to"
 	@echo "  make verify LAYER=silver [ENGINE=duckdb|duckdb-local|trino]   one gate"
 	@echo "  make run [ENGINE=...]   bronze -> silver -> gold, stop at the first blocked layer"
-	@echo "  make dq-up | dq-down    runner container ldl-soda on ldl-net (lakehouse must be up)"
-	@echo "  make airflow-dq-up      lakehouse Airflow + Soda-gated DAG (needs DQ_LDL_REPO_PATH)"
+	@echo "  make dq-build | dq-up | dq-down | dq-shell   runner container ldl-soda on ldl-net"
+	@echo "  make airflow-dq-up      lakehouse Airflow + the Soda-gated DAG"
 	@echo "  make airflow-dq-trigger trigger lakehouse_retail_medallion_dq and wait"
-	@echo "  make airflow-dq-trigger-bad  same, with the bad batch injected (dq_bronze must fail)"
+	@echo "  make airflow-dq-trigger-bad  same, bad batch injected (dq_bronze must fail; exits non-zero)"
 	@echo "  make airflow-dq-down    stop Airflow + lakehouse (volumes kept)"
 	@echo "  AIRFLOW_API_PORT=8080   Airflow host port (override if taken, e.g. 8090)"
-	@echo "  make diagrams           sync Mermaid blocks in the docs + render SVGs (npx mermaid-cli)"
-	@echo "  make diagrams-check     fail on stale Mermaid blocks; parse every .mmd with mermaid-cli"
-	@echo "  make docs               refresh Mermaid copies and shared snippets in the docs"
-	@echo "  make docs-check         links + anchors, markdownlint, Mermaid and snippet sync, duplicate prose"
-	@echo "  make dist               SODA.tar.gz without .venv / caches / reports"
+	@echo ""
+	@echo "Benchmarks (live stack; BENCH_OUT=dir keeps a run apart from docs/results/benchmarks)"
+	@echo "  make bench [SIZES='10000 100000'] [WARM=5]   gate latency/CPU/RSS/queries per layer x engine"
+	@echo "  make bench-accuracy     defect detection at 0.1/1/10% against ground truth"
+	@echo "  make bench-spark        Spark job time vs gate time"
+	@echo "  make bench-tools [TOOL_SIZES='100000 1000000'] [REPEATS=3]   Soda vs other tools (pinned venv)"
+	@echo "  make bench-tiny         the 7-row tool comparison in docs/research/benchmark-tiny (no Docker)"
+	@echo "  make bench-report       summary.md from the raw results in BENCH_OUT"
+	@echo "  make bench-all          all of the above"
+	@echo ""
+	@echo "Docs and housekeeping"
+	@echo "  make docs | docs-check  refresh | check links, markdownlint, Mermaid and snippet sync"
+	@echo "  make diagrams | diagrams-check   render SVGs | parse every .mmd with mermaid-cli"
+	@echo "  make clean | dist       caches and reports | SODA.tar.gz without .venv"
 
 env:
 	@test -f .env || cp .env.example .env && echo ".env ready"
@@ -58,7 +87,7 @@ typecheck:
 	$(RUN) mypy
 
 test-unit:
-	$(RUN) pytest -m "not integration"
+	$(RUN) pytest -m unit
 
 test-integration:
 	$(RUN) pytest -m integration
@@ -67,6 +96,21 @@ test:
 	$(RUN) pytest --cov=soda_lakehouse_dq --cov-report=term-missing
 
 check: lint typecheck test
+
+test-all: lint typecheck test validate demo
+	@echo "test-all: PASS (T0 unit + T1 integration, contracts valid, demo gates behave)"
+
+test-live:
+	$(RUN) pytest -m live -v
+
+test-full:
+	$(RUN) pytest -m "live or full" -v
+
+e2e-live:
+	scripts/e2e.sh live
+
+e2e-full:
+	scripts/e2e.sh full
 
 pre-commit:
 	$(RUN) pre-commit run --all-files
@@ -157,9 +201,15 @@ dist: clean
 
 # ---- benchmarks (need the live stack; they OVERWRITE the retail tables, see benchmarks/README.md) ----
 SIZES ?= 10000 100000 1000000 5000000
+WARM ?= 5
+TOOL_SIZES ?= 100000 1000000
+REPEATS ?= 3
+BENCH_OUT ?= docs/results/benchmarks
+export DQ_BENCH_RESULTS := $(abspath $(BENCH_OUT))
+TOOLS_VENV := benchmarks/tools/.venv
 bench: ## Gate latency/CPU/RSS/queries per layer x engine at SIZES
 	$(RUN) python -m benchmarks.specs
-	$(RUN) python -m benchmarks.run_perf --sizes $(SIZES) --warm 5
+	$(RUN) python -m benchmarks.run_perf --sizes $(SIZES) --warm $(WARM)
 
 bench-accuracy: ## Defect detection at 0.1/1/10% against ground truth
 	$(RUN) python -m benchmarks.run_accuracy
@@ -167,9 +217,16 @@ bench-accuracy: ## Defect detection at 0.1/1/10% against ground truth
 bench-spark: ## Spark job time vs gate time on the lakehouse sample
 	$(RUN) python -m benchmarks.spark_reference
 
-bench-tools: ## Soda vs datacontract-cli vs GX vs Pointblank vs Pandera (own venv)
-	cd benchmarks/tools && (test -d .venv || $(UV) venv -q --python 3.12 .venv) && $(UV) pip install -q -p .venv -r requirements.txt
-	benchmarks/tools/.venv/bin/python benchmarks/tools/run_tools.py bench --sizes 100000 1000000 --repeats 3 --out docs/results/benchmarks/tools.csv
+bench-tools: tools-venv ## Soda vs datacontract-cli vs GX vs Pointblank vs Pandera (own venv)
+	$(TOOLS_VENV)/bin/python benchmarks/tools/run_tools.py bench --sizes $(TOOL_SIZES) --repeats $(REPEATS) \
+	  --out $(DQ_BENCH_RESULTS)/tools.csv
+
+bench-tiny: tools-venv ## The 7-row comparison behind docs/research/benchmark-tiny (no Docker)
+	$(TOOLS_VENV)/bin/python benchmarks/tools/tiny/run_all.py
+
+tools-venv:
+	test -x $(TOOLS_VENV)/bin/python || $(UV) venv -q --python 3.12 $(TOOLS_VENV)
+	$(UV) pip install -q -p $(TOOLS_VENV) -r benchmarks/tools/requirements.txt
 
 bench-report: ## Write docs/results/benchmarks/summary.md from the raw results
 	$(RUN) python -m benchmarks.analyze
