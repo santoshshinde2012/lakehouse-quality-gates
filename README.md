@@ -56,66 +56,79 @@ do not block.
 
 ## Architecture
 
+<p align="center">
+  <img src="docs/diagrams/layered-architecture.svg" alt="Layered reference architecture: entry points, application, domain, adapters and data platform, with cross-cutting observability, configuration and security" width="100%">
+</p>
+
+The system has five layers, and dependencies only point **downward**. The entry points (CLI, Airflow,
+Docker) call use cases in the application layer, which work purely against domain models and ports.
+Adapters implement those ports on top of Soda Core, DuckDB, Trino, files and Slack, and they reach the
+Iceberg lakehouse underneath. `container.py` is the single composition root that wires everything together.
+
+<details>
+<summary>Editable Mermaid version of the layered view</summary>
+
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "15px", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "edgeLabelBackground": "#f8fafc"}}}%%
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#94a3b8", "primaryTextColor": "#0f172a"}}}%%
 flowchart TB
-  subgraph SRC["① Sources"]
+  subgraph L1["1 · Entry points"]
     direction LR
-    CSV[/"Retail CSV batches<br/>orders · customers"/]:::src
-    AF["Airflow 3 · orchestration<br/>lakehouse_retail_medallion_dq"]:::orch
+    CLI["soda-dq CLI (Typer)"]:::l1
+    DAG["Airflow DAG<br/>lakehouse_retail_medallion_dq"]:::l1
+    DOCK["Docker runner ldl-soda"]:::l1
   end
-
-  subgraph PLAT["② Lakehouse platform · local-data-lakehouse"]
+  CR["Composition root · container.py"]:::cr
+  subgraph L2["2 · Application"]
     direction LR
-    SPARK["Apache Spark 4.1<br/>bronze · silver · gold"]:::plat
-    LK["Lakekeeper<br/>Iceberg REST catalog"]:::plat
-    S3[("RustFS (S3)<br/>Apache Iceberg tables")]:::store
-    DUCK["DuckDB 1.5<br/>default engine"]:::plat
-    TRINO["Trino 483<br/>optional engine"]:::plat
-    SPARK -- writes --> LK
-    LK --- S3
-    DUCK -- reads --> LK
-    TRINO -- reads --> LK
+    RM["RunMedallionUseCase"]:::l2
+    VL["VerifyLayerUseCase"]:::l2
+    GP["GatePolicy → GateDecision"]:::l2
   end
-
-  subgraph QG["③ Quality gates · lakehouse-quality-gates"]
+  subgraph L3["3 · Domain"]
     direction LR
-    C[/"Soda contracts · YAML<br/>5 contracts · 46 checks"/]:::gate
-    V["SodaContractVerifier<br/>Soda Core 4.26"]:::gate
-    P{"GatePolicy<br/>pass · warn · block"}:::gate
-    C --> V --> P
+    MOD["Models<br/>Layer · Outcome · GateStatus · GateReport"]:::l3
+    PORT["Ports (Protocols)<br/>ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock"]:::l3
+    ERR["Errors<br/>DataQualityError + subclasses"]:::l3
   end
-
-  subgraph OUT["④ Outputs"]
+  subgraph L4["4 · Adapters"]
     direction LR
-    BI(["Trusted gold<br/>promoted only on pass"]):::out
-    REP[("Reports · JSON · JUnit · Markdown<br/>ops.dq_results (optional)")]:::out
-    NOTE(["Console · Slack alerts"]):::out
+    SV["SodaContractVerifier"]:::l4
+    FR["FileContractRepository"]:::l4
+    DP["DuckDBProvider · TrinoProvider"]:::l4
+    SK["Sinks: JSON · JUnit · Markdown · Iceberg"]:::l4
+    NT["Notifiers: Console · Slack"]:::l4
   end
-
-  CSV --> SPARK
-  AF -- "1 · docker exec ldl-spark" --> SPARK
-  AF -- "2 · docker exec ldl-soda soda-dq verify" --> V
-  DUCK -- "SQL" --> V
-  TRINO -. "SQL" .-> V
-  P --> BI
-  P --> REP
-  P --> NOTE
-
-  classDef src fill:#fef3c7,stroke:#b45309,stroke-width:1.5px,color:#451a03
-  classDef plat fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef orch fill:#fae8ff,stroke:#a21caf,stroke-width:1.5px,color:#3b0764
-  classDef out fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  style SRC fill:#fffbeb,stroke:#f59e0b,color:#78350f
-  style PLAT fill:#eef2ff,stroke:#6366f1,color:#312e81
-  style QG fill:#f0fdf4,stroke:#22c55e,color:#14532d
-
-  style OUT fill:#f0f9ff,stroke:#0ea5e9,color:#0c4a6e
+  subgraph L5["5 · Data platform (local-data-lakehouse)"]
+    direction LR
+    QE["DuckDB · Trino · Spark"]:::l5
+    LK["Lakekeeper REST catalog"]:::l5
+    IT["Iceberg tables<br/>bronze · silver · gold"]:::l5
+    S3["RustFS (S3)"]:::l5
+    PG["PostgreSQL"]:::l5
+  end
+  L1 --> CR --> L2 --> L3 --> L4 --> L5
+  classDef l1 fill:#eff6ff,stroke:#2563eb,color:#0f172a
+  classDef l2 fill:#f5f3ff,stroke:#7c3aed,color:#0f172a
+  classDef l3 fill:#f0fdfa,stroke:#0d9488,color:#0f172a
+  classDef l4 fill:#fffbeb,stroke:#d97706,color:#0f172a
+  classDef l5 fill:#f8fafc,stroke:#475569,color:#0f172a
+  classDef cr fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3
+  style L1 fill:#ffffff,stroke:#2563eb,color:#1e3a8a
+  style L2 fill:#ffffff,stroke:#7c3aed,color:#4c1d95
+  style L3 fill:#ffffff,stroke:#0d9488,color:#134e4a
+  style L4 fill:#ffffff,stroke:#d97706,color:#78350f
+  style L5 fill:#ffffff,stroke:#475569,color:#1e293b
 ```
+</details>
 
-**Medallion flow with gates.** Each gate runs after its layer is built and before the next layer reads it:
+### Medallion flow with quality gates
+
+<p align="center">
+  <img src="docs/diagrams/medallion-flow.svg" alt="Bronze, silver and gold, each followed by a Soda quality gate; passing gates promote data, blocked gates stop the pipeline" width="100%">
+</p>
+
+<details>
+<summary>Editable Mermaid version of the medallion flow</summary>
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
@@ -142,10 +155,11 @@ flowchart LR
   classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
   classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
 ```
+</details>
 
-Six more diagrams are in **[docs/architecture.md](docs/architecture.md)**: C4-style context and
-containers, gate sequence, Airflow DAG, deployment and domain classes. Each has its source and an SVG in
-[`docs/diagrams/`](docs/diagrams/).
+More diagrams are in **[docs/architecture.md](docs/architecture.md)**: C4-style context and containers,
+gate sequence, Airflow DAG, deployment and domain classes. The SVG sources are generated by
+[`docs/diagrams/src/build_diagrams.py`](docs/diagrams/src/build_diagrams.py).
 
 ## Quickstart
 

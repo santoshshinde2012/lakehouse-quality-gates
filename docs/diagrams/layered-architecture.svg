@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<defs>
+  <filter id="shadow" x="-5%" y="-5%" width="110%" height="120%">
+    <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#0f172a" flood-opacity="0.08"/>
+  </filter>
+</defs>
+<rect x="0.5" y="0.5" width="1599" height="999" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<text x="40" y="56" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#0f172a" text-anchor="start">lakehouse-quality-gates · layered reference architecture</text>
+<text x="40" y="86" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="400" fill="#475569" text-anchor="start">Soda Core v4 data contracts as quality gates for an Apache Iceberg lakehouse. Dependencies point downward only.</text>
+<rect x="248" y="120" width="1032" height="128" rx="12" fill="#eff6ff" stroke="#2563eb55" stroke-width="1"/>
+<rect x="40" y="120" width="184" height="128" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="40" y="120" width="6" height="128" rx="3" fill="#2563eb" stroke="none" stroke-width="1"/>
+<circle cx="76" cy="170.0" r="14" fill="#2563eb"/>
+<text x="76" y="175.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">1</text>
+<text x="100" y="175.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">Entry points</text>
+<text x="64" y="204.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">how a gate is started</text>
+<rect x="268.0" y="138" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="268.0" y="138" width="4" height="92" rx="2" fill="#2563eb" stroke="none" stroke-width="1"/>
+<text x="430.0" y="172.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">soda-dq CLI</text>
+<text x="430.0" y="192.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Typer · verify · run · seed</text>
+<text x="430.0" y="209.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">validate · list</text>
+<rect x="604.0" y="138" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="604.0" y="138" width="4" height="92" rx="2" fill="#2563eb" stroke="none" stroke-width="1"/>
+<text x="766.0" y="172.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Airflow DAG</text>
+<text x="766.0" y="192.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">lakehouse_retail_medallion_dq</text>
+<text x="766.0" y="209.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">dq_bronze · dq_silver · dq_gold</text>
+<rect x="940.0" y="138" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="940.0" y="138" width="4" height="92" rx="2" fill="#2563eb" stroke="none" stroke-width="1"/>
+<text x="1102.0" y="172.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Docker runner ldl-soda</text>
+<text x="1102.0" y="192.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">lakehouse-quality-gates:0.2.0</text>
+<text x="1102.0" y="209.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">docker exec from Airflow</text>
+<rect x="248" y="254" width="1032" height="44" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="764.0" y="276" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="middle">Composition root · container.py  —  the only place that instantiates adapters and injects them into use cases</text>
+<rect x="248" y="304" width="1032" height="128" rx="12" fill="#f5f3ff" stroke="#7c3aed55" stroke-width="1"/>
+<rect x="40" y="304" width="184" height="128" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="40" y="304" width="6" height="128" rx="3" fill="#7c3aed" stroke="none" stroke-width="1"/>
+<circle cx="76" cy="354.0" r="14" fill="#7c3aed"/>
+<text x="76" y="359.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">2</text>
+<text x="100" y="359.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">Application</text>
+<text x="64" y="388.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">use cases · orchestration</text>
+<rect x="268.0" y="322" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="268.0" y="322" width="4" height="92" rx="2" fill="#7c3aed" stroke="none" stroke-width="1"/>
+<text x="430.0" y="356.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">RunMedallionUseCase</text>
+<text x="430.0" y="376.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">bronze → silver → gold</text>
+<text x="430.0" y="393.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">stops at the first block</text>
+<rect x="604.0" y="322" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="604.0" y="322" width="4" height="92" rx="2" fill="#7c3aed" stroke="none" stroke-width="1"/>
+<text x="766.0" y="356.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">VerifyLayerUseCase</text>
+<text x="766.0" y="376.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">contracts → verify → decide</text>
+<text x="766.0" y="393.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">→ sinks → notifiers</text>
+<rect x="940.0" y="322" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="940.0" y="322" width="4" height="92" rx="2" fill="#7c3aed" stroke="none" stroke-width="1"/>
+<text x="1102.0" y="356.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">GatePolicy</text>
+<text x="1102.0" y="376.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">GateDecision</text>
+<text x="1102.0" y="393.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">pass · warn · block</text>
+<rect x="248" y="464" width="1032" height="128" rx="12" fill="#f0fdfa" stroke="#0d948855" stroke-width="1"/>
+<rect x="40" y="464" width="184" height="128" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="40" y="464" width="6" height="128" rx="3" fill="#0d9488" stroke="none" stroke-width="1"/>
+<circle cx="76" cy="514.0" r="14" fill="#0d9488"/>
+<text x="76" y="519.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">3</text>
+<text x="100" y="519.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">Domain</text>
+<text x="64" y="548.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">pure Python · no I/O</text>
+<rect x="268.0" y="482" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="268.0" y="482" width="4" height="92" rx="2" fill="#0d9488" stroke="none" stroke-width="1"/>
+<text x="430.0" y="516.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Models</text>
+<text x="430.0" y="536.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Layer · Outcome · GateStatus</text>
+<text x="430.0" y="553.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">ContractSpec · CheckResult · GateReport</text>
+<rect x="604.0" y="482" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="604.0" y="482" width="4" height="92" rx="2" fill="#0d9488" stroke="none" stroke-width="1"/>
+<text x="766.0" y="516.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Ports (Protocols)</text>
+<text x="766.0" y="536.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">ContractRepository · ContractVerifier</text>
+<text x="766.0" y="553.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">ResultSink · Notifier · Clock</text>
+<rect x="940.0" y="482" width="320.0" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="940.0" y="482" width="4" height="92" rx="2" fill="#0d9488" stroke="none" stroke-width="1"/>
+<text x="1102.0" y="516.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Errors</text>
+<text x="1102.0" y="536.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">DataQualityError</text>
+<text x="1102.0" y="553.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">+ 5 typed subclasses</text>
+<rect x="248" y="624" width="1032" height="128" rx="12" fill="#fffbeb" stroke="#d9770655" stroke-width="1"/>
+<rect x="40" y="624" width="184" height="128" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="40" y="624" width="6" height="128" rx="3" fill="#d97706" stroke="none" stroke-width="1"/>
+<circle cx="76" cy="674.0" r="14" fill="#d97706"/>
+<text x="76" y="679.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">4</text>
+<text x="100" y="679.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">Adapters</text>
+<text x="64" y="708.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">implement the ports</text>
+<rect x="268.0" y="642" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="268.0" y="642" width="4" height="92" rx="2" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="362.8" y="676.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">SodaContractVerifier</text>
+<text x="362.8" y="696.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Soda Core 4.26</text>
+<text x="362.8" y="713.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">verify_contract_locally</text>
+<rect x="469.6" y="642" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="469.6" y="642" width="4" height="92" rx="2" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="564.4" y="676.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">FileContractRepository</text>
+<text x="564.4" y="696.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">YAML contracts</text>
+<text x="564.4" y="713.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">{{ dataset_root }} token</text>
+<rect x="671.2" y="642" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="671.2" y="642" width="4" height="92" rx="2" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="766.0" y="676.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">DataSource providers</text>
+<text x="766.0" y="696.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">DuckDBProvider</text>
+<text x="766.0" y="713.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">TrinoProvider</text>
+<rect x="872.8" y="642" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="872.8" y="642" width="4" height="92" rx="2" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="967.5999999999999" y="676.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Result sinks</text>
+<text x="967.5999999999999" y="696.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">JSON · JUnit · Markdown</text>
+<text x="967.5999999999999" y="713.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Iceberg ops.dq_results</text>
+<rect x="1074.4" y="642" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="1074.4" y="642" width="4" height="92" rx="2" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="1169.2" y="676.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Notifiers</text>
+<text x="1169.2" y="696.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">ConsoleNotifier</text>
+<text x="1169.2" y="713.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">SlackWebhookNotifier</text>
+<rect x="248" y="784" width="1032" height="128" rx="12" fill="#f8fafc" stroke="#47556955" stroke-width="1"/>
+<rect x="40" y="784" width="184" height="128" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+<rect x="40" y="784" width="6" height="128" rx="3" fill="#475569" stroke="none" stroke-width="1"/>
+<circle cx="76" cy="834.0" r="14" fill="#475569"/>
+<text x="76" y="839.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">5</text>
+<text x="100" y="839.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#0f172a" text-anchor="start">Data platform</text>
+<text x="64" y="868.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="start">local-data-lakehouse</text>
+<rect x="268.0" y="802" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="268.0" y="802" width="4" height="92" rx="2" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="362.8" y="836.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Query engines</text>
+<text x="362.8" y="856.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">DuckDB 1.5 · Trino 483</text>
+<text x="362.8" y="873.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Spark 4.1 (writes layers)</text>
+<rect x="469.6" y="802" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="469.6" y="802" width="4" height="92" rx="2" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="564.4" y="836.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Lakekeeper</text>
+<text x="564.4" y="856.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">Iceberg REST catalog</text>
+<text x="564.4" y="873.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">vended S3 credentials</text>
+<rect x="671.2" y="802" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="671.2" y="802" width="4" height="92" rx="2" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="766.0" y="836.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Apache Iceberg tables</text>
+<text x="766.0" y="856.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">bronze · silver · gold</text>
+<text x="766.0" y="873.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">snapshots · time travel</text>
+<rect x="872.8" y="802" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="872.8" y="802" width="4" height="92" rx="2" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="967.5999999999999" y="836.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">RustFS</text>
+<text x="967.5999999999999" y="856.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">S3 object storage</text>
+<text x="967.5999999999999" y="873.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">s3://lake/warehouse</text>
+<rect x="1074.4" y="802" width="185.6" height="92" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="1074.4" y="802" width="4" height="92" rx="2" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="1169.2" y="836.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">PostgreSQL</text>
+<text x="1169.2" y="856.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">catalog metadata</text>
+<text x="1169.2" y="873.0" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">store</text>
+<line x1="351.2" y1="250" x2="351.2" y2="295" stroke="#94a3b8" stroke-width="2"/><path d="M345.2,293 L351.2,302 L357.2,293 Z" fill="#94a3b8"/>
+<line x1="1176.8000000000002" y1="250" x2="1176.8000000000002" y2="295" stroke="#94a3b8" stroke-width="2"/><path d="M1170.8000000000002,293 L1176.8000000000002,302 L1182.8000000000002,293 Z" fill="#94a3b8"/>
+<line x1="351.2" y1="434" x2="351.2" y2="455" stroke="#94a3b8" stroke-width="2"/><path d="M345.2,453 L351.2,462 L357.2,453 Z" fill="#94a3b8"/>
+<line x1="1176.8000000000002" y1="434" x2="1176.8000000000002" y2="455" stroke="#94a3b8" stroke-width="2"/><path d="M1170.8000000000002,453 L1176.8000000000002,462 L1182.8000000000002,453 Z" fill="#94a3b8"/>
+<line x1="351.2" y1="594" x2="351.2" y2="615" stroke="#94a3b8" stroke-width="2"/><path d="M345.2,613 L351.2,622 L357.2,613 Z" fill="#94a3b8"/>
+<line x1="1176.8000000000002" y1="594" x2="1176.8000000000002" y2="615" stroke="#94a3b8" stroke-width="2"/><path d="M1170.8000000000002,613 L1176.8000000000002,622 L1182.8000000000002,613 Z" fill="#94a3b8"/>
+<line x1="351.2" y1="754" x2="351.2" y2="775" stroke="#94a3b8" stroke-width="2"/><path d="M345.2,773 L351.2,782 L357.2,773 Z" fill="#94a3b8"/>
+<line x1="1176.8000000000002" y1="754" x2="1176.8000000000002" y2="775" stroke="#94a3b8" stroke-width="2"/><path d="M1170.8000000000002,773 L1176.8000000000002,782 L1182.8000000000002,773 Z" fill="#94a3b8"/>
+<rect x="1312" y="120" width="248" height="792" rx="12" fill="#f8fafc" stroke="#94a3b855" stroke-width="1"/>
+<text x="1436.0" y="150" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">Cross-cutting concerns</text>
+<text x="1436.0" y="170" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">apply to every layer</text>
+<rect x="1328" y="192.0" width="216" height="218.66666666666666" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="1328" y="192.0" width="4" height="218.66666666666666" rx="2" fill="#64748b" stroke="none" stroke-width="1"/>
+<text x="1438.0" y="280.8333333333333" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Observability</text>
+<text x="1438.0" y="300.8333333333333" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">structlog key/value events</text>
+<text x="1438.0" y="317.8333333333333" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">JSON logs (DQ_LOG_JSON)</text>
+<text x="1438.0" y="334.8333333333333" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">JSON · JUnit · MD reports</text>
+<rect x="1328" y="434.66666666666663" width="216" height="218.66666666666666" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="1328" y="434.66666666666663" width="4" height="218.66666666666666" rx="2" fill="#64748b" stroke="none" stroke-width="1"/>
+<text x="1438.0" y="523.5" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Configuration</text>
+<text x="1438.0" y="543.5" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">pydantic-settings</text>
+<text x="1438.0" y="560.5" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">DQ_* env vars · .env</text>
+<text x="1438.0" y="577.5" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">validated at startup</text>
+<rect x="1328" y="677.3333333333333" width="216" height="218.66666666666666" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#shadow)"/>
+<rect x="1328" y="677.3333333333333" width="4" height="218.66666666666666" rx="2" fill="#64748b" stroke="none" stroke-width="1"/>
+<text x="1438.0" y="766.1666666666666" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Security</text>
+<text x="1438.0" y="786.1666666666666" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">vended, scoped S3 creds</text>
+<text x="1438.0" y="803.1666666666666" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">non-root · read-only rootfs</text>
+<text x="1438.0" y="820.1666666666666" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#475569" text-anchor="middle">cap_drop ALL · SecretStr</text>
+<line x1="40" y1="936" x2="1560" y2="936" stroke="#e2e8f0"/>
+<line x1="56" y1="950" x2="56" y2="967" stroke="#94a3b8" stroke-width="2"/><path d="M50,965 L56,974 L62,965 Z" fill="#94a3b8"/>
+<text x="72" y="967" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">depends on (downward only)</text>
+<rect x="300" y="954" width="14" height="14" rx="3" fill="#2563eb" stroke="none" stroke-width="1"/>
+<text x="322" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="start">Entry points</text>
+<rect x="425.2" y="954" width="14" height="14" rx="3" fill="#7c3aed" stroke="none" stroke-width="1"/>
+<text x="447.2" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="start">Application</text>
+<rect x="542.8" y="954" width="14" height="14" rx="3" fill="#0d9488" stroke="none" stroke-width="1"/>
+<text x="564.8" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="start">Domain</text>
+<rect x="622.4" y="954" width="14" height="14" rx="3" fill="#d97706" stroke="none" stroke-width="1"/>
+<text x="644.4" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="start">Adapters</text>
+<rect x="717.1999999999999" y="954" width="14" height="14" rx="3" fill="#475569" stroke="none" stroke-width="1"/>
+<text x="739.1999999999999" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="500" fill="#475569" text-anchor="start">Data platform</text>
+<text x="1560" y="966" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="end">Adapters implement domain ports (dependency inversion) · domain imports only the stdlib</text>
+</svg>

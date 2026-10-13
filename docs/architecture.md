@@ -15,6 +15,34 @@ Re-render with `npx -y @mermaid-js/mermaid-cli -i docs/diagrams/<name>.mmd -o do
 | 🟪 fuchsia | orchestration |
 | 🟥 red | failure paths |
 
+## Layered reference architecture
+
+![Layered reference architecture](diagrams/layered-architecture.svg)
+
+| # | Layer | Contents (real names) | May depend on |
+|---|---|---|---|
+| 1 | **Entry points** | `soda-dq` Typer CLI (`cli.py`), Airflow DAG `lakehouse_retail_medallion_dq` (`airflow/dags/`), Docker runner `ldl-soda` | the application layer, through `container.py` |
+| – | **Composition root** | `container.py`: `build_container`, `build_provider`, `build_sinks`, `build_notifiers` | every layer. It is the only place that instantiates adapters |
+| 2 | **Application** | `RunMedallionUseCase`, `VerifyLayerUseCase`, `GatePolicy` → `GateDecision` | domain |
+| 3 | **Domain** | models (`Layer`, `Outcome`, `GateStatus`, `ContractSpec`, `CheckResult`, `ContractResult`, `GateReport`), ports (`ContractRepository`, `ContractVerifier`, `ResultSink`, `Notifier`, `Clock`), errors (`DataQualityError` + subclasses) | the standard library only |
+| 4 | **Adapters** | `SodaContractVerifier`, `FileContractRepository`, `DuckDBProvider` / `TrinoProvider`, sinks (`JsonFileSink`, `JUnitXmlSink`, `MarkdownSink`, `IcebergSink`), notifiers (`ConsoleNotifier`, `SlackWebhookNotifier`), `SystemClock` | domain (they implement its ports), plus third-party libraries |
+| 5 | **Data platform** | local-data-lakehouse: DuckDB, Trino and Spark, the Lakekeeper REST catalog, Iceberg tables (bronze, silver, gold), RustFS (S3), PostgreSQL | none (external systems) |
+
+**The dependency rule.** Source code only depends on layers below it, and the domain has no
+third-party imports. The application layer never imports Soda, DuckDB or Slack: it receives
+`ContractVerifier`, `ResultSink` and the other ports through its constructor (dependency inversion), and
+`container.py` passes in the concrete adapters. Three cross-cutting concerns span every layer:
+**observability** (structlog events and reports), **configuration** (pydantic-settings, `DQ_*`) and
+**security** (vended S3 credentials, a non-root read-only container, `SecretStr` for the Slack URL).
+
+### Medallion flow with quality gates
+
+![Medallion flow with quality gates](diagrams/medallion-flow.svg)
+
+Both SVGs are hand-authored by [`diagrams/src/build_diagrams.py`](diagrams/src/build_diagrams.py) on an
+8 px grid. Rebuild them with
+`python docs/diagrams/src/build_diagrams.py && rsvg-convert -z 2 docs/diagrams/<name>.svg -o docs/diagrams/<name>.png`.
+
 ## 0. Overview (README hero)
 
 ```mermaid

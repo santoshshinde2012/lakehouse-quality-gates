@@ -47,6 +47,8 @@ ignore = ["PLR0913", "S101", "ANN401", "S603", "S607", "PLC0415"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "PLR2004", "S"]
 "airflow/**" = ["ANN"]
+# Drawing script: coordinate-heavy helpers, UPPERCASE layout constants, long text literals.
+"docs/diagrams/src/**" = ["ANN", "N806", "PLR0917", "PLR0913", "E501"]
 
 [tool.mypy]
 python_version = "3.12"
