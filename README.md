@@ -57,7 +57,7 @@ do not block.
 ## Architecture
 
 <p align="center">
-  <img src="docs/diagrams/layered-architecture.svg" alt="Layered reference architecture: entry points, application, domain, adapters and data platform, with cross-cutting observability, configuration and security" width="100%">
+  <a href="docs/diagrams/drawio/layered-architecture.drawio"><img src="docs/diagrams/drawio/layered-architecture.drawio.png" alt="Layered reference architecture: entry points, composition root, application, domain, adapters and data platform, with cross-cutting observability, configuration and security" width="100%"></a>
 </p>
 
 The system has five layers, and dependencies only point **downward**. The entry points (CLI, Airflow,
@@ -65,101 +65,42 @@ Docker) call use cases in the application layer, which work purely against domai
 Adapters implement those ports on top of Soda Core, DuckDB, Trino, files and Slack, and they reach the
 Iceberg lakehouse underneath. `container.py` is the single composition root that wires everything together.
 
-<details>
-<summary>Editable Mermaid version of the layered view</summary>
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#94a3b8", "primaryTextColor": "#0f172a"}}}%%
-flowchart TB
-  subgraph L1["1 · Entry points"]
-    direction LR
-    CLI["soda-dq CLI (Typer)"]:::l1
-    DAG["Airflow DAG<br/>lakehouse_retail_medallion_dq"]:::l1
-    DOCK["Docker runner ldl-soda"]:::l1
-  end
-  CR["Composition root · container.py"]:::cr
-  subgraph L2["2 · Application"]
-    direction LR
-    RM["RunMedallionUseCase"]:::l2
-    VL["VerifyLayerUseCase"]:::l2
-    GP["GatePolicy → GateDecision"]:::l2
-  end
-  subgraph L3["3 · Domain"]
-    direction LR
-    MOD["Models<br/>Layer · Outcome · GateStatus · GateReport"]:::l3
-    PORT["Ports (Protocols)<br/>ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock"]:::l3
-    ERR["Errors<br/>DataQualityError + subclasses"]:::l3
-  end
-  subgraph L4["4 · Adapters"]
-    direction LR
-    SV["SodaContractVerifier"]:::l4
-    FR["FileContractRepository"]:::l4
-    DP["DuckDBProvider · TrinoProvider"]:::l4
-    SK["Sinks: JSON · JUnit · Markdown · Iceberg"]:::l4
-    NT["Notifiers: Console · Slack"]:::l4
-  end
-  subgraph L5["5 · Data platform (local-data-lakehouse)"]
-    direction LR
-    QE["DuckDB · Trino · Spark"]:::l5
-    LK["Lakekeeper REST catalog"]:::l5
-    IT["Iceberg tables<br/>bronze · silver · gold"]:::l5
-    S3["RustFS (S3)"]:::l5
-    PG["PostgreSQL"]:::l5
-  end
-  L1 --> CR --> L2 --> L3 --> L4 --> L5
-  classDef l1 fill:#eff6ff,stroke:#2563eb,color:#0f172a
-  classDef l2 fill:#f5f3ff,stroke:#7c3aed,color:#0f172a
-  classDef l3 fill:#f0fdfa,stroke:#0d9488,color:#0f172a
-  classDef l4 fill:#fffbeb,stroke:#d97706,color:#0f172a
-  classDef l5 fill:#f8fafc,stroke:#475569,color:#0f172a
-  classDef cr fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray:4 3
-  style L1 fill:#ffffff,stroke:#2563eb,color:#1e3a8a
-  style L2 fill:#ffffff,stroke:#7c3aed,color:#4c1d95
-  style L3 fill:#ffffff,stroke:#0d9488,color:#134e4a
-  style L4 fill:#ffffff,stroke:#d97706,color:#78350f
-  style L5 fill:#ffffff,stroke:#475569,color:#1e293b
-```
-</details>
-
 ### Medallion flow with quality gates
 
 <p align="center">
-  <img src="docs/diagrams/medallion-flow.svg" alt="Bronze, silver and gold, each followed by a Soda quality gate; passing gates promote data, blocked gates stop the pipeline" width="100%">
+  <a href="docs/diagrams/drawio/medallion-flow.drawio"><img src="docs/diagrams/drawio/medallion-flow.drawio.png" alt="Bronze, silver and gold, each followed by a Soda quality gate; passing gates promote data, blocked gates fail the Airflow task" width="100%"></a>
 </p>
 
+### Deployment
+
+<p align="center">
+  <a href="docs/diagrams/drawio/deployment.drawio"><img src="docs/diagrams/drawio/deployment.drawio.png" alt="Docker network ldl-net: host ports, Airflow, Spark, ldl-soda, Trino, Lakekeeper, PostgreSQL and RustFS containers" width="100%"></a>
+</p>
+
+More views are in **[docs/architecture.md](docs/architecture.md)**: C4-style context and containers,
+gate sequence, Airflow DAG and domain classes, all as Mermaid.
+
 <details>
-<summary>Editable Mermaid version of the medallion flow</summary>
+<summary><b>Editing diagrams</b></summary>
 
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
-flowchart LR
-  SRC[("Sample CSV / bad batch")]:::store
-  B["bronze.orders<br/>bronze.customers"]:::store
-  GB{"Bronze gate<br/>14 checks"}:::gate
-  S["silver.orders<br/>silver.customers"]:::store
-  GS{"Silver gate<br/>21 checks"}:::gate
-  G["gold.daily_order_metrics"]:::store
-  GG{"Gold gate<br/>11 checks"}:::gate
-  OK(["Published for BI"]):::gate
-  X(["Task fails · Slack alert<br/>downstream not run"]):::fail
-  SRC -- ingest --> B --> GB
-  GB -- pass --> S --> GS
-  GS -- pass --> G --> GG
-  GG -- pass --> OK
-  GB -- fail --> X
-  GS -- fail --> X
-  GG -- fail --> X
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+The `.drawio` files in [`docs/diagrams/drawio`](docs/diagrams/drawio) are the source of truth. Open them in
+[diagrams.net](https://app.diagrams.net/) or the VS Code
+[Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) extension.
+The exported `.drawio.png` files embed the diagram, so they open in draw.io too.
+
+They are generated by [`docs/diagrams/src/build_drawio.py`](docs/diagrams/src/build_drawio.py). To
+regenerate and re-export them (needs the draw.io desktop app, e.g. `brew install --cask drawio`):
+
+```bash
+make diagrams
+# equivalent to running, for each file:
+/Applications/draw.io.app/Contents/MacOS/draw.io --export --format png --scale 2 --border 20 \
+  --embed-diagram -o docs/diagrams/drawio/<name>.drawio.png docs/diagrams/drawio/<name>.drawio
 ```
-</details>
 
-More diagrams are in **[docs/architecture.md](docs/architecture.md)**: C4-style context and containers,
-gate sequence, Airflow DAG, deployment and domain classes. The SVG sources are generated by
-[`docs/diagrams/src/build_diagrams.py`](docs/diagrams/src/build_diagrams.py).
+If you edit a `.drawio` file by hand in draw.io, export it again with the command above and stop
+regenerating that file from the script.
+</details>
 
 ## Quickstart
 
