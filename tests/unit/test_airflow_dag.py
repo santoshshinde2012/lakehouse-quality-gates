@@ -76,6 +76,7 @@ def test_dag_chain_has_a_gate_after_every_layer(dag_module):
     assert order == [
         "land_smoke",
         "bronze",
+        "inject_bad_batch",
         "dq_bronze",
         "silver",
         "dq_silver",
@@ -97,3 +98,12 @@ def test_gate_command_and_validation(dag_module):
         dq_operators.soda_gate_command("platinum")
     with pytest.raises(ValueError, match="unsafe"):
         dq_operators.soda_gate_command("gold", "retail; rm -rf /")
+
+
+def test_fault_injection_is_off_unless_conf_flag(dag_module):
+    import dq_operators
+
+    cmd = dq_operators.fault_injection_command()
+    assert "dag_run.conf.get('inject_bad_batch')" in cmd
+    assert "docker exec ldl-soda soda-dq seed /opt/soda-dq/fixtures/bad_batch --yes" in cmd
+    assert cmd.endswith('else echo "no fault injected"; fi')

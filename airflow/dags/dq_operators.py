@@ -33,3 +33,26 @@ def soda_gate_task(layer: str, pipeline: str = "retail") -> BashOperator:
         doc_md=f"Soda contract gate for `{pipeline}/{layer}`: fails the task when the gate blocks.",
         retries=0,  # a data problem does not fix itself on retry
     )
+
+
+def fault_injection_command(container: str = SODA_CONTAINER) -> str:
+    """Seed the bad batch only when the run's conf has ``inject_bad_batch: true``.
+
+    The Jinja expression renders to the fixed words ``yes`` or ``no``; no conf value reaches the shell.
+    """
+    seed = " ".join(
+        shlex.quote(a)
+        for a in ["docker", "exec", container, "soda-dq", "seed", "/opt/soda-dq/fixtures/bad_batch", "--yes"]
+    )
+    flag = "{{ 'yes' if dag_run.conf.get('inject_bad_batch') else 'no' }}"
+    return f'if [ "{flag}" = yes ]; then {seed}; else echo "no fault injected"; fi'
+
+
+def fault_injection_task() -> BashOperator:
+    return BashOperator(
+        task_id="inject_bad_batch",
+        bash_command=fault_injection_command(),
+        doc_md='Demo only: with conf `{"inject_bad_batch": true}` the bad batch replaces the tables, '
+        "so `dq_bronze` must block. Otherwise a no-op.",
+        retries=0,
+    )
