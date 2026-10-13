@@ -1,0 +1,33 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Gate run sequence
+%% Purpose: What happens, in order, when one layer is gated
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
+sequenceDiagram
+  autonumber
+  participant U as Airflow task
+  participant C as soda-dq CLI
+  participant V as VerifyLayerUseCase
+  participant R as FileContractRepository
+  participant S as SodaContractVerifier
+  participant L as Lakekeeper (Iceberg)
+  participant P as GatePolicy
+  participant K as Sinks and notifiers
+  U->>C: soda-dq verify silver
+  C->>+V: execute(retail, silver)
+  V->>R: list_contracts(retail, silver)
+  R-->>V: ContractSpec list
+  V->>+S: verify(contracts)
+  S->>L: open DuckDB or Trino, read tables
+  L-->>S: rows aggregated by SQL
+  S-->>-V: ContractResult list
+  V->>P: decide(results)
+  Note over P: Fail closed: an error or an<br/>unevaluated check also blocks
+  P-->>V: GateDecision
+  V->>K: write(report), notify(report)
+  V-->>-C: GateReport
+  alt blocked
+    C-->>U: exit 1, task fails, downstream skipped
+  else passed or passed with warnings
+    C-->>U: exit 0, next layer runs
+  end

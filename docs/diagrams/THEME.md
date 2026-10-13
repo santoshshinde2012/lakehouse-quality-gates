@@ -1,8 +1,9 @@
 # Diagram theme
 
 Every diagram in this repo is a native Mermaid block that GitHub renders inline. The sources live in
-this folder as `.mmd` files. `make diagrams` copies them into `README.md` and `docs/architecture.md`;
-`make diagrams-check` (and `pytest`) fails if a copy is stale.
+this folder as `.mmd` files. `make diagrams` copies them into `README.md` and every page under `docs/` that has a
+`<!-- diagram:NAME -->` marker; `make diagrams-check` (and `pytest`) fails if a copy is stale. The
+[catalogue](README.md) lists every diagram and where it is shown.
 
 ## Principles
 
@@ -19,6 +20,16 @@ this folder as `.mmd` files. `make diagrams` copies them into `README.md` and `d
 - **Layout.** Group with subgraphs and link zone to zone (`SRC --> LAKE`) instead of node to node. This
   keeps each zone's internal `direction`, makes the zones line up, and avoids crossings. `linkStyle`
   indexes count every link, invisible `~~~` ones included.
+
+## File layout
+
+Every source starts with the same two parts, and the tests enforce both:
+
+1. **The shared init line** (`%%{init: ...}%%`), identical in every file.
+2. **A header comment**: `%% Title:`, `%% Purpose:`, `%% Last updated:` and a pointer back to this theme.
+
+Sequence diagrams use `autonumber`, and a `Note` marks each key decision. Charts (`xychart-beta`) have no
+legend, so the page names each series under the chart.
 
 ## Palette
 

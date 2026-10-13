@@ -2,12 +2,17 @@
 
 | | |
 |---|---|
-| **Version** | 1.0 (ships with release v0.3.0) |
+| **Version** | 1.1 (release v0.3.1: documentation restructured) |
 | **Status** | Accepted. Sections 12 to 14 are measured; section 17 (write-audit-publish) is proposed |
 | **Author** | Santosh Shinde |
 | **Date** | 2026-10-13 |
 | **Repository** | [santoshshinde2012/lakehouse-quality-gates](https://github.com/santoshshinde2012/lakehouse-quality-gates) |
 | **Reviewers** | Data platform owners of `local-data-lakehouse` |
+
+> [!TIP]
+> This is the end-to-end document. The same material is split into focused pages in
+> [architecture/](architecture/README.md), [guides/](guides/quickstart.md) and [benchmarks/](benchmarks/README.md);
+> terms are defined in the [glossary](overview/glossary.md). The [documentation hub](README.md) lists everything.
 
 ## Contents
 
@@ -35,6 +40,10 @@
 ---
 
 ## 1. Executive summary
+
+> [!IMPORTANT]
+> **Decision.** Keep Soda Core v4 as the gate engine and add Iceberg write-audit-publish next. Today a gate stops
+> promotion but cannot hide a layer Spark has already written ([L1](#16-known-limitations-and-risks)).
 
 `local-data-lakehouse` builds a retail medallion (bronze, silver and gold Apache Iceberg tables) with Spark,
 orchestrated by Airflow 3. Before this project nothing stopped a bad batch from flowing from bronze into the
@@ -65,6 +74,9 @@ today a gate stops *promotion* but cannot hide a bad layer that Spark has alread
 
 ## 2. Problem statement, goals and non-goals
 
+> [!NOTE]
+> **At a glance.** Bad batches flowed from bronze to gold unchecked. Goal: block the right layer for every injected defect, never block clean data, and change nothing in the lakehouse.
+
 ### Problem
 
 Spark jobs in the lakehouse overwrite each layer from the one below. A malformed file (a missing key, a
@@ -94,6 +106,9 @@ snapshots carry the problem.
 
 ## 3. Requirements
 
+> [!NOTE]
+> **At a glance.** Nine functional requirements and eight SLOs. Latency, correctness and memory SLOs are met on DuckDB; overhead is met against Spark; Trino misses the 5M-order latency SLO on its default heap.
+
 ### 3.1 Functional
 
 | ID | Requirement |
@@ -119,9 +134,12 @@ snapshots carry the problem.
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | Section 10 |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
-| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 100 tests at 99% coverage |
+| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 103 tests at 99% coverage |
 
 ## 4. Background and tool selection
+
+> [!NOTE]
+> **At a glance.** Soda Core v4 stays (score 76, ELv2). The OSI fallback is ODCS + datacontract-cli + Pointblank (score 82).
 
 A separate landscape study ([docs/research/quality-gates-landscape.md](research/quality-gates-landscape.md),
 13 Oct 2026) verified licences, versions and engine support from PyPI, GitHub and vendor docs, and ran the
@@ -157,9 +175,18 @@ Section 12.6 re-runs the tool comparison at 100k and 1M rows on the Mac.
 
 ## 5. High-level architecture
 
-<!-- diagram:01-system-architecture -->
+> [!NOTE]
+> **At a glance.** A gate runs after each Spark layer; Airflow schedules both. Ports and adapters inside `soda-dq`.
+
+Where the quality gates sit between the lakehouse layers, and what every gate run produces.
+
+<!-- diagram:system-architecture -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: System architecture
+%% Purpose: Where the quality gates sit between the lakehouse layers and what they produce
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart TB
   subgraph ORCH["Orchestration"]
     direction LR
@@ -217,6 +244,13 @@ flowchart TB
 ```
 <!-- /diagram -->
 
+**How to read it:**
+
+- Read left to right, following the data: **Sources → Lakehouse platform → Quality gates → Outputs**.
+- Indigo is this project (`soda-dq`); grey zones belong to `local-data-lakehouse` or are outputs.
+- The red dotted path is a **block**: the gate fails, the Airflow task fails, nothing downstream runs.
+- Airflow (top) schedules every step: the Spark job of a layer, then that layer's gate.
+
 | Zone | Responsibility |
 |---|---|
 | Orchestration | Airflow 3 runs `lakehouse_retail_medallion_dq`: a Spark task per layer, then a gate task |
@@ -227,9 +261,15 @@ flowchart TB
 
 ### Code architecture
 
-<!-- diagram:02-code-architecture -->
+How the `soda-dq` code is layered as ports and adapters.
+
+<!-- diagram:code-architecture -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Code architecture (hexagonal)
+%% Purpose: How the soda-dq code is layered: adapters around an application core
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph IN["Inbound adapters"]
     direction TB
@@ -278,11 +318,21 @@ flowchart LR
 ```
 <!-- /diagram -->
 
+**How to read it:**
+
+- Inbound adapters (left) start a gate run: the CLI, the Airflow task, the Docker runner.
+- The application core (indigo) holds the use cases, the gate policy, the domain models and the ports. It imports no third-party library except structlog.
+- Outbound adapters (right) implement the ports: Soda, DuckDB and Trino, the sinks, the notifiers.
+- Dependencies point inward. `container.py` (not drawn) is the only place that wires concrete classes.
+
 Dependencies point inward: the domain imports only the standard library; the application imports only the
 domain (and structlog); adapters implement domain ports; `container.py` is the only module that
 instantiates concrete classes (ADR 0005).
 
 ## 6. Detailed design
+
+> [!NOTE]
+> **At a glance.** Rendered Soda contracts, three engines behind one port, a fail-closed policy, four sinks and two notifiers.
 
 ### 6.1 Components
 
@@ -301,35 +351,43 @@ instantiates concrete classes (ADR 0005).
 
 ### 6.2 Data model
 
-<!-- diagram:07-domain-ports -->
+The domain types, the ports (Python `Protocol`s) and the adapters that implement them.
+
+<!-- diagram:domain-model -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Domain model and ports
+%% Purpose: The domain types, the ports (Protocols) and the adapters that implement them
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 classDiagram
-  direction LR
+  direction TB
   namespace domain {
     class ContractSpec {
-      +pipeline
-      +layer
-      +name
-      +dataset
-      +path
-      +datasets()
+      +name: str
+      +pipeline: str
+      +layer: Layer
+      +dataset: str
+      +references: tuple
     }
     class CheckResult {
-      +name
-      +outcome
-      +details
+      +name: str
+      +check_type: str
+      +outcome: Outcome
+      +column: str
+      +metrics: dict
     }
     class ContractResult {
-      +contract
-      +checks
-      +outcome
+      +contract: ContractSpec
+      +checks: tuple
+      +errors: tuple
     }
     class GateReport {
-      +run_id
-      +layer
-      +decision
-      +results
+      +run_id: str
+      +layer: Layer
+      +engine: str
+      +status: GateStatus
+      +reasons: tuple
     }
     class ContractRepository {
       <<Protocol>>
@@ -347,74 +405,58 @@ classDiagram
       <<Protocol>>
       +notify(report)
     }
-    class Clock {
-      <<Protocol>>
-      +now()
-    }
   }
   namespace application {
-    class GateDecision {
-      +status
-      +reasons
-    }
-    class GatePolicy {
-      +fail_on_warn
-      +decide(results) GateDecision
-    }
     class VerifyLayerUseCase {
       +execute(pipeline, layer, variables) GateReport
     }
+    class GatePolicy {
+      +fail_on_warn: bool
+      +allow_not_evaluated: bool
+      +decide(results) GateDecision
+    }
   }
   namespace adapters {
-    class SodaContractVerifier
-    class DataSourceProvider {
-      <<Protocol>>
-      +open() SodaDataSources
-    }
-    class DuckDBProvider
-    class TrinoProvider
     class FileContractRepository
+    class SodaContractVerifier
     class JsonFileSink
     class SlackWebhookNotifier
   }
   ContractResult o-- CheckResult
   ContractResult --> ContractSpec
   GateReport o-- ContractResult
-  GatePolicy ..> GateDecision
   VerifyLayerUseCase --> ContractRepository
   VerifyLayerUseCase --> ContractVerifier
   VerifyLayerUseCase --> GatePolicy
   VerifyLayerUseCase --> ResultSink
   VerifyLayerUseCase --> Notifier
-  VerifyLayerUseCase --> Clock
-  SodaContractVerifier ..|> ContractVerifier
-  SodaContractVerifier --> DataSourceProvider
-  DuckDBProvider ..|> DataSourceProvider
-  TrinoProvider ..|> DataSourceProvider
   FileContractRepository ..|> ContractRepository
+  SodaContractVerifier ..|> ContractVerifier
   JsonFileSink ..|> ResultSink
   SlackWebhookNotifier ..|> Notifier
   style ContractSpec fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style CheckResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style ContractResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style GateReport fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ContractRepository fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ContractVerifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ResultSink fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style Notifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style Clock fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style GateDecision fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style GatePolicy fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ContractRepository fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style ContractVerifier fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style ResultSink fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style Notifier fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
   style VerifyLayerUseCase fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style SodaContractVerifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style DataSourceProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style DuckDBProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style TrinoProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style GatePolicy fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style FileContractRepository fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style SodaContractVerifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
   style JsonFileSink fill:#ffffff,stroke:#94a3b8,color:#0f172a
   style SlackWebhookNotifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
 ```
 <!-- /diagram -->
+
+**How to read it:**
+
+- Solid indigo boxes are domain and application types; dashed indigo boxes are ports.
+- White boxes are adapters; one example per port is shown (see the components table for all).
+- A dotted arrow with a hollow head means *implements*; a diamond means *contains*.
+- Field lists are abridged; the source is `src/soda_lakehouse_dq/domain/models.py`.
 
 | Type | Kind | Notes |
 |---|---|---|
@@ -455,43 +497,59 @@ One YAML file per dataset under `contracts/retail/<layer>/`. Bronze keeps raw va
 | gold | `daily_order_metrics` | Orders ≥ 1, revenue and average order value not negative | invalid | fail |
 | gold | `daily_order_metrics` | Average order value ≤ `MAX_AVG_ORDER_VALUE` (1,000) | invalid | warn |
 
-Totals: 14 bronze, 21 silver and 11 gold checks (46). Full text in [contracts.md](contracts.md).
+Totals: 14 bronze, 21 silver and 11 gold checks (46). Full text in [contracts.md](guides/contracts.md).
 
 ### 6.4 Gate policy semantics
 
-<!-- diagram:09-gate-policy -->
+How `GatePolicy` turns the check outcomes of one layer into *passed*, *passed with warnings* or *blocked*.
+
+<!-- diagram:gate-policy -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Gate policy decision flow
+%% Purpose: How GatePolicy turns check outcomes into passed, passed with warnings or blocked
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart TB
-  IN(["Contract results"]):::actor
-  E{"Execution error?"}:::node
-  F{"Any check failed?"}:::node
-  N{"Any not evaluated?"}:::node
-  W{"Any check warned?"}:::node
+  IN(["Contract results<br/><small>for one layer</small>"]):::actor
+  Z{"No contracts<br/>verified?"}:::node
+  E{"Execution<br/>error?"}:::node
+  F{"Any check<br/>failed?"}:::node
+  N{"Any check<br/>not evaluated?"}:::node
+  W{"Any check<br/>warned?"}:::node
   B(["Blocked<br/><small>exit 1</small>"]):::blocked
   PW(["Passed with warnings<br/><small>exit 0</small>"]):::ours
   P(["Passed<br/><small>exit 0</small>"]):::pass
-  IN --> E
+  IN --> Z
+  Z -->|no| E
   E -->|no| F
   F -->|no| N
   N -->|no| W
   W -->|no| P
   W -->|yes| PW
+  Z -->|yes| B
   E -->|yes| B
   F -->|yes| B
-  N -->|"yes (unless allowed)"| B
-  PW -. "fail_on_warn" .-> B
+  N -->|"yes, unless<br/>DQ_ALLOW_NOT_EVALUATED"| B
+  PW -. "DQ_FAIL_ON_WARN=true" .-> B
   classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
   classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
   classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
   classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
   classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
   classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
-  linkStyle 5 stroke:#4f46e5,stroke-width:1.5px
-  linkStyle 4 stroke:#16a34a,stroke-width:2px
-  linkStyle 6,7,8,9 stroke:#dc2626,stroke-width:1.5px
+  linkStyle 5 stroke:#16a34a,stroke-width:2px
+  linkStyle 6 stroke:#4f46e5,stroke-width:1.5px
+  linkStyle 7,8,9,10,11 stroke:#dc2626,stroke-width:1.5px
 ```
 <!-- /diagram -->
+
+**How to read it:**
+
+- Questions are asked top to bottom; any *yes* on a red path **blocks** (exit code 1).
+- The gate **fails closed**: no contracts, an execution error or an unevaluated check all block by default.
+- The only overrides are `DQ_ALLOW_NOT_EVALUATED` and `DQ_FAIL_ON_WARN` (plus `allow_empty`, in code only).
+- The policy evaluates every rule and reports **all** reasons, not just the first one.
 
 | Situation | Default | Override |
 |---|---|---|
@@ -539,7 +597,7 @@ A notifier that raises is logged and ignored: alerting must never hide the gate 
 ### 6.8 Configuration
 
 `pydantic-settings` reads `DQ_*` environment variables and `.env`. The full table is in the
-[runbook](runbook.md#configuration-dq_-see-envexample). Invalid values fail at start-up with exit 2.
+[runbook](guides/configuration.md#settings-dq_). Invalid values fail at start-up with exit 2.
 
 ### 6.9 Error handling
 
@@ -554,11 +612,20 @@ A notifier that raises is logged and ignored: alerting must never hide the gate 
 
 ## 7. Data flow and sequences
 
+> [!NOTE]
+> **At a glance.** Repository → verifier → policy → sinks. Each gate issues a fixed 3 to 5 SQL queries regardless of data size.
+
 ### 7.1 Medallion with gates
 
-<!-- diagram:03-medallion-flow -->
+One gate after each layer; only a passing gate lets the next layer run.
+
+<!-- diagram:medallion-gates -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Medallion flow with quality gates
+%% Purpose: One gate after each layer; a failed gate stops promotion
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph BRZ["Bronze"]
     direction TB
@@ -602,48 +669,61 @@ flowchart LR
 ```
 <!-- /diagram -->
 
+**How to read it:**
+
+- Green arrows are **pass**: the next layer is built.
+- Red dotted arrows are **fail**: the run is **blocked** at that layer.
+- The gates run 14 (bronze), 21 (silver) and 11 (gold) checks: 46 in total.
+- A **warn** does not block unless `DQ_FAIL_ON_WARN=true`.
+
 ### 7.2 One gate run
 
-<!-- diagram:05-gate-sequence -->
+What happens, step by step, when one layer is gated (here: silver).
+
+<!-- diagram:gate-run-sequence -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Gate run sequence
+%% Purpose: What happens, in order, when one layer is gated
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 sequenceDiagram
   autonumber
-  participant U as Airflow task / engineer
+  participant U as Airflow task
   participant C as soda-dq CLI
   participant V as VerifyLayerUseCase
   participant R as FileContractRepository
   participant S as SodaContractVerifier
-  participant D as DuckDBProvider
   participant L as Lakekeeper (Iceberg)
   participant P as GatePolicy
-  participant K as Sinks, Notifiers
-  rect rgb(248, 250, 252)
-    U->>C: soda-dq verify silver
-    C->>+V: execute(retail, silver, variables)
-    V->>R: list_contracts(retail, silver)
-    R-->>V: ContractSpec[]
-    V->>+S: verify(contracts, variables)
-    S->>D: open()
-    D->>L: ATTACH catalog
-    S->>S: verify_contract_locally()
-    S-->>-V: ContractResult[]
-    V->>P: decide(results)
-    P-->>V: GateDecision
-    V->>K: write(report), notify(report)
-    V-->>-C: GateReport
-    alt blocked
-      rect rgb(254, 242, 242)
-        C-->>U: exit 1, task fails, downstream skipped
-      end
-    else passed or warned
-      rect rgb(240, 253, 244)
-        C-->>U: exit 0, promote layer
-      end
-    end
+  participant K as Sinks and notifiers
+  U->>C: soda-dq verify silver
+  C->>+V: execute(retail, silver)
+  V->>R: list_contracts(retail, silver)
+  R-->>V: ContractSpec list
+  V->>+S: verify(contracts)
+  S->>L: open DuckDB or Trino, read tables
+  L-->>S: rows aggregated by SQL
+  S-->>-V: ContractResult list
+  V->>P: decide(results)
+  Note over P: Fail closed: an error or an<br/>unevaluated check also blocks
+  P-->>V: GateDecision
+  V->>K: write(report), notify(report)
+  V-->>-C: GateReport
+  alt blocked
+    C-->>U: exit 1, task fails, downstream skipped
+  else passed or passed with warnings
+    C-->>U: exit 0, next layer runs
   end
 ```
 <!-- /diagram -->
+
+**How to read it:**
+
+- Numbers give the order of calls. Solid arrows are calls; dashed arrows are returns.
+- Only `SodaContractVerifier` imports Soda, and only the data-source provider knows the engine (DuckDB or Trino).
+- The note marks the key decision: the gate fails closed.
+- The `alt` box shows the two exits: 1 (blocked) and 0 (passed, with or without warnings).
 
 Soda issues one metadata query (schema) and one batched aggregate query per dataset, plus extra queries for
 reference, failed-rows and SQL-metric checks. Measured per layer: bronze 4, silver 5, gold 3 queries
@@ -651,9 +731,18 @@ reference, failed-rows and SQL-metric checks. Measured per layer: bronze 4, silv
 
 ## 8. Orchestration
 
-<!-- diagram:06-airflow-dag -->
+> [!NOTE]
+> **At a glance.** A sibling Airflow DAG with a `docker exec` gate task after each Spark task; gates never retry.
+
+The tasks of the gated DAG and how a failed gate stops the run.
+
+<!-- diagram:airflow-dag -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Airflow DAG lakehouse_retail_medallion_dq
+%% Purpose: Spark tasks and gate tasks in the gated DAG
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph LOAD["Load"]
     direction TB
@@ -704,6 +793,13 @@ flowchart LR
 ```
 <!-- /diagram -->
 
+**How to read it:**
+
+- White double-edged boxes are Spark tasks; indigo boxes are gate tasks (`docker exec ldl-soda soda-dq verify <layer>`).
+- Exit 0 lets the next group run; exit 1 fails the task and every downstream task becomes `upstream_failed`.
+- Gate tasks have `retries=0`: data problems do not fix themselves.
+- `inject_bad_batch` does nothing unless the run is triggered with `{"inject_bad_batch": true}`.
+
 | Concern | Design |
 |---|---|
 | Gate task | `BashOperator`: `docker exec ldl-soda soda-dq verify <layer>`, through the lakehouse's Docker socket proxy (exec only) |
@@ -717,9 +813,18 @@ flowchart LR
 
 ## 9. Deployment topology
 
-<!-- diagram:04-deployment -->
+> [!NOTE]
+> **At a glance.** One hardened `ldl-soda` container on the lakehouse network; everything else is the lakehouse.
+
+The containers, their host ports and how they connect.
+
+<!-- diagram:deployment -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Deployment on Docker network ldl-net
+%% Purpose: Containers, ports and how they talk to each other
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph HOST["Host"]
     direction TB
@@ -767,18 +872,28 @@ flowchart LR
 ```
 <!-- /diagram -->
 
+**How to read it:**
+
+- The dashed boundary is the Docker network `ldl-net`; `:NNNN` are host ports.
+- `ldl-soda` (indigo) is this project; every other container belongs to `local-data-lakehouse`.
+- Airflow reaches containers only through the Docker socket proxy, which allows `exec` and little else.
+- `ldl-trino` runs only in the lakehouse's full profile with `TRINO=1`.
+
 | Component | Image / version | Host port | Notes |
 |---|---|---|---|
 | Airflow api-server, scheduler, dag-processor | Apache Airflow 3 | 8090 (`AIRFLOW_API_PORT`) | Mounts our DAG through our own compose overlay |
 | docker-proxy | socket proxy | none | Allowlist widened to `exec` for `ldl-soda` |
 | `ldl-spark` | Spark 4.1.3, Iceberg 1.12 | none | Runs the jobs |
-| `ldl-soda` | `lakehouse-quality-gates:0.3.0` | none | Non-root `dq`, read-only root FS, `cap_drop: ALL`, `no-new-privileges`, tmpfs `/tmp` |
+| `ldl-soda` | `lakehouse-quality-gates:<version>` | none | Non-root `dq`, read-only root FS, `cap_drop: ALL`, `no-new-privileges`, tmpfs `/tmp` |
 | `ldl-trino` | Trino 483 | 8088 | Full profile only |
 | `ldl-lakekeeper` | Lakekeeper | 8181 | Iceberg REST catalog, vends S3 credentials |
 | `ldl-postgres` | PostgreSQL | none | Catalog database |
 | `ldl-objectstore` | RustFS | 9000 | `s3://lake/warehouse` |
 
 ## 10. Security
+
+> [!NOTE]
+> **At a glance.** No storage keys, read-only access, non-root read-only container, secrets never logged.
 
 | Area | Control |
 |---|---|
@@ -793,11 +908,14 @@ flowchart LR
 
 ## 11. Observability
 
+> [!NOTE]
+> **At a glance.** Reports per run, structured logs, optional `ops.dq_results` history, Slack on warn or block.
+
 | Signal | Where | Use |
 |---|---|---|
 | Structured logs | structlog (`DQ_LOG_JSON=true` for JSON), events `dq.verify.start`, `dq.contract.verify`, `dq.verify.done`, `dq.notify.failed` | Debugging, log shipping |
 | Gate reports | `reports/*.json`, `*.xml`, `*.md` | Audit trail per run; JUnit renders in CI |
-| Iceberg history | `ops.dq_results` (one row per check: run id, layer, contract, check, outcome, metrics, timestamp) | Trend queries in Trino or DuckDB, e.g. failure rate per check per week |
+| Iceberg history | `ops.dq_results` (one row per check: run id, created at, pipeline, layer, engine, gate status, contract, dataset, check name and type, column, outcome) | Trend queries in Trino or DuckDB, e.g. failure rate per check per week |
 | Airflow | Task state, logs, durations | Gate latency per run, alert on task failure |
 | Alerts | Slack webhook (on warn or block) | Human triage (runbook) |
 | CI | Job summary with the Markdown reports, uploaded report artefacts | Contract changes are reviewed with their effect |
@@ -807,6 +925,9 @@ Suggested metrics when shipped to a metrics backend: `dq_gate_duration_seconds{l
 or `ops.dq_results`.
 
 ## 12. Benchmarks and performance analysis
+
+> [!NOTE]
+> **At a glance.** DuckDB gates: 0.4–0.6 s per layer to 1M orders, ≤ 780 MiB at 5M, 4–5 % of Spark time, 66/66 correct verdicts.
 
 All numbers below are from real runs on one machine; raw data is in
 [`docs/results/benchmarks/`](results/benchmarks/) (`perf_raw.csv`, `perf_raw.jsonl.gz` with every check result, `pipeline_raw.csv`,
@@ -869,9 +990,15 @@ Reading the table:
 All three gates, warm p50 summed, compared with the time to build all three layers (DuckDB writer, same
 SQL as the Spark jobs):
 
-<!-- diagram:10-scaling -->
+Seconds for all three layers as the batch grows from 10k to 5M orders.
+
+<!-- diagram:benchmark-scaling -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Benchmark: scaling with batch size
+%% Purpose: Gate time vs build time for 10k to 5M orders (measured)
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 xychart-beta
   title "Seconds for all three layers vs orders (warm p50)"
   x-axis "orders in the batch" ["10k", "100k", "1M", "5M"]
@@ -882,7 +1009,12 @@ xychart-beta
 ```
 <!-- /diagram -->
 
-Lines: **indigo** host DuckDB gates, **amber** container gates, **teal** build of the three layers.
+**How to read it:**
+
+- **Indigo:** host DuckDB gates (bronze + silver + gold, warm p50 summed).
+- **Amber:** the same gates in the `ldl-soda` container.
+- **Teal:** the time to build the three layers (DuckDB writer running the Spark SQL).
+- Trino is left out because its bronze and silver gates fail at 5M on the default 1 GiB heap. Source: [benchmark summary](results/benchmarks/summary.md).
 
 | orders | gates, host DuckDB | gates, container | gates, Trino | build (DuckDB writer) |
 |---|---|---|---|---|
@@ -988,6 +1120,9 @@ memory; the SQL-pushdown tools stay flat, which matches the lakehouse case where
 
 ## 13. Reliability and failure modes
 
+> [!NOTE]
+> **At a glance.** The gate fails closed. The top risks are a missing check (bad data passes) and the window before the gate runs.
+
 | # | Failure mode | Effect | Detection | Severity (1-5) | Likelihood (1-5) | Mitigation |
 |---|---|---|---|---|---|---|
 | 1 | Lakekeeper or object store down | Gate cannot read | `DataSourceError`, exit 2, task fails | 4 | 2 | Fail closed; Airflow retry on the *Spark* task, not the gate |
@@ -1004,6 +1139,9 @@ memory; the SQL-pushdown tools stay flat, which matches the lakehouse case where
 | 12 | Engine out of memory (Trino 1 GiB heap at 5M orders, measured) | Checks not evaluated | block, `EXCEEDED_LOCAL_MEMORY_LIMIT` in reasons | 3 | 3 | Size Trino memory; DuckDB engine for large batches |
 
 ## 14. Scalability and capacity planning
+
+> [!NOTE]
+> **At a glance.** Cost is flat to 1M orders and grows roughly linearly after; partition-scoped contracts are the first lever.
 
 Fitted from section 12 (host DuckDB, warm p50), with the caveat that four sizes and one machine make
 this an estimate, not a model:
@@ -1036,6 +1174,9 @@ entirely.
 
 ## 16. Known limitations and risks
 
+> [!NOTE]
+> **At a glance.** L1, `CREATE OR REPLACE` before the gate, is the one real correctness gap; write-audit-publish closes it.
+
 | # | Limitation / risk | Impact | Plan |
 |---|---|---|---|
 | L1 | **Spark writes with `CREATE OR REPLACE` before the gate runs**: the gate stops promotion to the next layer but cannot hide the layer it checked | Readers of that layer see unaudited data until the gate fails and someone rolls back | WAP (section 17); until then, roll back with `rollback_to_snapshot` (runbook) |
@@ -1049,42 +1190,52 @@ entirely.
 
 ## 17. Roadmap: write-audit-publish
 
+> [!NOTE]
+> **At a glance.** Proposed, not built: Spark writes to an audit branch, the gate reads the branch, Spark fast-forwards `main`.
+
 **Goal:** readers of `main` never see a batch that has not passed its gate.
 
-<!-- diagram:08-wap-sequence -->
+How Iceberg branches would keep a layer hidden from readers until its gate passes.
+
+<!-- diagram:wap-sequence -->
 ```mermaid
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Write-audit-publish (proposed)
+%% Purpose: How Iceberg branches would hide a layer until its gate passes
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 sequenceDiagram
   autonumber
   participant AF as Airflow DAG
   participant SP as Spark job
-  participant LK as Lakekeeper
+  participant LK as Lakekeeper (Iceberg)
   participant DQ as soda-dq gate
   participant PB as Publisher (Spark)
-  rect rgb(248, 250, 252)
-    AF->>SP: run layer with spark.wap.branch=audit_RUN
-    SP->>LK: commit snapshot to branch audit_RUN
-    Note over LK: main is unchanged, readers see the last good snapshot
-    AF->>DQ: soda-dq verify LAYER --branch audit_RUN
-    DQ->>LK: read FOR VERSION AS OF 'audit_RUN'
-    DQ-->>AF: GateReport
-    alt passed or warned
-      rect rgb(240, 253, 244)
-        AF->>PB: publish
-        PB->>LK: CALL system.fast_forward('t', 'main', 'audit_RUN')
-        Note over LK: main now points at the audited snapshot
-      end
-    else blocked
-      rect rgb(254, 242, 242)
-        DQ-->>AF: exit 1, task fails, downstream skipped
-        Note over LK: branch left unpublished, expires by retention
-      end
-    end
+  AF->>SP: run layer, spark.wap.branch = audit_RUN
+  SP->>LK: commit snapshot to branch audit_RUN
+  Note over LK: main is unchanged: readers still<br/>see the last published snapshot
+  AF->>DQ: soda-dq verify LAYER --branch audit_RUN
+  DQ->>LK: read FOR VERSION AS OF 'audit_RUN'
+  DQ-->>AF: GateReport
+  alt passed or passed with warnings
+    AF->>PB: publish
+    PB->>LK: CALL system.fast_forward(t, 'main', 'audit_RUN')
+    Note over PB,LK: Spark publishes because<br/>Trino 483 cannot fast-forward branches
+  else blocked
+    DQ-->>AF: exit 1, task fails, downstream skipped
+    Note over LK: branch is never published<br/>and expires by retention
   end
 ```
 <!-- /diagram -->
 
-**Design**
+**How to read it:**
+
+- This is a **proposal**; it is not implemented yet (see [Write-audit-publish](architecture/write-audit-publish.md)).
+- Numbers give the order of steps; notes mark the key decisions.
+- Readers of `main` never see the `audit_RUN` branch: a blocked batch is simply never published.
+- Publishing runs on Spark because Trino 483 cannot create or fast-forward branches.
+
+### Design
 
 1. **Table properties** (once per table, Spark): `ALTER TABLE t SET TBLPROPERTIES ('write.wap.enabled'='true')`.
 2. **Write** (Spark job): `spark.conf.set("spark.wap.branch", f"audit_{run_id}")`, then the existing
@@ -1116,7 +1267,7 @@ jobs, so it needs agreement from that repo's owners.
 | T2 | Integration: real Soda Core against in-memory DuckDB built from fixtures; good batch passes 46/46, bad batch blocks every layer; CLI end to end | `tests/integration/`, `make demo` | CI |
 | T3 | Live: DuckDB, Trino and container gates on the running lakehouse; Airflow good and bad runs; scale and accuracy benchmarks | `make bench`, [results](results/README.md) | Manual on the reference Mac |
 
-Coverage: 100 tests, 99% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo
+Coverage: 103 tests, 99% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo
 gates inside it.
 
 ## 19. Operations runbook summary
@@ -1130,35 +1281,25 @@ gates inside it.
 | Warnings should block | `DQ_FAIL_ON_WARN=true` |
 | Benchmarks | `make bench` (live stack up, `make dq-up`), then `make bench-report` |
 
-Full runbook: [runbook.md](runbook.md).
+Full runbook: [runbook.md](guides/runbook.md).
 
 ## 20. Appendix
 
 ### 20.1 Glossary
 
-| Term | Meaning |
-|---|---|
-| Medallion | Bronze (raw), silver (clean, conformed), gold (business aggregates) layers |
-| Gate | The set of contracts for one layer plus the policy deciding pass or block |
-| Contract | A Soda YAML file declaring schema and checks for one dataset |
-| Check | One assertion (missing, invalid, duplicate, freshness, schema, failed_rows, metric) |
-| WAP | Write-audit-publish: write to a branch, audit it, then publish to `main` |
-| Vended credentials | Short-lived S3 credentials issued by the Iceberg REST catalog per table |
-| ELv2 | Elastic License 2.0, a source-available licence |
-| ODCS | Open Data Contract Standard (Bitol, LF AI & Data) |
-| p50 / p95 | Median / 95th percentile (nearest rank) |
-| RSS | Resident set size: physical memory used by a process |
+Every term (gate, contract, layer, check, block, warn, engine, sink, WAP, p95, ...) is defined once in the
+[glossary](overview/glossary.md).
 
 ### 20.2 References
 
-- Soda Core: https://docs.soda.io/ · release notes https://docs.soda.io/release-notes/soda-core · licence https://github.com/sodadata/soda-core/blob/main/LICENSE · Trino support https://github.com/sodadata/soda-core/pull/2585
-- Apache Iceberg branching: https://iceberg.apache.org/docs/latest/branching/ · Spark procedures https://iceberg.apache.org/docs/latest/spark-procedures/ · WAP branch issue https://github.com/apache/iceberg/issues/11528 · PR https://github.com/apache/iceberg/pull/15917
-- Trino Iceberg connector: https://trino.io/docs/current/connector/iceberg.html · branch DDL PR (closed) https://github.com/trinodb/trino/pull/28464
-- Lakekeeper: https://docs.lakekeeper.io/docs/latest/table-maintenance/
-- DuckDB Iceberg extension: https://duckdb.org/docs/stable/core_extensions/iceberg/overview
-- datacontract-cli / ODCS: https://docs.datacontract.com/ · https://bitol-io.github.io/open-data-contract-standard/
-- Great Expectations Core: https://docs.greatexpectations.io/ · Pointblank https://posit-dev.github.io/pointblank/ · Pandera https://pandera.readthedocs.io/
-- AWS WAP with Iceberg branching: https://aws.amazon.com/blogs/big-data/build-write-audit-publish-pattern-with-apache-iceberg-branching-and-aws-glue-data-quality/
+- Soda Core: <https://docs.soda.io/> · release notes <https://docs.soda.io/release-notes/soda-core> · licence <https://github.com/sodadata/soda-core/blob/main/LICENSE> · Trino support <https://github.com/sodadata/soda-core/pull/2585>
+- Apache Iceberg branching: <https://iceberg.apache.org/docs/latest/branching/> · Spark procedures <https://iceberg.apache.org/docs/latest/spark-procedures/> · WAP branch issue <https://github.com/apache/iceberg/issues/11528> · PR <https://github.com/apache/iceberg/pull/15917>
+- Trino Iceberg connector: <https://trino.io/docs/current/connector/iceberg.html> · branch DDL PR (closed) <https://github.com/trinodb/trino/pull/28464>
+- Lakekeeper: <https://docs.lakekeeper.io/docs/latest/table-maintenance/>
+- DuckDB Iceberg extension: <https://duckdb.org/docs/stable/core_extensions/iceberg/overview>
+- datacontract-cli / ODCS: <https://docs.datacontract.com/> · <https://bitol-io.github.io/open-data-contract-standard/>
+- Great Expectations Core: <https://docs.greatexpectations.io/> · Pointblank <https://posit-dev.github.io/pointblank/> · Pandera <https://pandera.readthedocs.io/>
+- AWS WAP with Iceberg branching: <https://aws.amazon.com/blogs/big-data/build-write-audit-publish-pattern-with-apache-iceberg-branching-and-aws-glue-data-quality/>
 - Landscape study: [research/quality-gates-landscape.md](research/quality-gates-landscape.md)
 
 ### 20.3 ADR index

@@ -1,30 +1,36 @@
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Domain model and ports
+%% Purpose: The domain types, the ports (Protocols) and the adapters that implement them
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 classDiagram
-  direction LR
+  direction TB
   namespace domain {
     class ContractSpec {
-      +pipeline
-      +layer
-      +name
-      +dataset
-      +path
-      +datasets()
+      +name: str
+      +pipeline: str
+      +layer: Layer
+      +dataset: str
+      +references: tuple
     }
     class CheckResult {
-      +name
-      +outcome
-      +details
+      +name: str
+      +check_type: str
+      +outcome: Outcome
+      +column: str
+      +metrics: dict
     }
     class ContractResult {
-      +contract
-      +checks
-      +outcome
+      +contract: ContractSpec
+      +checks: tuple
+      +errors: tuple
     }
     class GateReport {
-      +run_id
-      +layer
-      +decision
-      +results
+      +run_id: str
+      +layer: Layer
+      +engine: str
+      +status: GateStatus
+      +reasons: tuple
     }
     class ContractRepository {
       <<Protocol>>
@@ -42,69 +48,46 @@ classDiagram
       <<Protocol>>
       +notify(report)
     }
-    class Clock {
-      <<Protocol>>
-      +now()
-    }
   }
   namespace application {
-    class GateDecision {
-      +status
-      +reasons
-    }
-    class GatePolicy {
-      +fail_on_warn
-      +decide(results) GateDecision
-    }
     class VerifyLayerUseCase {
       +execute(pipeline, layer, variables) GateReport
     }
+    class GatePolicy {
+      +fail_on_warn: bool
+      +allow_not_evaluated: bool
+      +decide(results) GateDecision
+    }
   }
   namespace adapters {
-    class SodaContractVerifier
-    class DataSourceProvider {
-      <<Protocol>>
-      +open() SodaDataSources
-    }
-    class DuckDBProvider
-    class TrinoProvider
     class FileContractRepository
+    class SodaContractVerifier
     class JsonFileSink
     class SlackWebhookNotifier
   }
   ContractResult o-- CheckResult
   ContractResult --> ContractSpec
   GateReport o-- ContractResult
-  GatePolicy ..> GateDecision
   VerifyLayerUseCase --> ContractRepository
   VerifyLayerUseCase --> ContractVerifier
   VerifyLayerUseCase --> GatePolicy
   VerifyLayerUseCase --> ResultSink
   VerifyLayerUseCase --> Notifier
-  VerifyLayerUseCase --> Clock
-  SodaContractVerifier ..|> ContractVerifier
-  SodaContractVerifier --> DataSourceProvider
-  DuckDBProvider ..|> DataSourceProvider
-  TrinoProvider ..|> DataSourceProvider
   FileContractRepository ..|> ContractRepository
+  SodaContractVerifier ..|> ContractVerifier
   JsonFileSink ..|> ResultSink
   SlackWebhookNotifier ..|> Notifier
   style ContractSpec fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style CheckResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style ContractResult fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style GateReport fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ContractRepository fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ContractVerifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style ResultSink fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style Notifier fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style Clock fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style GateDecision fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style GatePolicy fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
+  style ContractRepository fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style ContractVerifier fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style ResultSink fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
+  style Notifier fill:#f5f7ff,stroke:#4f46e5,stroke-dasharray:4 3,color:#1e1b4b
   style VerifyLayerUseCase fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
-  style SodaContractVerifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style DataSourceProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style DuckDBProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
-  style TrinoProvider fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style GatePolicy fill:#eef2ff,stroke:#4f46e5,color:#1e1b4b
   style FileContractRepository fill:#ffffff,stroke:#94a3b8,color:#0f172a
+  style SodaContractVerifier fill:#ffffff,stroke:#94a3b8,color:#0f172a
   style JsonFileSink fill:#ffffff,stroke:#94a3b8,color:#0f172a
   style SlackWebhookNotifier fill:#ffffff,stroke:#94a3b8,color:#0f172a

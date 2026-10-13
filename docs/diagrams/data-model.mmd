@@ -1,0 +1,56 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Data model
+%% Purpose: The retail Iceberg tables the gates check and the ops.dq_results table they write
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
+erDiagram
+  BRONZE_CUSTOMERS_RAW ||--o{ SILVER_CUSTOMERS : "cleaned into"
+  BRONZE_ORDERS_RAW ||--o{ SILVER_ORDERS : "cleaned into"
+  SILVER_CUSTOMERS ||--o{ SILVER_ORDERS : "customer_id"
+  SILVER_ORDERS }o--|| GOLD_DAILY_ORDER_METRICS : "aggregated by day"
+  BRONZE_ORDERS_RAW {
+    varchar order_id
+    varchar customer_id
+    timestamptz order_ts
+    varchar status
+    double amount
+    varchar _source_file
+  }
+  BRONZE_CUSTOMERS_RAW {
+    varchar customer_id
+    varchar name
+    varchar email
+    varchar city
+    date signup_date
+    varchar _source_file
+  }
+  SILVER_ORDERS {
+    varchar order_id PK
+    varchar customer_id FK
+    timestamptz order_ts
+    varchar status
+    double amount
+  }
+  SILVER_CUSTOMERS {
+    varchar customer_id PK
+    varchar name
+    varchar email
+    varchar city
+    date signup_date
+  }
+  GOLD_DAILY_ORDER_METRICS {
+    date order_date PK
+    bigint orders
+    double revenue
+    double avg_order_value
+    bigint cancelled_orders
+    bigint refunded_orders
+  }
+  DQ_RESULTS {
+    varchar run_id
+    varchar layer
+    varchar gate_status
+    varchar contract
+    varchar check_name
+    varchar outcome
+  }

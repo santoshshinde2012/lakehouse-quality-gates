@@ -1,0 +1,22 @@
+# markdownlint-cli2: https://github.com/DavidAnson/markdownlint-cli2
+config:
+  default: true
+  MD013: false            # line length: tables and links are long by nature
+  MD033:                  # inline HTML: allow the README hero, details and diagram markers
+    allowed_elements: [div, p, a, img, br, small, details, summary, b, sub, sup]
+  MD041: false            # README starts with a centred <div> hero
+  MD024:
+    siblings_only: true   # repeated sub-headings under different parents are fine
+  MD060: false            # table column style: compact pipes are used throughout
+globs:
+  - "README.md"
+  - "CHANGELOG.md"
+  - "CONTRIBUTING.md"
+  - "benchmarks/README.md"
+  - "docs/**/*.md"
+ignores:
+  - "docs/results/**"
+  - "docs/research/benchmark-tiny/**"
+  - "docs/research/quality-gates-landscape.md"
+  - "**/.venv/**"
+  - "**/node_modules/**"

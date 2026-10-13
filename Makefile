@@ -15,7 +15,7 @@ LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.ym
 
 .PHONY: bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
-	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check clean dist
+	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check docs-check clean dist
 
 help:
 	@echo "lakehouse-quality-gates (Soda Core 4.26 data contracts as medallion quality gates)"
@@ -33,6 +33,7 @@ help:
 	@echo "  AIRFLOW_API_PORT=8080   Airflow host port (override if taken, e.g. 8090)"
 	@echo "  make diagrams           sync Mermaid blocks in the docs + render SVGs (npx mermaid-cli)"
 	@echo "  make diagrams-check     fail on stale Mermaid blocks; parse every .mmd with mermaid-cli"
+	@echo "  make docs-check         relative links + anchors, markdownlint, Mermaid sync"
 	@echo "  make dist               SODA.tar.gz without .venv / caches / reports"
 
 env:
@@ -121,7 +122,7 @@ airflow-dq-trigger-bad:
 airflow-dq-down:
 	cd "$(DQ_LDL_REPO_PATH)" && SODA_HOME="$(SODA_HOME)" $(LDL_COMPOSE) down
 
-# Mermaid sources: docs/diagrams/*.mmd (see docs/diagrams/THEME.md). README.md and docs/architecture.md embed
+# Mermaid sources: docs/diagrams/*.mmd (see docs/diagrams/THEME.md). README.md and the pages under docs/ embed
 # copies between <!-- diagram:NAME --> markers; scripts/diagrams.py keeps them in sync.
 MMDC ?= npx -y @mermaid-js/mermaid-cli@11
 diagrams:
@@ -129,6 +130,11 @@ diagrams:
 	mkdir -p docs/diagrams/svg
 	for f in docs/diagrams/*.mmd; do n=$$(basename $$f .mmd); \
 	  $(MMDC) -q -i $$f -o docs/diagrams/svg/$$n.svg -b transparent || exit 1; done
+
+docs-check: ## Relative links and anchors, markdownlint, Mermaid sync
+	python3 scripts/check_links.py
+	npx -y markdownlint-cli2@0.23.3
+	python3 scripts/diagrams.py --check
 
 diagrams-check:
 	python3 scripts/diagrams.py --check

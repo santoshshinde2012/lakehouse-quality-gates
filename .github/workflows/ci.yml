@@ -34,6 +34,12 @@ jobs:
           uv run --frozen ruff check .
       - name: Type check (mypy --strict)
         run: uv run --frozen mypy
+      - name: Docs (links, anchors, Mermaid sync)
+        run: |
+          python scripts/check_links.py
+          python scripts/diagrams.py --check
+      - name: Docs (markdownlint)
+        run: npx --yes markdownlint-cli2@0.23.3
       - name: Contract syntax (Soda)
         run: uv run --frozen soda-dq validate
       - name: Tests (unit + real Soda/DuckDB integration)

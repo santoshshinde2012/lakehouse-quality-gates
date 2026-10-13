@@ -1,10 +1,10 @@
 """Keep the Mermaid blocks in the Markdown docs in sync with docs/diagrams/*.mmd.
 
-A block looks like this in README.md or docs/architecture.md:
+A block looks like this in README.md or any Markdown page under docs/:
 
-    <!-- diagram:01-layered-architecture -->
+    <!-- diagram:system-architecture -->
     ```mermaid
-    ...contents of docs/diagrams/01-layered-architecture.mmd...
+    ...contents of docs/diagrams/system-architecture.mmd...
     ```
     <!-- /diagram -->
 
@@ -20,7 +20,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "docs" / "diagrams"
-DOCS = (ROOT / "README.md", ROOT / "docs" / "architecture.md", ROOT / "docs" / "system-design.md")
+# README.md plus every Markdown page under docs/, except generated results and imported research artefacts.
+DOCS = (
+    ROOT / "README.md",
+    *sorted(
+        p
+        for p in (ROOT / "docs").rglob("*.md")
+        if not p.is_relative_to(ROOT / "docs" / "results")
+        and not p.is_relative_to(ROOT / "docs" / "research" / "benchmark-tiny")
+    ),
+)
 BLOCK = re.compile(
     r"(?P<open><!-- diagram:(?P<name>[\w-]+) -->\n)```mermaid\n.*?```\n(?P<close><!-- /diagram -->)",
     re.S,

@@ -3,6 +3,20 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.3.1] - 2026-10-13
+
+### Changed
+
+- Documentation restructured around a hub (docs/README.md: who should read what, reading order) and topic folders: `overview/` (use case, glossary), `architecture/` (overview, components, data flow, deployment, security, observability, write-audit-publish, design principles), `guides/` (quickstart, contracts, configuration, runbook, troubleshooting), `benchmarks/` (methodology, results, analysis), `research/` and an ADR index. Old paths keep short "moved" pages.
+- docs/system-design.md stays the end-to-end document, now with *At a glance* callouts, links to the focused pages and the glossary.
+- The README is shorter: what and why, the architecture diagram, quickstart, headline results and documentation links.
+- Diagrams renamed to descriptive files with a header comment (title, purpose, last updated); every embedded diagram has a one-line summary and a *How to read it* list. New: system context and data model (ER). Domain model corrected to the real fields; gate policy now shows the empty-gate rule; sequences are numbered with notes on key decisions.
+- Corrected stale facts: Soda Core v4 licence (ELv2, not "proprietary") in the README, `ops.dq_results` columns, image version references.
+
+### Added
+
+- `scripts/check_links.py` (relative links and anchors) with tests, `make docs-check`, markdownlint-cli2 config and pre-commit hooks, and CI steps for links and markdownlint.
+
 ## [0.3.0] - 2026-10-13
 
 ### Added
@@ -51,16 +65,19 @@ versioning: [SemVer](https://semver.org/).
 ## [0.2.0] - 2026-10-13
 
 ### Changed
+
 - The project is now `lakehouse-quality-gates`: repository, distribution, Docker image (`lakehouse-quality-gates:0.2.0`) and compose project. The CLI is still `soda-dq`, and the import package is still `soda_lakehouse_dq`.
 - The Makefile reads the Airflow host port from `AIRFLOW_API_PORT` (default 8080, the lakehouse default). Use 8090 when 8080 is taken.
 
 ### Added
+
 - An `inject_bad_batch` task in `lakehouse_retail_medallion_dq`. It does nothing unless the run's conf has `{"inject_bad_batch": true}`; then it seeds `fixtures/bad_batch`, so `dq_bronze` must block. New make targets: `airflow-dq-trigger-bad` and `airflow-dq-down`.
 - A `DQ_DUCKDB_TEMP_DIRECTORY` setting, which the container sets to `/tmp/duckdb`.
 - Archived Trino, Docker and Airflow results in `docs/results/`.
 - A design-principles document and a SOLID audit: the lakehouse client import lives in one module, a new `NotificationError`, and stricter settings validation.
 
 ### Fixed
+
 - `soda-dq seed` inside the read-only container: it now applies the httplib client and the temp directory, and runs DuckDB's Iceberg writer from a scratch working directory (so no stray `./data` folder appears).
 - README: the real-lakehouse snippet now exports `DQ_LDL_REPO_PATH` before it is used.
 
@@ -69,12 +86,14 @@ versioning: [SemVer](https://semver.org/).
 Verified end to end on macOS (arm64, Docker Desktop) against local-data-lakehouse.
 
 ### Added
+
 - `soda-dq seed SAMPLE_DIR --yes`: rebuilds the live retail Iceberg tables from CSVs (for example `fixtures/bad_batch`) for gate demos.
 - Schema check details (missing, unexpected and mistyped columns, order) in reports, gate reasons, JUnit and Markdown.
 - `DQ_DUCKDB_HTTPFS_CLIENT` setting (`httplib` inside containers).
 - Seven Mermaid architecture diagrams with SVGs in `docs/diagrams/`.
 
 ### Fixed
+
 - DuckDB on the Lakekeeper REST catalog: `USE` the first schema (the catalog has no `main` schema), and warm tables with `DESCRIBE` before the schema check (columns load lazily).
 - Contracts expect `timestamp with time zone`, which is what Spark and DuckDB write to Iceberg.
 - Trino datasource sends `user: soda-dq` (Trino returns 401 without one).
@@ -84,6 +103,7 @@ Verified end to end on macOS (arm64, Docker Desktop) against local-data-lakehous
 ## [0.1.0] - 2026-10-13
 
 ### Added
+
 - Soda Core 4.26.0 data contracts for the retail medallion: `bronze.orders_raw`, `bronze.customers_raw`,
   `silver.orders`, `silver.customers`, `gold.daily_order_metrics` (46 checks).
 - Ports-and-adapters package `soda_lakehouse_dq`: gate policy, verify-layer and run-medallion use cases,
@@ -98,5 +118,6 @@ Verified end to end on macOS (arm64, Docker Desktop) against local-data-lakehous
 - Docs: README, architecture, use case, contracts, runbook, ADRs 0001-0005.
 
 ### Notes
+
 - Numeric contract variables passed as strings are coerced (`--set MAX=48` -> 48): Soda 4.26 rejects strings
   for numeric threshold keys.

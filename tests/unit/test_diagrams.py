@@ -26,8 +26,12 @@ def test_markdown_blocks_match_sources() -> None:
 
 def test_every_source_uses_the_shared_theme() -> None:
     sources = sorted((ROOT / "docs" / "diagrams").glob("*.mmd"))
-    assert len(sources) == 10
+    assert len(sources) == 12
     first_lines = {s.read_text(encoding="utf-8").splitlines()[0] for s in sources}
+    for source in sources:
+        header = source.read_text(encoding="utf-8").splitlines()[1:4]
+        keys = [line.split(":")[0] for line in header]
+        assert keys == ["%% Title", "%% Purpose", "%% Last updated"], source.name
     assert len(first_lines) == 1
     assert INIT.match(first_lines.pop())
 

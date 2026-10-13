@@ -3,6 +3,7 @@
 - Status: accepted
 
 ## Decision
+
 - Add `lakehouse_retail_medallion_dq` and leave `lakehouse_retail_medallion` exactly as it is. Reuse its
   `spark_submit_task` and add `soda_gate_task(layer)`, which runs `docker exec ldl-soda soda-dq verify
   <layer>` (exit 1 fails the task, `retries=0`).
@@ -11,6 +12,7 @@
 - Warnings are logged, not fatal (`DQ_FAIL_ON_WARN` can change this).
 
 ## Consequences and follow-up
+
 The Spark jobs write with `CREATE OR REPLACE`, so a gate stops *promotion to the next layer* but cannot
 undo the layer it checked. A follow-up should use Iceberg branches for write-audit-publish (write to an
 `audit_<run_id>` branch, gate, then `fast_forward` main) so consumers never see unaudited data.

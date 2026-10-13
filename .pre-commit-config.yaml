@@ -11,6 +11,11 @@ repos:
       - id: check-toml
       - id: check-added-large-files
       - id: detect-private-key
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+        exclude: ^docs/(results|research)/
   - repo: local
     hooks:
       - id: ruff-format
@@ -35,3 +40,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^contracts/
+      - id: docs-links
+        name: docs links and anchors
+        entry: python3 scripts/check_links.py
+        language: system
+        pass_filenames: false
+        files: \.md$
