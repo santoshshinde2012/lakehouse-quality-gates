@@ -1,6 +1,5 @@
 Testing configs/odcs_orders_bad.yaml
-Server: local (type=local, format=csv,
-path=/workspace/research/benchmark/data/orders_bad.csv)
+Server: local (type=local, format=csv, path=data/orders_bad.csv)
 ╭────────┬───────────────────────────┬─────────────┬───────────────────────────╮
 │ Result │ Check                     │ Field       │ Details                   │
 ├────────┼───────────────────────────┼─────────────┼───────────────────────────┤

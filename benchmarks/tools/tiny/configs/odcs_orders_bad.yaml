@@ -8,7 +8,7 @@ servers:
   - server: local
     type: local
     format: csv
-    path: /workspace/research/benchmark/data/orders_bad.csv
+    path: data/orders_bad.csv
 schema:
   - name: orders
     physicalType: table
@@ -38,5 +38,5 @@ schema:
     quality:
       - type: sql
         description: every order references a known customer
-        query: SELECT COUNT(*) FROM orders o WHERE o.customer_id IS NOT NULL AND o.customer_id NOT IN (SELECT customer_id FROM read_csv_auto('/workspace/research/benchmark/data/customers.csv'))
+        query: SELECT COUNT(*) FROM orders o WHERE o.customer_id IS NOT NULL AND o.customer_id NOT IN (SELECT customer_id FROM read_csv_auto('data/customers.csv'))
         mustBe: 0

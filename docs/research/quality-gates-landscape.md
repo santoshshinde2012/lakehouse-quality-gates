@@ -123,11 +123,11 @@ This fixes the overwrite-before-gate gap documented in ADR 0004.
 
 These runtimes are on tiny data and mostly measure import and setup cost. They are **not** throughput benchmarks.
 
-**Artifacts (`/workspace/research/benchmark/`):**
+**Artifacts:** the harness is in [benchmarks/tools/tiny](../../benchmarks/tools/tiny/) and the outputs in [benchmark-tiny/results](benchmark-tiny/results/). Reproduce with `make bench-tiny`.
 - `data/`: fixtures
 - `configs/`: Soda contract and ODCS contracts
 - `scripts/run_*.py`
-- `run_all.sh`: reproduces everything
+- `run_all.py`: reproduces everything
 - `results/*.txt`: raw outputs
 - `results/summary.csv`
 - `results/versions.txt`: pinned environment

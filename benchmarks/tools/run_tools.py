@@ -298,14 +298,32 @@ def one(tool: str, data: Path) -> None:
                                       "cpu_s": usage.ru_utime + usage.ru_stime, "checks": checks}, default=str))  # fmt: skip
 
 
+PACKAGES = ("soda-core", "soda-duckdb", "datacontract-cli", "great-expectations", "pointblank", "pandera",
+            "duckdb", "pandas", "polars", "pyarrow")  # fmt: skip
+
+
+def write_versions(path: Path) -> None:
+    """Record the exact versions used next to the results."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    found: dict[str, str] = {}
+    for name in PACKAGES:
+        try:
+            found[name] = version(name)
+        except PackageNotFoundError:
+            found[name] = "not installed"
+    found["python"] = sys.version.split()[0]
+    path.write_text(json.dumps(found, indent=2) + "\n")
+
+
 def bench(sizes: list[int], repeats: int, out: Path, tools: list[str]) -> None:
     fields = ["rows", "k", "tool", "repeat", "process_s", "run_s", "cpu_s", "max_rss_bytes", "correct",
               "wrong_checks", "counts"]  # fmt: skip
-    new = not out.exists()
-    with out.open("a", newline="") as fh, tempfile.TemporaryDirectory() as tmp:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    write_versions(out.with_name("tools_versions.json"))
+    with out.open("w", newline="") as fh, tempfile.TemporaryDirectory() as tmp:
         writer = csv.DictWriter(fh, fieldnames=fields)
-        if new:
-            writer.writeheader()
+        writer.writeheader()
         for rows in sizes:
             data = Path(tmp) / str(rows)
             meta = generate(rows, data)

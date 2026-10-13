@@ -1,5 +1,5 @@
-good PASS 0.02s
-bad FAIL 0.02s
+good PASS 0.05s
+bad FAIL 0.06s
 shape: (6, 6)
 ┌──────────────┬────────────────┬─────────────┬─────────────────────────────┬──────────────┬───────┐
 │ failure_case ┆ schema_context ┆ column      ┆ check                       ┆ check_number ┆ index │

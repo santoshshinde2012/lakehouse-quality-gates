@@ -17,7 +17,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-RESULTS = ROOT / "docs" / "results" / "benchmarks"
+# DQ_BENCH_RESULTS (make ... BENCH_OUT=dir) sends a run elsewhere, so a small run never mixes with the published set.
+RESULTS = Path(os.environ.get("DQ_BENCH_RESULTS") or ROOT / "docs" / "results" / "benchmarks").resolve()
 PROBE = ROOT / "benchmarks" / "probe.py"
 CONTAINER = os.environ.get("LDL_SODA_CONTAINER", "ldl-soda")
 TRINO_URL = os.environ.get("BENCH_TRINO_URL", "http://localhost:8088")

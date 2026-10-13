@@ -1,7 +1,33 @@
-good success= True 0.07s
-bad success= False 0.06s
+good success= True 0.08s
+bad success= False 0.04s
   FAIL expect_column_values_to_be_unique order_id unexpected= ['O1', 'O1'] idx= [0, 1]
   FAIL expect_column_values_to_not_be_null customer_id unexpected= [nan] idx= [2]
   FAIL expect_column_values_to_be_in_set customer_id unexpected= ['C9'] idx= [3]
   FAIL expect_column_values_to_be_in_set status unexpected= ['PAID??'] idx= [4]
   FAIL expect_column_values_to_be_between amount unexpected= [-3.0] idx= [5]
+
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 1408.43it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 1266.59it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 1847.17it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 1766.77it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 950.72it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 939.85it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 2022.30it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 2011.40it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 2008.25it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 2003.55it/s]
+
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 10824.01it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 7469.82it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 9876.70it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 8181.35it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 4835.69it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 4649.54it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 6903.13it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 6824.51it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 6789.28it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 6743.55it/s]

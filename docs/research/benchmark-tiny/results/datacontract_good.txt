@@ -1,6 +1,5 @@
 Testing configs/odcs_orders_good.yaml
-Server: local (type=local, format=csv,
-path=/workspace/research/benchmark/data/orders_good.csv)
+Server: local (type=local, format=csv, path=data/orders_good.csv)
 ╭────────┬─────────────────────────────────────────────┬─────────────┬─────────╮
 │ Result │ Check                                       │ Field       │ Details │
 ├────────┼─────────────────────────────────────────────┼─────────────┼─────────┤
@@ -19,4 +18,4 @@ path=/workspace/research/benchmark/data/orders_good.csv)
 │ passed │ Check that field status has invalid_count = │ status      │         │
 │        │ 0                                           │             │         │
 ╰────────┴─────────────────────────────────────────────┴─────────────┴─────────╯
-🟢 Data contract is valid. Ran 10 checks. Took 0.90184 seconds.
+🟢 Data contract is valid. Ran 10 checks. Took 0.81885 seconds.

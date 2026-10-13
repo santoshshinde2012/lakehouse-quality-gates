@@ -1,4 +1,4 @@
-good ok= True 0.04s
+good ok= True 0.07s
    PASSED row_count None {'check_rows_tested': 4, 'dataset_rows_tested': 4}
    PASSED missing order_id {'missing_count': 0, 'missing_percent': 0.0, 'check_rows_tested': 4, 'dataset_rows_tested': 4}
    PASSED duplicate order_id {'duplicate_count': 0, 'duplicate_percent': 0.0, 'check_rows_tested': 4, 'missing_count': 0, 'dataset_rows_tested': 4}

@@ -1,4 +1,4 @@
-good all_passed= True 0.03s failed_steps= []
+good all_passed= True 0.09s failed_steps= []
 bad all_passed= False 0.02s failed_steps= [2, 3, 4, 5, 6]
 step 1 []
 step 2 [{'_row_num_': 3, 'order_id': 'O3', 'customer_id': None, 'status': 'cancelled', 'amount': 0.0}]
