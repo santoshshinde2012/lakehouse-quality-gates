@@ -1,0 +1,7 @@
+good success= True 0.07s
+bad success= False 0.06s
+  FAIL expect_column_values_to_be_unique order_id unexpected= ['O1', 'O1'] idx= [0, 1]
+  FAIL expect_column_values_to_not_be_null customer_id unexpected= [nan] idx= [2]
+  FAIL expect_column_values_to_be_in_set customer_id unexpected= ['C9'] idx= [3]
+  FAIL expect_column_values_to_be_in_set status unexpected= ['PAID??'] idx= [4]
+  FAIL expect_column_values_to_be_between amount unexpected= [-3.0] idx= [5]

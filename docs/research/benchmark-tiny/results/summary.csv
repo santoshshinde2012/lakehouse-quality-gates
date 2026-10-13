@@ -1,0 +1,7 @@
+tool,wall_seconds_incl_import,exit_code,config_lines
+soda_v4,0.651,0,24
+gx_core,2.934,0,18
+pointblank,0.635,0,18
+pandera,0.937,0,15
+datacontract_good,1.856,0,42
+datacontract_bad,2.022,1,42

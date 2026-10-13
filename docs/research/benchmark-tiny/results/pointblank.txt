@@ -1,0 +1,8 @@
+good all_passed= True 0.03s failed_steps= []
+bad all_passed= False 0.02s failed_steps= [2, 3, 4, 5, 6]
+step 1 []
+step 2 [{'_row_num_': 3, 'order_id': 'O3', 'customer_id': None, 'status': 'cancelled', 'amount': 0.0}]
+step 3 [{'_row_num_': 1, 'order_id': 'O1'}, {'_row_num_': 2, 'order_id': 'O1'}]
+step 4 [{'_row_num_': 5, 'order_id': 'O5', 'customer_id': 'C1', 'status': 'PAID??', 'amount': 7.0}]
+step 5 [{'_row_num_': 6, 'order_id': 'O6', 'customer_id': 'C2', 'status': 'paid', 'amount': -3.0}]
+step 6 [{'_row_num_': 4, 'order_id': 'O4', 'customer_id': 'C9', 'status': 'refunded', 'amount': 5.0}]

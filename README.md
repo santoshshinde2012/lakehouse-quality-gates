@@ -9,7 +9,7 @@ using DuckDB or Trino, and are orchestrated by Airflow, for
 [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse).
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.2.3-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.2.3)
+[![Release](https://img.shields.io/badge/release-v0.3.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.3.0)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -18,7 +18,7 @@ using DuckDB or Trino, and are orchestrated by Airflow, for
 [![Soda Core 4.26](https://img.shields.io/badge/Soda%20Core-4.26-00B388)](https://docs.soda.io/)
 
 [Why](#why) · [Features](#key-features) · [Architecture](#architecture) · [Quickstart](#quickstart) ·
-[Usage](#usage) · [Configuration](#configuration) · [Results](#verified-results) · [Docs](#documentation) · [Roadmap](#roadmap)
+[Usage](#usage) · [Configuration](#configuration) · [Results](#verified-results) · [Benchmarks](#benchmarks) · [Docs](#documentation) · [Roadmap](#roadmap)
 
 </div>
 
@@ -58,7 +58,7 @@ do not block.
 
 <!-- diagram:01-system-architecture -->
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 flowchart TB
   subgraph ORCH["Orchestration"]
     direction LR
@@ -126,7 +126,7 @@ writes JSON, JUnit and Markdown reports, plus an optional `dq_results` Iceberg t
 
 <!-- diagram:02-code-architecture -->
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 flowchart LR
   subgraph IN["Inbound adapters"]
     direction TB
@@ -190,7 +190,7 @@ Soda, DuckDB or Slack. More in [docs/architecture.md](docs/architecture.md).
 
 <!-- diagram:03-medallion-flow -->
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 flowchart LR
   subgraph BRZ["Bronze"]
     direction TB
@@ -238,7 +238,7 @@ flowchart LR
 
 <!-- diagram:04-deployment -->
 ```mermaid
-%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 flowchart LR
   subgraph HOST["Host"]
     direction TB
@@ -413,7 +413,9 @@ airflow/dags/      lakehouse_retail_medallion_dq.py, dq_operators.py
 docker/            Dockerfile, docker-compose.dq.yml, docker-compose.airflow-dq.yml
 fixtures/          good_batch, bad_batch (injected defects)
 tests/             unit (fakes for every port) + integration (real Soda on DuckDB)
-docs/              architecture, design principles, contracts, runbook, ADRs, results
+benchmarks/        perf, accuracy, Spark reference and tool-comparison harnesses (make bench*)
+scripts/           gen_scale_data.py (scale + defect generator), diagrams.py (Mermaid sync)
+docs/              system design, architecture, design principles, contracts, runbook, ADRs, results, research
 ```
 
 > **Names.** The repository and distribution are `lakehouse-quality-gates`, the CLI is `soda-dq`, and the
@@ -443,10 +445,32 @@ Verified end to end on macOS on 2026-10-13. Every log and report is in **[docs/r
 | Docker `ldl-soda` (non-root, read-only) | ✅ good passed · bad blocked |
 | Airflow DAG | ✅ good: 9/9 tasks succeeded · bad: `dq_bronze` failed, downstream `upstream_failed` |
 
+## Benchmarks
+
+Measured on an Apple M1 Pro (16 GiB, Docker VM 8 GiB) against the live Iceberg lakehouse with generated
+batches of 10k to 5M orders, 1 cold + 5 warm runs per cell. Full method, variance and caveats:
+**[System design §12](docs/system-design.md#12-benchmarks-and-performance-analysis)**; raw data and tables:
+[docs/results/benchmarks](docs/results/benchmarks/summary.md).
+
+| Question | Result |
+|---|---|
+| Gate latency (host DuckDB, warm p50 per layer) | 0.4–0.6 s up to 1M orders · 0.5–2.0 s at 5M |
+| Cost next to the Spark jobs (lakehouse sample) | 4–5 % of each layer's `spark-submit` time |
+| Peak memory at 5M orders | ≤ 780 MiB (container), 684 MiB (host) |
+| Detection (7 defect types × 0.1/1/10 % + clean) | 66/66 verdicts correct · precision 1.0 · recall 1.0 · counts exact |
+| Trino at 5M with the default 1 GiB heap | ⚠ checks run out of memory, so the gate blocks (fail closed) |
+| Same six checks at 1M rows | Soda 0.44 s · Pointblank 0.47 s · datacontract-cli 1.08 s · Pandera 2.83 s · GX 11.5 s (all correct) |
+
+Reproduce with `make bench`, `make bench-accuracy`, `make bench-spark`, `make bench-tools` and
+`make bench-report` (they overwrite the live retail tables; see [benchmarks/README.md](benchmarks/README.md)).
+
 ## Documentation
 
 | Doc | Contents |
 |---|---|
+| [System design](docs/system-design.md) | End-to-end design document: requirements and SLOs, architecture, failure modes, measured benchmarks, capacity, WAP roadmap |
+| [Benchmarks](docs/results/benchmarks/summary.md) | Raw CSV/JSON and summary tables (latency, resources, accuracy, tool comparison) |
+| [Research](docs/research/quality-gates-landscape.md) | Quality-gate tool landscape, scoring matrix and the recommendation |
 | [Architecture](docs/architecture.md) | Seven diagrams: context, containers, medallion gates, sequence, DAG, deployment, classes |
 | [Design principles](docs/design-principles.md) | SOLID mapped to classes, plus typing, errors, logging, config and security |
 | [Use case](docs/use-case.md) | The retail scenario end to end |
@@ -459,7 +483,9 @@ Verified end to end on macOS on 2026-10-13. Every log and report is in **[docs/r
 ## Roadmap
 
 - [ ] **Write-Audit-Publish with Iceberg branches.** Write each layer to an audit branch, gate it, then
-  fast-forward `main`, so readers never see unaudited snapshots.
+  fast-forward `main`, so readers never see unaudited snapshots. Designed in
+  [system design §17](docs/system-design.md#17-roadmap-write-audit-publish); publish must run on Spark
+  because Trino 483 cannot create or fast-forward branches.
 - [ ] Gate the lakehouse's second pipeline (renewal features).
 - [ ] OpenLineage events from gate runs, so quality is visible next to lineage.
 - [ ] Contract drift checks in CI against the live schema.

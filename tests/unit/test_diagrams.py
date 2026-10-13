@@ -1,4 +1,4 @@
-"""The Mermaid blocks in README.md and docs/architecture.md match docs/diagrams/*.mmd."""
+"""The Mermaid blocks in the docs (README, architecture, system design) match docs/diagrams/*.mmd."""
 
 from __future__ import annotations
 
@@ -26,14 +26,14 @@ def test_markdown_blocks_match_sources() -> None:
 
 def test_every_source_uses_the_shared_theme() -> None:
     sources = sorted((ROOT / "docs" / "diagrams").glob("*.mmd"))
-    assert len(sources) == 7
+    assert len(sources) == 10
     first_lines = {s.read_text(encoding="utf-8").splitlines()[0] for s in sources}
     assert len(first_lines) == 1
     assert INIT.match(first_lines.pop())
 
 
 def test_every_source_is_embedded_somewhere() -> None:
-    docs = (ROOT / "README.md").read_text() + (ROOT / "docs" / "architecture.md").read_text()
+    docs = "".join(doc.read_text() for doc in _load().DOCS)
     for source in (ROOT / "docs" / "diagrams").glob("*.mmd"):
         assert f"<!-- diagram:{source.stem} -->" in docs
 

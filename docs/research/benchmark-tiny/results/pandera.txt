@@ -1,0 +1,16 @@
+good PASS 0.02s
+bad FAIL 0.02s
+shape: (6, 6)
+┌──────────────┬────────────────┬─────────────┬─────────────────────────────┬──────────────┬───────┐
+│ failure_case ┆ schema_context ┆ column      ┆ check                       ┆ check_number ┆ index │
+│ ---          ┆ ---            ┆ ---         ┆ ---                         ┆ ---          ┆ ---   │
+│ str          ┆ str            ┆ str         ┆ str                         ┆ i32          ┆ i32   │
+╞══════════════╪════════════════╪═════════════╪═════════════════════════════╪══════════════╪═══════╡
+│ O1           ┆ Column         ┆ order_id    ┆ field_uniqueness            ┆ null         ┆ 0     │
+│ O1           ┆ Column         ┆ order_id    ┆ field_uniqueness            ┆ null         ┆ 1     │
+│ null         ┆ Column         ┆ customer_id ┆ not_nullable                ┆ null         ┆ 2     │
+│ C9           ┆ Column         ┆ customer_id ┆ isin(['C1', 'C2', 'C3'])    ┆ 0            ┆ 3     │
+│ PAID??       ┆ Column         ┆ status      ┆ isin(['paid', 'shipped',    ┆ 0            ┆ 4     │
+│              ┆                ┆             ┆ 'canc…                      ┆              ┆       │
+│ -3.0         ┆ Column         ┆ amount      ┆ greater_than_or_equal_to(0) ┆ 0            ┆ 5     │
+└──────────────┴────────────────┴─────────────┴─────────────────────────────┴──────────────┴───────┘

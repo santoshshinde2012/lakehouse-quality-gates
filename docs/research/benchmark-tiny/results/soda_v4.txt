@@ -1,0 +1,16 @@
+good ok= True 0.04s
+   PASSED row_count None {'check_rows_tested': 4, 'dataset_rows_tested': 4}
+   PASSED missing order_id {'missing_count': 0, 'missing_percent': 0.0, 'check_rows_tested': 4, 'dataset_rows_tested': 4}
+   PASSED duplicate order_id {'duplicate_count': 0, 'duplicate_percent': 0.0, 'check_rows_tested': 4, 'missing_count': 0, 'dataset_rows_tested': 4}
+   PASSED missing customer_id {'missing_count': 0, 'missing_percent': 0.0, 'check_rows_tested': 4, 'dataset_rows_tested': 4}
+   PASSED invalid customer_id {'invalid_count': 0, 'invalid_percent': 0.0, 'check_rows_tested': 4, 'missing_count': 0, 'dataset_rows_tested': 4}
+   PASSED invalid status {'invalid_count': 0, 'invalid_percent': 0.0, 'check_rows_tested': 4, 'missing_count': 0, 'dataset_rows_tested': 4}
+   PASSED invalid amount {'invalid_count': 0, 'invalid_percent': 0.0, 'check_rows_tested': 4, 'missing_count': 0, 'dataset_rows_tested': 4}
+bad ok= False 0.03s
+   PASSED row_count None {'check_rows_tested': 6, 'dataset_rows_tested': 6}
+   PASSED missing order_id {'missing_count': 0, 'missing_percent': 0.0, 'check_rows_tested': 6, 'dataset_rows_tested': 6}
+   FAILED duplicate order_id {'duplicate_count': 1, 'duplicate_percent': 16.666666666666668, 'check_rows_tested': 6, 'missing_count': 0, 'dataset_rows_tested': 6}
+   FAILED missing customer_id {'missing_count': 1, 'missing_percent': 16.666666666666668, 'check_rows_tested': 6, 'dataset_rows_tested': 6}
+   FAILED invalid customer_id {'invalid_count': 1, 'invalid_percent': 16.666666666666668, 'check_rows_tested': 6, 'missing_count': 1, 'dataset_rows_tested': 6}
+   FAILED invalid status {'invalid_count': 1, 'invalid_percent': 16.666666666666668, 'check_rows_tested': 6, 'missing_count': 0, 'dataset_rows_tested': 6}
+   FAILED invalid amount {'invalid_count': 1, 'invalid_percent': 16.666666666666668, 'check_rows_tested': 6, 'missing_count': 0, 'dataset_rows_tested': 6}

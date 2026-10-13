@@ -1,0 +1,40 @@
+Testing configs/odcs_orders_bad.yaml
+Server: local (type=local, format=csv,
+path=/workspace/research/benchmark/data/orders_bad.csv)
+╭────────┬───────────────────────────┬─────────────┬───────────────────────────╮
+│ Result │ Check                     │ Field       │ Details                   │
+├────────┼───────────────────────────┼─────────────┼───────────────────────────┤
+│ failed │ every order references a  │             │ Actual custom_sql(orders) │
+│        │ known customer            │             │ was 1, expected = 0       │
+│ failed │ amount not negative       │ amount      │ Actual custom_sql(amount) │
+│        │                           │             │ was 1, expected = 0       │
+│ failed │ Check that field          │ customer_id │ Actual                    │
+│        │ customer_id has no        │             │ missing_count(customer_i… │
+│        │ missing values            │             │ was 1, expected = 0       │
+│ failed │ Check that unique field   │ order_id    │ Actual                    │
+│        │ order_id has no duplicate │             │ duplicate_count(order_id) │
+│        │ values                    │             │ was 1, expected = 0       │
+│ failed │ Check that field status   │ status      │ Actual                    │
+│        │ has invalid_count = 0     │             │ invalid_count(status) was │
+│        │                           │             │ 1, expected = 0           │
+│ passed │ Check that field 'amount' │ amount      │                           │
+│        │ is present                │             │                           │
+│ passed │ Check that field          │ customer_id │                           │
+│        │ 'customer_id' is present  │             │                           │
+│ passed │ Check that field          │ order_id    │                           │
+│        │ 'order_id' is present     │             │                           │
+│ passed │ Check that field order_id │ order_id    │                           │
+│        │ has no missing values     │             │                           │
+│ passed │ Check that field 'status' │ status      │                           │
+│        │ is present                │             │                           │
+╰────────┴───────────────────────────┴─────────────┴───────────────────────────╯
+🔴 Data contract is invalid, found the following errors:
+1) order_id Check that unique field order_id has no duplicate values: Actual
+duplicate_count(order_id) was 1, expected = 0
+2) customer_id Check that field customer_id has no missing values: Actual
+missing_count(customer_id) was 1, expected = 0
+3) status Check that field status has invalid_count = 0: Actual
+invalid_count(status) was 1, expected = 0
+4) amount amount not negative: Actual custom_sql(amount) was 1, expected = 0
+5) every order references a known customer: Actual custom_sql(orders) was 1,
+expected = 0

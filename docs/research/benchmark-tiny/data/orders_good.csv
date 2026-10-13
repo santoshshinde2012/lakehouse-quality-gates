@@ -1,0 +1,5 @@
+order_id,customer_id,status,amount
+O1,C1,paid,10.5
+O2,C2,shipped,20
+O3,C3,cancelled,0
+O4,C1,refunded,5

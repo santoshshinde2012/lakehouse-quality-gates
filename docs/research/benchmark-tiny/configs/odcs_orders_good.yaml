@@ -1,0 +1,42 @@
+apiVersion: v3.1.0
+kind: DataContract
+id: silver-orders
+name: silver.orders
+version: 1.0.0
+status: active
+servers:
+  - server: local
+    type: local
+    format: csv
+    path: /workspace/research/benchmark/data/orders_good.csv
+schema:
+  - name: orders
+    physicalType: table
+    properties:
+      - name: order_id
+        logicalType: string
+        required: true
+        unique: true
+      - name: customer_id
+        logicalType: string
+        required: true
+      - name: status
+        logicalType: string
+        quality:
+          - type: library
+            metric: invalidValues
+            arguments:
+              validValues: [paid, shipped, cancelled, refunded]
+            mustBe: 0
+      - name: amount
+        logicalType: number
+        quality:
+          - type: sql
+            description: amount not negative
+            query: SELECT COUNT(*) FROM orders WHERE amount < 0
+            mustBe: 0
+    quality:
+      - type: sql
+        description: every order references a known customer
+        query: SELECT COUNT(*) FROM orders o WHERE o.customer_id IS NOT NULL AND o.customer_id NOT IN (SELECT customer_id FROM read_csv_auto('/workspace/research/benchmark/data/customers.csv'))
+        mustBe: 0

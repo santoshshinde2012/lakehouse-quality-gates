@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "docs" / "diagrams"
-DOCS = (ROOT / "README.md", ROOT / "docs" / "architecture.md")
+DOCS = (ROOT / "README.md", ROOT / "docs" / "architecture.md", ROOT / "docs" / "system-design.md")
 BLOCK = re.compile(
     r"(?P<open><!-- diagram:(?P<name>[\w-]+) -->\n)```mermaid\n.*?```\n(?P<close><!-- /diagram -->)",
     re.S,

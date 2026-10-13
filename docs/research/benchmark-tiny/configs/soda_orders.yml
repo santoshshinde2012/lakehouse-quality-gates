@@ -1,0 +1,24 @@
+dataset: duck/main/orders
+checks:
+  - row_count:
+columns:
+  - name: order_id
+    checks:
+      - missing:
+      - duplicate:
+  - name: customer_id
+    checks:
+      - missing:
+      - invalid:
+          name: customer_ref
+          valid_reference_data:
+            dataset: duck/main/customers
+            column: customer_id
+  - name: status
+    checks:
+      - invalid:
+          valid_values: [paid, shipped, cancelled, refunded]
+  - name: amount
+    checks:
+      - invalid:
+          valid_min: 0
