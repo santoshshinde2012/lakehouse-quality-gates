@@ -1,6 +1,6 @@
 [project]
 name = "lakehouse-quality-gates"
-version = "0.2.3"
+version = "0.3.0"
 description = "Contract-gated medallion: Soda Core v4 data contracts as quality gates for local-data-lakehouse"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -38,6 +38,8 @@ packages = ["src/soda_lakehouse_dq"]
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["docs/research"]
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "PL", "PT", "C4", "TID", "ANN", "S"]
@@ -47,17 +49,25 @@ ignore = ["PLR0913", "S101", "ANN401", "S603", "S607", "PLC0415"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "PLR2004", "S"]
 "airflow/**" = ["ANN"]
+# Benchmark harnesses: SQL built from generated paths/ints, subprocess calls, wide result rows.
+"benchmarks/**" = ["S603", "S607", "S608", "PLR0912", "PLR0913", "PLR0914", "PLR0915", "PLR0917", "PLR2004", "E501", "RUF001", "C901"]
+"scripts/gen_scale_data.py" = ["S311", "PLR0913", "PLR0917", "PLR2004"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 mypy_path = "src"
-packages = ["soda_lakehouse_dq"]
+files = ["src/soda_lakehouse_dq", "benchmarks", "scripts"]
+exclude = ["benchmarks/tools/"]
 
 [[tool.mypy.overrides]]
-module = ["soda_core.*", "soda_duckdb.*", "soda_trino.*", "duckdb.*", "lakehouse_client.*", "pyiceberg.*", "pyarrow.*"]
+module = ["soda_core.*", "soda_duckdb.*", "soda_trino.*", "duckdb.*", "lakehouse_client.*", "pyiceberg.*", "pyarrow.*", "trino.*"]
 ignore_missing_imports = true
 follow_untyped_imports = false
+
+[[tool.mypy.overrides]]
+module = ["benchmarks.*"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

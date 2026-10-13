@@ -25,3 +25,4 @@ readme.original.md.bak
 
 # rendered by make diagrams (README uses inline Mermaid)
 docs/diagrams/svg/
+benchmarks/tools/.venv/

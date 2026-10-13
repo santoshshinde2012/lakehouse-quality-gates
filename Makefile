@@ -13,7 +13,7 @@ export AIRFLOW_API_PORT
 LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
 	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml --profile full
 
-.PHONY: help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
+.PHONY: bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
 	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check clean dist
 
@@ -142,3 +142,24 @@ clean:
 dist: clean
 	tar --exclude=.venv --exclude=.git --exclude=.env --exclude='*/__pycache__' \
 	    -C .. -czf ../SODA.tar.gz $(notdir $(SODA_HOME))
+
+# ---- benchmarks (need the live stack; they OVERWRITE the retail tables, see benchmarks/README.md) ----
+SIZES ?= 10000 100000 1000000 5000000
+bench: ## Gate latency/CPU/RSS/queries per layer x engine at SIZES
+	$(RUN) python -m benchmarks.specs
+	$(RUN) python -m benchmarks.run_perf --sizes $(SIZES) --warm 5
+
+bench-accuracy: ## Defect detection at 0.1/1/10% against ground truth
+	$(RUN) python -m benchmarks.run_accuracy
+
+bench-spark: ## Spark job time vs gate time on the lakehouse sample
+	$(RUN) python -m benchmarks.spark_reference
+
+bench-tools: ## Soda vs datacontract-cli vs GX vs Pointblank vs Pandera (own venv)
+	cd benchmarks/tools && (test -d .venv || $(UV) venv -q --python 3.12 .venv) && $(UV) pip install -q -p .venv -r requirements.txt
+	benchmarks/tools/.venv/bin/python benchmarks/tools/run_tools.py bench --sizes 100000 1000000 --repeats 3 --out docs/results/benchmarks/tools.csv
+
+bench-report: ## Write docs/results/benchmarks/summary.md from the raw results
+	$(RUN) python -m benchmarks.analyze
+
+bench-all: bench bench-accuracy bench-spark bench-tools bench-report ## Everything above

@@ -1,0 +1,10 @@
+# Isolated env for the tool comparison (conflicting pins); versions used are recorded in docs/results/benchmarks/tools_versions.txt
+datacontract-cli[duckdb]
+great-expectations
+pointblank
+pandera[polars]
+polars
+pandas
+pyarrow
+duckdb
+soda-duckdb
