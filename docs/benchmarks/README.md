@@ -1,26 +1,26 @@
 # Benchmarks
 
 > [!NOTE]
-> **At a glance.** On an Apple M1 Pro laptop, a gate on host DuckDB takes **0.4 to 0.6 s per layer up to 1M orders**
-> and 0.5 to 2.0 s at 5M, costs **4 to 5 %** of the Spark job time, peaks under **780 MiB**, and got **66 of 66**
-> verdicts right on injected defects. Trino on its default 1 GiB heap fails at 5M orders (the gate blocks).
+> **At a glance.** On an Apple M1 Pro laptop, a gate on host DuckDB takes **0.42–0.68 s per layer up to 1M orders**,
+> all three gates take **3.09 s at 5M orders**, a gate adds **2.3–4.9 %** to its Spark job, memory peaks at
+> **690 MiB**, and **66 of 66** verdicts were right. Trino needs the 4 GiB heap override at 5M orders.
 
 | Page | What it covers |
 |---|---|
 | [Methodology](methodology.md) | Machine, data generator, engines, runs and how each metric is measured |
-| [Results](results.md) | Latency, resources, detection accuracy, overhead against Spark, tool comparison |
-| [Analysis](analysis.md) | SLO verdicts, what the numbers mean for the design, capacity planning, caveats |
+| [Results](results.md) | Mermaid charts and tables: latency, memory, pipeline, overhead, Airflow, accuracy, tools |
+| [Analysis](analysis.md) | Findings, scaling, bottlenecks, recommendations, threats to validity |
 
 <!-- region:headline -->
 | Headline | Value |
 |---|---|
-| Gate latency, host DuckDB, warm p50 per layer | 0.4–0.6 s up to 1M orders · 0.5–2.0 s at 5M |
-| Worst warm p95 (DuckDB host or container) | 3.56 s (container, bronze, 5M) |
-| Gate time as a share of the Spark job (lakehouse sample) | 4–5 % per layer |
-| Peak gate memory at 5M orders | 780 MiB (container), 684 MiB (host) |
-| Detection accuracy (7 defect types × 3 rates + clean) | 66/66 verdicts, precision 1.0, recall 1.0 |
-| Same six checks at 1M rows | Soda 0.44 s, Pointblank 0.47 s, datacontract-cli 1.08 s, Pandera 2.83 s, GX Core 11.5 s |
+| Gate latency, host DuckDB, warm p50 per layer | 0.42–0.68 s up to 1M orders |
+| All three gates at 5M orders, warm p50 | 3.09 s host DuckDB · 29.79 s Trino (4 GiB heap) |
+| Worst warm p95, DuckDB host or container (5M) | 3.47 s |
+| Gate time as a share of its Spark job | 2.3–4.9 % per layer |
+| Peak gate memory at 5M orders | 690 MiB (container), 685 MiB (host) |
+| Detection accuracy (7 defect types × 3 rates + clean) | 66/66 verdicts |
+| Same six checks at 1M rows | soda 0.39 s, pointblank 0.44 s, datacontract 0.89 s, pandera 3.34 s, gx 11.40 s |
 <!-- /region -->
 
-**Raw data:** [`docs/results/benchmarks/`](../results/benchmarks/summary.md) (CSV, JSON, gzipped JSON lines and the generated
-`summary.md`). **Harness:** [`benchmarks/`](../../benchmarks/README.md); reproduce with `make bench-all`.
+**Raw data:** [`docs/results/benchmarks/2026-10-14-v0.4.1/`](../results/benchmarks/2026-10-14-v0.4.1/specs.json) (CSV, JSON and gzipped JSON lines). **Harness:** [`benchmarks/`](../../benchmarks/README.md); reproduce with `make bench-all`.

@@ -8,9 +8,10 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 
 | Run | Date | Commit | What it shows | Reproduce |
 |---|---|---|---|---|
+| [v0.5.0 benchmarks](benchmarks/2026-10-14-v0.4.1/specs.json) | 2026-10-14 | `e39dc18` (v0.4.1) | Own end-to-end benchmarks charted in [results](../benchmarks/results.md): latency 10k–5M on DuckDB, Trino (4 GiB heap) and the container, memory, seed-to-gold pipeline, Spark overhead, Airflow good/bad runs, accuracy, five-tool comparison | `make bench-all` |
 | [v0.4.1 checks](runs/2026-10-14-v0.4.1-checks/README.md) | 2026-10-14 | v0.4.1 | `make test-all` after the documentation tidy: 110 tests, 99% coverage, demo | `make test-all` |
 | [Fresh-clone run](runs/2026-10-13-fresh-clone/README.md) | 2026-10-13 | `51cf981` (v0.4.0) | Every documented path from a new clone: `test-all`, `e2e-live`, `e2e-full`, benchmarks at 10k/100k, `bench-tiny` | `make test-all e2e-live e2e-full`, then `make bench SIZES="10000 100000" WARM=2 BENCH_OUT=...`, `make bench-accuracy`, `make bench-tools TOOL_SIZES=100000` |
-| [Published benchmarks](benchmarks/summary.md) | 2026-10-13 | `60326e4` (v0.3.0) | Gate latency, resources, accuracy, Spark overhead and the tool comparison at 10k to 5M orders; analysed in [docs/benchmarks](../benchmarks/README.md) | `make bench-all` (about two hours) |
+| [Earlier benchmarks](benchmarks/summary.md) (superseded) | 2026-10-13 | `60326e4` (v0.3.0) | Gate latency, resources, accuracy, Spark overhead and the tool comparison at 10k to 5M orders; analysed in [docs/benchmarks](../benchmarks/README.md) | `make bench-all` (about two hours) |
 | [Component verification](runs/2026-10-13-v0.2-verification/README.md) | 2026-10-13 | `39b76a4` (v0.2.1) | Each component on its own: lint, types, tests, demo, live DuckDB and Trino, the runner image, Airflow good and bad runs, with every gate report | the manual walkthrough in the [runbook](../guides/runbook.md#manual-walkthrough) |
 | [Archive](archive/README.md) | 2026-10-13 | | Superseded artefacts kept for the record (early Airflow debugging runs) | |
 
@@ -23,7 +24,8 @@ All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Doc
 |---|---|
 | `runs/2026-10-14-v0.4.1-checks/` | `test-all.log` |
 | `runs/2026-10-13-fresh-clone/` | `test-all.log` (tests and coverage), `e2e-live/` and `e2e-full/` (one log per step), benchmark CSV/JSON and the generated `summary.md` |
-| `benchmarks/` | The published benchmark data: raw CSV and JSON lines, machine `specs.json`, `tools_versions.json`, generated `summary.md` |
+| `benchmarks/2026-10-14-v0.4.1/` | Current benchmark data: `perf_raw`, `pipeline_raw`, `spark_reference`, `airflow_runs`, `airflow_tasks`, `accuracy`, `tools` (CSV; JSON lines gzipped), `specs.json`, `tools_versions.json` |
+| `benchmarks/` (top level) | Superseded v0.3.0 benchmark data: raw CSV and JSON lines, machine `specs.json`, `tools_versions.json`, generated `summary.md` |
 | `runs/2026-10-13-v0.2-verification/` | `logs/`, `gates/` (JSON, Markdown and JUnit report per gate), `docker/`, `airflow/`, `tests/` (JUnit) and `coverage/coverage.xml` |
 | `archive/` | Superseded files, each with a note on why it was kept |
 

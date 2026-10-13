@@ -38,7 +38,7 @@ Docker resources:
 | T3 full (adds Spark, Trino, Airflow, the runner) | 4+ | 6 GB, 8 GB recommended | 10 GB |
 | Benchmarks at 1M to 5M orders on Trino | 6+ | 8 GB+ | 15 GB |
 
-Trino ships with a 1 GiB heap (`-Xmx1G` in the lakehouse's `config/trino/jvm.config`). That is enough up to 1M orders.
+Trino ships with a 1 GiB heap (`-Xmx1G` in the lakehouse's `config/trino/jvm.config`). That is enough up to 1M orders. For 5M orders run `make trino-heap`, a compose override in `benchmarks/trino/` with a 4 GiB heap that leaves the lakehouse files untouched; `make trino-heap-reset` restores the default.
 At 5M orders the Trino gates fail with `EXCEEDED_LOCAL_MEMORY_LIMIT`. For that size, raise the heap locally to 3 to 4 GB
 (keep the change out of your lakehouse commits) and give Docker at least 8 GB, or run the large sizes on DuckDB only.
 
@@ -169,7 +169,7 @@ afterwards. `BENCH_OUT=dir` writes a run to its own folder so it never mixes wit
 | `DQ_LDL_REPO_PATH is not set` from `scripts/e2e.sh` | set it in `.env` or the environment to the lakehouse checkout |
 | live tests all `SKIPPED ... Lakekeeper is not reachable` | the stack is down: `make up-light` in the lakehouse, or use `make e2e-live` |
 | `Bind for 0.0.0.0:8080 failed: port is already allocated` on `airflow-dq-up` | another service holds 8080: `AIRFLOW_API_PORT=8090` |
-| Trino gates block with `EXCEEDED_LOCAL_MEMORY_LIMIT` | batch too big for the 1 GiB heap, see [prerequisites](#prerequisites) |
+| Trino gates block with `EXCEEDED_LOCAL_MEMORY_LIMIT` | batch too big for the 1 GiB heap: `make trino-heap`, see [prerequisites](#prerequisites) |
 | a `FAIL` row in the e2e summary | open the log it names under `reports/e2e-<mode>/`; rerun, the script is idempotent |
 | `bench-tools` cannot resolve the pins | it needs Python 3.12; delete `benchmarks/tools/.venv` and rerun |
 | `docs-check` fails on `npx` | install Node.js 20+; the first run downloads markdownlint and mermaid-cli |

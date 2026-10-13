@@ -1,0 +1,9 @@
+# Benchmark-only override: give the lakehouse's Trino a 4 GiB heap so the order gates can run at 5M orders.
+# Applied on top of local-data-lakehouse's docker-compose.yml without editing it (`make trino-heap`):
+#   cd $DQ_LDL_REPO_PATH && docker compose -f docker-compose.yml -f <this file> --profile full --profile trino up -d --wait trino
+# Paths are absolute at run time: the Makefile passes LQG_TRINO_DIR. Undo with `make trino-heap-reset`.
+services:
+  trino:
+    volumes:
+      - ${LQG_TRINO_DIR:?set by make trino-heap}/jvm.config:/etc/trino/jvm.config:ro
+      - ${LQG_TRINO_DIR}/config.properties:/etc/trino/config.properties:ro

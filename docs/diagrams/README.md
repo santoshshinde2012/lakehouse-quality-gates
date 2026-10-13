@@ -18,7 +18,6 @@ All sources share one init line and palette, described in [THEME.md](THEME.md).
 | [`airflow-dag.mmd`](airflow-dag.mmd) | Airflow DAG `lakehouse_retail_medallion_dq` | flowchart | The tasks of the gated DAG and how a failed gate stops the run. | [data-flow.md](../architecture/data-flow.md) |
 | [`deployment.mmd`](deployment.mmd) | Deployment on Docker network `ldl-net` | flowchart | The containers, their host ports and how they connect. | [deployment.md](../architecture/deployment.md) |
 | [`wap-sequence.mmd`](wap-sequence.mmd) | Write-audit-publish (proposed) | sequence | How Iceberg branches would keep a layer hidden from readers until its gate passes. | [write-audit-publish.md](../architecture/write-audit-publish.md) |
-| [`benchmark-scaling.mmd`](benchmark-scaling.mmd) | Scaling with batch size (measured) | xychart | Seconds for all three layers as the batch grows from 10k to 5M orders. | [results.md](../benchmarks/results.md) |
 
 ## Editing a diagram
 

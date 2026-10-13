@@ -54,11 +54,11 @@ notifiers. It sits next to the lakehouse and changes none of its files.
 
 | Question | Answer (measured) |
 |---|---|
-| How long does a gate take? | Host DuckDB, warm p50 per layer: **0.4 to 0.6 s up to 1M orders, 0.5 to 2.0 s at 5M**. Slowest warm run anywhere on DuckDB: 3.6 s (container, bronze, 5M) |
-| What does it cost next to the pipeline? | **4 to 5 %** of the Spark job time per layer on the lakehouse sample (about 1.1 s of gate process vs 20 to 26 s of `spark-submit`). Against a fast DuckDB writer at 1M to 5M rows, 37 to 60 % for bronze and silver |
-| How much memory? | Peak client RSS **≤ 780 MiB at 5M orders** (container, bronze); under 300 MiB up to 1M |
+| How long does a gate take? | Host DuckDB, warm p50 per layer: **0.42–0.68 s up to 1M orders, 0.40 to 1.36 s at 5M**; all three gates 3.09 s at 5M. Worst warm p95 on DuckDB: 3.47 s (container, bronze, 5M) |
+| What does it cost next to the pipeline? | **2.3–4.9 %** of the Spark job time per layer (median, lakehouse sample). In the Airflow DAG the three gate tasks are about 6 s of a 124 s run. Seed to gold at 5M with DuckDB builds: gates are 24 % of 12.9 s |
+| How much memory? | Peak client RSS **690 MiB at 5M orders** (container), 685 MiB host; about 310 MiB at 1M |
 | Does it catch bad data? | **66 of 66 gate verdicts correct** over 7 defect types × 3 rates (0.1 %, 1 %, 10 %) plus a clean control; check-level precision and recall **1.0**; reported failing-row counts equal the injected counts |
-| Where does it break? | **Trino with the lakehouse's default 1 GiB heap fails at 5M orders** (`EXCEEDED_LOCAL_MEMORY_LIMIT` on the bronze and silver order checks). The gate fails *closed* (blocks) as designed, but it is a false block caused by capacity, not data |
+| Where does it break? | **Trino with the lakehouse's default 1 GiB heap fails at 5M orders** (`EXCEEDED_LOCAL_MEMORY_LIMIT`; the gate fails *closed*). With `make trino-heap` (4 GiB) it passes, taking 29.79 s for the three gates |
 | How does Soda compare? | Same six checks at 1M rows: Soda 0.44 s / 204 MiB, Pointblank 0.47 s / 389 MiB, datacontract-cli 1.08 s / 286 MiB, Pandera 2.83 s / 1.5 GiB, GX Core 11.5 s / 723 MiB. All five got every verdict right |
 
 **Decision.** Keep Soda Core v4 (Elastic License 2.0, internal use is allowed) as the gate engine and
@@ -121,10 +121,10 @@ snapshots carry the problem.
 
 | ID | Area | Target (SLO) | Measured ([benchmarks](benchmarks/results.md)) |
 |---|---|---|---|
-| N1 | Gate latency | p95 ≤ 10 s per layer up to 1M orders, ≤ 30 s at 5M, on the reference laptop | **Met** for host DuckDB and the container at every size (worst warm p95 3.56 s at 5M). Trino met up to 1M (worst p95 7.69 s, one outlier) and **fails** at 5M on the default 1 GiB heap ([latency](benchmarks/results.md#latency)) |
-| N2 | Overhead | A gate costs less than its layer's build at ≥ 1M rows | **Met against Spark** (4 to 5 %). Against the DuckDB writer met for bronze and silver at ≥ 1M (37 to 60 %); not met for gold at 1M (gate 0.39 s vs a 0.16 s build of 90 rows); met at 5M (93 %) |
+| N1 | Gate latency | p95 ≤ 10 s per layer up to 1M orders, ≤ 30 s at 5M, on the reference laptop | **Met** for host DuckDB and the container at every size (worst warm p95 3.47 s at 5M). Trino with the 4 GiB heap meets it up to 1M (worst p95 7.61 s) and at 5M except the bronze tail (p95 30.14 s); on the default 1 GiB heap it **fails** at 5M ([latency](benchmarks/results.md#gate-latency-vs-batch-size)) |
+| N2 | Overhead | A gate costs less than its layer's build at ≥ 1M rows | **Met against Spark** (2.3–4.9 %). Against the DuckDB writer at 5M the bronze and silver gates cost less than their builds; the gold gate (0.40 s) is close to its 0.53 s build; see [pipeline](benchmarks/results.md#end-to-end-pipeline-stage-by-stage) |
 | N3 | Correctness | Recall 1.0 on blocking defect categories; 0 false blocks on clean data | **Met**: 30/30 expected failing or warning checks raised, 0 unexpected, 0 false blocks on clean data |
-| N4 | Memory | Gate client peak RSS ≤ 2 GiB at 5M orders (fits the 8 GiB Docker VM next to Spark and Trino) | **Met**: 684 MiB host, 780 MiB container at 5M |
+| N4 | Memory | Gate client peak RSS ≤ 2 GiB at 5M orders (fits the 8 GiB Docker VM next to Spark and Trino) | **Met**: 685 MiB host, 690 MiB container at 5M |
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | [Security](architecture/security.md) |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
@@ -383,11 +383,11 @@ so contract *coverage*, not accuracy, is the risk (failure mode 5 in [section 9]
 | 5 | Gate passes but data is bad (missing check) | Bad data promoted | Downstream checks (gold reconciliation), consumers | 5 | 2 | Contract review, [accuracy suite](benchmarks/results.md#detection-accuracy), WAP |
 | 6 | Bad layer visible before the gate runs | Readers see unaudited data for the gate's duration | Known gap | 4 | 4 | WAP ([section 13](#13-roadmap-write-audit-publish)) |
 | 7 | Slack down | No alert | `dq.notify.failed` log | 2 | 2 | Gate result unaffected; Airflow failure alerts |
-| 8 | Container killed (OOM) | Task fails | Airflow, exit code ≠ 0/1 | 3 | 1 | Measured RSS headroom ([resources](benchmarks/results.md#resources)); spill dir on tmpfs |
+| 8 | Container killed (OOM) | Task fails | Airflow, exit code ≠ 0/1 | 3 | 1 | Measured RSS headroom ([resources](benchmarks/results.md#memory-vs-batch-size)); spill dir on tmpfs |
 | 9 | Clock skew | Freshness false block | freshness check | 2 | 1 | `BRONZE_MAX_AGE_HOURS` override |
 | 10 | Concurrent DAG runs | Layers rebuilt under a running gate | inconsistent results | 4 | 2 | One run at a time; WAP branches per run |
 | 11 | Soda licence change | Upgrade blocked | Licence review on upgrade | 3 | 2 | Pinned versions; OSI fallback behind the same port |
-| 12 | Engine out of memory (Trino 1 GiB heap at 5M orders, measured) | Checks not evaluated | block, `EXCEEDED_LOCAL_MEMORY_LIMIT` in reasons | 3 | 3 | Size Trino memory; DuckDB engine for large batches |
+| 12 | Engine out of memory (Trino 1 GiB heap at 5M orders, measured) | Checks not evaluated | block, `EXCEEDED_LOCAL_MEMORY_LIMIT` in reasons | 3 | 3 | `make trino-heap` (4 GiB); DuckDB engine for large batches |
 
 ## 10. Scalability and capacity
 
@@ -396,7 +396,7 @@ so contract *coverage*, not accuracy, is the risk (failure mode 5 in [section 9]
 > first lever.
 
 Rules of thumb fitted from the benchmarks, and the scaling options in order of cost (partition-scoped contracts
-first), are in [capacity planning](benchmarks/analysis.md#capacity-planning).
+first), are in [capacity planning](benchmarks/analysis.md#scaling).
 
 ## 11. Trade-offs and alternatives considered
 
@@ -404,7 +404,7 @@ first), are in [capacity planning](benchmarks/analysis.md#capacity-planning).
 |---|---|---|---|
 | Gate engine | Soda Core v4 | datacontract-cli + ODCS, GX Core, Pointblank, Pandera, dbt tests | [Section 4](#4-background-and-tool-selection): compact contracts, native referential checks, correct verdicts, fast; licence accepted for internal use |
 | Where the gate runs | Separate container `ldl-soda`, triggered by Airflow | Inside the Spark job (`soda-sparkdf`), Airflow worker venv | Isolation (no dependency clash with Spark/Airflow), hardened image, same contracts on any engine |
-| Default engine | DuckDB on the host/container | Trino | No JVM, lowest latency at every measured scale ([latency](benchmarks/results.md#latency)); Trino kept for parity and as the shared-cluster path |
+| Default engine | DuckDB on the host/container | Trino | No JVM, lowest latency at every measured scale ([latency](benchmarks/results.md#gate-latency-vs-batch-size)); Trino kept for parity and as the shared-cluster path |
 | DAG strategy | Sibling gated DAG | Patch the original DAG | Zero changes to `local-data-lakehouse` (G6, [ADR 0004](adr/0004-separate-gated-dag.md)) |
 | Contract format | Soda YAML + one `{{ dataset_root }}` token | Jinja templating, Python-defined checks | Keep contracts plain Soda; one token is enough ([ADR 0003](adr/0003-dataset-root-token.md)) |
 | Warn vs fail at bronze | Value checks warn at bronze, fail at silver | Fail everything at bronze | Bronze is raw by definition; silver is where the contract is enforced |
@@ -421,11 +421,11 @@ first), are in [capacity planning](benchmarks/analysis.md#capacity-planning).
 | L1 | **Spark writes with `CREATE OR REPLACE` before the gate runs**: the gate stops promotion to the next layer but cannot hide the layer it checked | Readers of that layer see unaudited data until the gate fails and someone rolls back | WAP ([section 13](#13-roadmap-write-audit-publish)); until then, roll back with `rollback_to_snapshot` ([runbook](guides/runbook.md#a-gate-blocked-triage)) |
 | L2 | Soda Core v4 is ELv2, not OSI | Redistribution needs a licence review | Pinned; OSI fallback designed ([section 4](#4-background-and-tool-selection)) |
 | L3 | No failing-row extracts without Soda's diagnostics warehouse | Triage needs a manual query ([runbook](guides/runbook.md#a-gate-blocked-triage) has them) | Pointblank or a SQL quarantine step |
-| L4 | Freshness and reference checks scan whole tables | Linear cost with table size ([capacity planning](benchmarks/analysis.md#capacity-planning)) | Partition-scoped contracts with `filter` on the batch |
-| L5 | The scale benchmark builds layers with DuckDB, not Spark | Overhead ratios at scale use DuckDB build times | Spark reference measured at the sample size ([overhead](benchmarks/results.md#overhead-against-the-pipeline)) |
+| L4 | Freshness and reference checks scan whole tables | Linear cost with table size ([capacity planning](benchmarks/analysis.md#scaling)) | Partition-scoped contracts with `filter` on the batch |
+| L5 | The scale benchmark builds layers with DuckDB, not Spark | Overhead ratios at scale use DuckDB build times | Spark reference measured at the sample size ([overhead](benchmarks/results.md#gate-overhead-against-the-spark-pipeline)) |
 | L6 | Single-node, single-run assumptions | No concurrency control | WAP branches per run |
 | L7 | Trino `CREATE BRANCH` / `FAST FORWARD` are not in OSS Trino 483 (trinodb/trino#28464 closed unmerged) | WAP publish must run on Spark | Spark `CALL system.fast_forward` |
-| L8 | Trino at the lakehouse default heap (1 GiB) cannot evaluate the bronze and silver order checks at 5M orders | False blocks at large batches on the Trino engine | Raise Trino memory or use DuckDB for large batches ([latency](benchmarks/results.md#latency)) |
+| L8 | Trino at the lakehouse default heap (1 GiB) cannot evaluate the bronze and silver order checks at 5M orders | False blocks at large batches on the Trino engine | Raise Trino memory or use DuckDB for large batches ([latency](benchmarks/results.md#gate-latency-vs-batch-size)) |
 
 ## 13. Roadmap: write-audit-publish
 

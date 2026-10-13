@@ -1,0 +1,67 @@
+rows,defect,rate,injected,layer,expected_status,status,verdict_ok,expected_fail,actual_fail,expected_warn,actual_warn,tp,fp,fn,reported_count
+100000,none,0.0,0,bronze,passed,passed,True,,,,,0,0,0,
+100000,none,0.0,0,silver,passed,passed,True,,,,,0,0,0,
+100000,none,0.0,0,gold,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.001,100,bronze,blocked,blocked,True,No order duplicated inside one source file,No order duplicated inside one source file,,,1,0,0,100
+100000,duplicate_in_file,0.001,100,silver,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.001,100,gold,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.01,1000,bronze,blocked,blocked,True,No order duplicated inside one source file,No order duplicated inside one source file,,,1,0,0,1000
+100000,duplicate_in_file,0.01,1000,silver,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.01,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.1,10000,bronze,blocked,blocked,True,No order duplicated inside one source file,No order duplicated inside one source file,,,1,0,0,10000
+100000,duplicate_in_file,0.1,10000,silver,passed,passed,True,,,,,0,0,0,
+100000,duplicate_in_file,0.1,10000,gold,passed,passed,True,,,,,0,0,0,
+100000,future_timestamp,0.001,100,bronze,passed,passed,True,,,,,0,0,0,
+100000,future_timestamp,0.001,100,silver,blocked,blocked,True,No order timestamped in the future,No order timestamped in the future,,,1,0,0,100
+100000,future_timestamp,0.001,100,gold,blocked,blocked,True,No metrics for future days,No metrics for future days,,,1,0,0,1
+100000,future_timestamp,0.01,1000,bronze,passed,passed,True,,,,,0,0,0,
+100000,future_timestamp,0.01,1000,silver,blocked,blocked,True,No order timestamped in the future,No order timestamped in the future,,,1,0,0,1000
+100000,future_timestamp,0.01,1000,gold,blocked,blocked,True,No metrics for future days,No metrics for future days,,,1,0,0,1
+100000,future_timestamp,0.1,10000,bronze,passed,passed,True,,,,,0,0,0,
+100000,future_timestamp,0.1,10000,silver,blocked,blocked,True,No order timestamped in the future,No order timestamped in the future,,,1,0,0,10000
+100000,future_timestamp,0.1,10000,gold,blocked,blocked,True,No metrics for future days,No metrics for future days,,,1,0,0,1
+100000,malformed_email,0.001,10,bronze,passed,passed,True,,,,,0,0,0,
+100000,malformed_email,0.001,10,silver,blocked,blocked,True,Email is well-formed,Email is well-formed,,,1,0,0,0;10
+100000,malformed_email,0.001,10,gold,passed,passed,True,,,,,0,0,0,
+100000,malformed_email,0.01,100,bronze,passed,passed,True,,,,,0,0,0,
+100000,malformed_email,0.01,100,silver,blocked,blocked,True,Email is well-formed,Email is well-formed,,,1,0,0,0;100
+100000,malformed_email,0.01,100,gold,passed,passed,True,,,,,0,0,0,
+100000,malformed_email,0.1,1000,bronze,passed,passed,True,,,,,0,0,0,
+100000,malformed_email,0.1,1000,silver,blocked,blocked,True,Email is well-formed,Email is well-formed,,,1,0,0,0;1000
+100000,malformed_email,0.1,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,missing_customer,0.001,100,bronze,blocked,blocked,True,Every order has a customer,Every order has a customer,,,1,0,0,100
+100000,missing_customer,0.001,100,silver,blocked,blocked,True,Customer id present,Customer id present,,,1,0,0,0;100
+100000,missing_customer,0.001,100,gold,passed,passed,True,,,,,0,0,0,
+100000,missing_customer,0.01,1000,bronze,blocked,blocked,True,Every order has a customer,Every order has a customer,,,1,0,0,1000
+100000,missing_customer,0.01,1000,silver,blocked,blocked,True,Customer id present,Customer id present,,,1,0,0,0;1000
+100000,missing_customer,0.01,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,missing_customer,0.1,10000,bronze,blocked,blocked,True,Every order has a customer,Every order has a customer,,,1,0,0,10000
+100000,missing_customer,0.1,10000,silver,blocked,blocked,True,Customer id present,Customer id present,,,1,0,0,0;10000
+100000,missing_customer,0.1,10000,gold,passed,passed,True,,,,,0,0,0,
+100000,negative_amount,0.001,100,bronze,passed_with_warnings,passed_with_warnings,True,,,Amount is not negative (enforced in silver),Amount is not negative (enforced in silver),1,0,0,0;100
+100000,negative_amount,0.001,100,silver,blocked,blocked,True,Amount is not negative,Amount is not negative,,,1,0,0,0;100
+100000,negative_amount,0.001,100,gold,passed,passed,True,,,,,0,0,0,
+100000,negative_amount,0.01,1000,bronze,passed_with_warnings,passed_with_warnings,True,,,Amount is not negative (enforced in silver),Amount is not negative (enforced in silver),1,0,0,0;1000
+100000,negative_amount,0.01,1000,silver,blocked,blocked,True,Amount is not negative,Amount is not negative,,,1,0,0,0;1000
+100000,negative_amount,0.01,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,negative_amount,0.1,10000,bronze,passed_with_warnings,passed_with_warnings,True,,,Amount is not negative (enforced in silver),Amount is not negative (enforced in silver),1,0,0,0;10000
+100000,negative_amount,0.1,10000,silver,blocked,blocked,True,Amount is not negative,Amount is not negative,,,1,0,0,0;10000
+100000,negative_amount,0.1,10000,gold,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.001,100,bronze,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.001,100,silver,blocked,blocked,True,Customer exists in silver.customers,Customer exists in silver.customers,,,1,0,0,0;100
+100000,orphan_customer,0.001,100,gold,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.01,1000,bronze,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.01,1000,silver,blocked,blocked,True,Customer exists in silver.customers,Customer exists in silver.customers,,,1,0,0,0;1000
+100000,orphan_customer,0.01,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.1,10000,bronze,passed,passed,True,,,,,0,0,0,
+100000,orphan_customer,0.1,10000,silver,blocked,blocked,True,Customer exists in silver.customers,Customer exists in silver.customers,,,1,0,0,0;10000
+100000,orphan_customer,0.1,10000,gold,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.001,100,bronze,passed_with_warnings,passed_with_warnings,True,,,Status is a known value (case-insensitive),Status is a known value (case-insensitive),1,0,0,0;100
+100000,unknown_status,0.001,100,silver,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.001,100,gold,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.01,1000,bronze,passed_with_warnings,passed_with_warnings,True,,,Status is a known value (case-insensitive),Status is a known value (case-insensitive),1,0,0,0;1000
+100000,unknown_status,0.01,1000,silver,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.01,1000,gold,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.1,10000,bronze,passed_with_warnings,passed_with_warnings,True,,,Status is a known value (case-insensitive),Status is a known value (case-insensitive),1,0,0,0;10000
+100000,unknown_status,0.1,10000,silver,passed,passed,True,,,,,0,0,0,
+100000,unknown_status,0.1,10000,gold,passed,passed,True,,,,,0,0,0,

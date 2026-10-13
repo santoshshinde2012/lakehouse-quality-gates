@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import subprocess
 import urllib.request
@@ -26,7 +27,20 @@ def collect() -> dict[str, Any]:
         "cpu_cores": _cmd("sysctl", "-n", "hw.ncpu"),
         "memory_bytes": _cmd("sysctl", "-n", "hw.memsize"),
         "docker": _cmd("docker", "info", "--format", "{{.ServerVersion}} cpus={{.NCPU}} mem={{.MemTotal}}"),
-        "packages": {p: version(p) for p in ("soda-core", "soda-duckdb", "soda-trino", "duckdb")},
+        "packages": {
+            p: version(p)
+            for p in ("soda-core", "soda-duckdb", "soda-trino", "duckdb", "lakehouse-quality-gates")
+        },
+        "commit": _cmd("git", "rev-parse", "--short", "HEAD"),
+        "lakehouse_commit": _cmd(
+            "git",
+            "-C",
+            os.environ.get("DQ_LDL_REPO_PATH", "../local-data-lakehouse"),
+            "rev-parse",
+            "--short",
+            "HEAD",
+        ),
+        "trino_heap": _cmd("docker", "exec", "ldl-trino", "grep", "-m1", "Xmx", "/etc/trino/jvm.config"),
     }
     try:
         request = urllib.request.Request(f"{TRINO_URL}/v1/info")  # noqa: S310 - fixed local URL

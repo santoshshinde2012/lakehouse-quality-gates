@@ -13,7 +13,7 @@ export AIRFLOW_API_PORT
 LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
 	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml --profile full
 
-.PHONY: test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
+.PHONY: test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench-airflow bench-charts trino-heap trino-heap-reset bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
 	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check docs docs-check clean dist
 
@@ -186,11 +186,14 @@ docs-check: ## Relative links and anchors, markdownlint, Mermaid and snippet syn
 	python3 scripts/diagrams.py --check
 	python3 scripts/doc_snippets.py --check
 	python3 scripts/check_numbers.py
+	python3 scripts/bench_charts.py --check
 
 diagrams-check:
 	python3 scripts/diagrams.py --check
 	tmp=$$(mktemp -d); for f in docs/diagrams/*.mmd; do \
-	  $(MMDC) -q -i $$f -o $$tmp/$$(basename $$f .mmd).svg || exit 1; done; rm -rf $$tmp; echo "diagrams OK"
+	  $(MMDC) -q -i $$f -o $$tmp/$$(basename $$f .mmd).svg || exit 1; done; \
+	python3 scripts/bench_charts.py --extract $$tmp/charts && for f in $$tmp/charts/*.mmd; do \
+	  $(MMDC) -q -i $$f -o $$f.svg || exit 1; done; rm -rf $$tmp; echo "diagrams and benchmark charts OK"
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache .coverage reports/*.json reports/*.xml reports/*.md reports/rendered
@@ -232,4 +235,18 @@ tools-venv:
 bench-report: ## Write docs/results/benchmarks/summary.md from the raw results
 	$(RUN) python -m benchmarks.analyze
 
-bench-all: bench bench-accuracy bench-spark bench-tools bench-report ## Everything above
+bench-airflow: ## Good and bad runs of the gated DAG, per-task durations (needs make airflow-dq-up)
+	$(RUN) python -m benchmarks.airflow_runs
+
+bench-charts: ## Mermaid charts in docs/benchmarks/results.md from BENCH_CHARTS_DIR
+	$(RUN) python scripts/bench_charts.py
+
+# Trino heap for 5M orders without editing the lakehouse: a compose override kept in this repo.
+TRINO_OVERRIDE := -f docker-compose.yml -f $(SODA_HOME)/benchmarks/trino/docker-compose.trino-heap.yml --profile full --profile trino
+trino-heap: ## Recreate the lakehouse Trino with a 4 GiB heap (benchmarks/trino/)
+	cd "$(DQ_LDL_REPO_PATH)" && LQG_TRINO_DIR=$(SODA_HOME)/benchmarks/trino docker compose $(TRINO_OVERRIDE) up -d --wait trino
+
+trino-heap-reset: ## Back to the lakehouse default 1 GiB heap
+	cd "$(DQ_LDL_REPO_PATH)" && docker compose -f docker-compose.yml --profile full --profile trino up -d --wait --force-recreate trino
+
+bench-all: bench bench-accuracy bench-spark bench-tools bench-airflow bench-report bench-charts ## Everything above

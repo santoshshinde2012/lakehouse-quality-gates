@@ -1,0 +1,20 @@
+{
+  "collected_at": "2026-10-13T19:57:05.386390+00:00",
+  "os": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.9",
+  "cpu": "Apple M1 Pro",
+  "cpu_cores": "10",
+  "memory_bytes": "17179869184",
+  "docker": "29.8.1 cpus=10 mem=8214851584",
+  "packages": {
+    "soda-core": "4.26.0",
+    "soda-duckdb": "4.26.0",
+    "soda-trino": "4.26.0",
+    "duckdb": "1.5.6",
+    "lakehouse-quality-gates": "0.4.1"
+  },
+  "commit": "e39dc18",
+  "lakehouse_commit": "6d6c1b3",
+  "trino_heap": "-Xmx4G",
+  "trino": "483"
+}

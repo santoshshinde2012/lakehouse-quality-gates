@@ -5,7 +5,7 @@
 **Soda data contracts as quality gates between bronze, silver and gold: bad data never reaches gold.**
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.4.1-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.4.1)
+[![Release](https://img.shields.io/badge/release-v0.5.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.5.0)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Coverage 99%](https://img.shields.io/badge/coverage-99%25-16a34a)](docs/results/README.md)
@@ -208,8 +208,26 @@ Every target, expected output and pass criterion: [running and testing](docs/gui
 |---|---|---|
 | Tests and coverage | 110 passed, 99% line coverage | [v0.4.1 checks](docs/results/runs/2026-10-14-v0.4.1-checks/README.md) |
 | End-to-end | `e2e-live` 9/9 and `e2e-full` 15/15 steps passed | [fresh-clone run](docs/results/runs/2026-10-13-fresh-clone/README.md) |
-| Gate time, host DuckDB, warm p50 per layer | 0.4–0.6 s up to 1M orders | [benchmarks](docs/benchmarks/README.md) |
-| Detection accuracy | 66/66 verdicts, precision 1.0, recall 1.0 | [benchmarks](docs/benchmarks/README.md) |
+| Gate time, host DuckDB, warm p50 per layer | 0.42–0.68 s up to 1M orders | [benchmarks](docs/benchmarks/results.md) |
+| All three gates at 5M orders, warm p50 | 3.09 s host DuckDB · 29.79 s Trino (4 GiB heap) | [benchmarks](docs/benchmarks/results.md) |
+| Gate time as a share of its Spark job | 2.3–4.9 % per layer | [analysis](docs/benchmarks/analysis.md) |
+| Detection accuracy | 66/66 verdicts, precision 1.0, recall 1.0 | [benchmarks](docs/benchmarks/results.md) |
+| Airflow DAG, good / bad batch | 124 s / stops at `dq_bronze` after 57 s | [benchmarks](docs/benchmarks/results.md#airflow-dag-run-per-task) |
+
+Gate latency against batch size (warm p50, all three gates; indigo host DuckDB, amber Trino, teal container):
+
+<!-- include:docs/benchmarks/results.md#headline-chart -->
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+xychart-beta
+  title "All three gates, warm p50 (s)"
+  x-axis ["10k", "100k", "1M", "5M"]
+  y-axis "seconds" 0 --> 34.26
+  line [1.346, 1.478, 1.799, 3.092]
+  line [2.400, 2.789, 7.931, 29.787]
+  line [1.597, 1.730, 1.978, 5.304]
+```
+<!-- /include -->
 
 All evidence: [docs/results](docs/results/README.md).
 

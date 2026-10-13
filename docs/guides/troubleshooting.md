@@ -12,5 +12,5 @@ Find the symptom, apply the fix. For a gate that **blocked** on real data, follo
 | Airflow `dq_*`: `403` from the docker proxy | The overlay is not applied. Start Airflow with `make airflow-dq-up` (adds `ldl-soda` to the allowlist) |
 | Airflow `dq_*`: `No such container: ldl-soda` | `make dq-up` first (needs network `ldl-net`) |
 | Freshness fails on old data | Bronze must be ingested within `BRONZE_MAX_AGE_HOURS` (24). For a replay, `--set BRONZE_MAX_AGE_HOURS=720` |
-| Trino gates block at very large batches with `EXCEEDED_LOCAL_MEMORY_LIMIT` in the reasons | Trino's default 1 GiB heap is too small (measured at 5M orders). Give Trino more memory or use `DQ_ENGINE=duckdb` ([benchmarks](../benchmarks/results.md#latency)) |
+| Trino gates block at very large batches with `EXCEEDED_LOCAL_MEMORY_LIMIT` in the reasons | Trino's default 1 GiB heap is too small (measured at 5M orders). Run `make trino-heap` (4 GiB heap, `make trino-heap-reset` to undo) or use `DQ_ENGINE=duckdb` ([benchmarks](../benchmarks/results.md#gate-latency-vs-batch-size)) |
 | Exit code 2 and no report | Configuration or connectivity: check `DQ_LDL_REPO_PATH`, Lakekeeper (`:8181`), Trino (`:8088`), `docker ps` |

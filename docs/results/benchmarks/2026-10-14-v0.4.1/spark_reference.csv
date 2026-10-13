@@ -1,0 +1,10 @@
+repeat,layer,spark_s,gate_s,gate_process_s,status
+0,bronze,22.65,1.1086,1.61,passed
+0,silver,25.74,0.6037,0.95,passed
+0,gold,23.36,0.8416,1.24,passed
+1,bronze,27.41,0.6456,1.03,passed
+1,silver,22.1,0.7895,1.2,passed
+1,gold,25.74,0.6525,1.0,passed
+2,bronze,23.69,1.3345,1.91,passed
+2,silver,37.62,0.6678,1.06,passed
+2,gold,19.25,0.6968,1.07,passed

@@ -3,6 +3,22 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.5.0] - 2026-10-14
+
+### Added
+
+- **Own end-to-end benchmarks with Mermaid charts.** `docs/benchmarks/results.md` now holds 10 GitHub-rendered Mermaid charts (`xychart-beta` line and bar, `pie`), each with a takeaway, a data table and a link to its raw file: gate latency vs batch size (10k to 5M orders, host DuckDB, Trino, `ldl-soda` container), per-layer latency at 5M, memory and query count, seed-to-gold pipeline, overhead against Spark, Airflow DAG per-task durations for good and bad batches, detection accuracy and the five-tool comparison.
+- `scripts/bench_charts.py` generates the charts and the benchmark headline table from the newest data folder; `make docs-check` fails if they are stale and `make diagrams-check` parses every chart with mermaid-cli.
+- `benchmarks/airflow_runs.py` (`make bench-airflow`) times good and bad DAG runs and every task.
+- `make trino-heap` / `make trino-heap-reset`: a compose override in `benchmarks/trino/` that gives Trino a 4 GiB heap without editing the lakehouse; Trino now passes at 5M orders.
+- `docs/benchmarks/analysis.md` rewritten: findings, scaling, bottlenecks, recommendations, threats to validity.
+- Raw data in `docs/results/benchmarks/2026-10-14-v0.4.1/` with machine specs, versions and commits.
+
+### Changed
+
+- README "Results at a glance" adds the headline latency chart and the new numbers; `check_numbers.py` reads the newest benchmark folder and checks the DuckDB latency range and the 5M three-gate time.
+- The v0.3.0 benchmark set is marked superseded in the results index.
+
 ## [0.4.1] - 2026-10-14
 
 ### Changed
