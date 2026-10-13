@@ -1,0 +1,10 @@
+dag_id                         logical_date    task_id           state    start_date                        end_date
+lakehouse_retail_medallion_dq                  gold              success  2026-10-13T07:30:11.138239+00:00  2026-10-13T07:31:45.604270+00:00
+lakehouse_retail_medallion_dq                  dq_gold           success  2026-10-13T07:31:47.516322+00:00  2026-10-13T07:31:55.124121+00:00
+lakehouse_retail_medallion_dq                  query_timetravel  success  2026-10-13T07:31:56.060598+00:00  2026-10-13T07:33:40.582124+00:00
+lakehouse_retail_medallion_dq                  land_smoke        success  2026-10-13T07:25:48.473579+00:00  2026-10-13T07:26:28.064760+00:00
+lakehouse_retail_medallion_dq                  bronze            success  2026-10-13T07:26:29.535786+00:00  2026-10-13T07:27:12.699313+00:00
+lakehouse_retail_medallion_dq                  inject_bad_batch  success  2026-10-13T07:27:13.139639+00:00  2026-10-13T07:27:13.776509+00:00
+lakehouse_retail_medallion_dq                  dq_bronze         success  2026-10-13T07:27:14.364132+00:00  2026-10-13T07:27:19.171609+00:00
+lakehouse_retail_medallion_dq                  silver            success  2026-10-13T07:27:19.710765+00:00  2026-10-13T07:30:00.242570+00:00
+lakehouse_retail_medallion_dq                  dq_silver         success  2026-10-13T07:30:01.674123+00:00  2026-10-13T07:30:10.362385+00:00

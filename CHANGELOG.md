@@ -3,6 +3,22 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.2.0] - 2026-10-13
+
+### Changed
+- The project is now `lakehouse-quality-gates`: repository, distribution, Docker image (`lakehouse-quality-gates:0.2.0`) and compose project. The CLI is still `soda-dq`, and the import package is still `soda_lakehouse_dq`.
+- The Makefile reads the Airflow host port from `AIRFLOW_API_PORT` (default 8080, the lakehouse default). Use 8090 when 8080 is taken.
+
+### Added
+- An `inject_bad_batch` task in `lakehouse_retail_medallion_dq`. It does nothing unless the run's conf has `{"inject_bad_batch": true}`; then it seeds `fixtures/bad_batch`, so `dq_bronze` must block. New make targets: `airflow-dq-trigger-bad` and `airflow-dq-down`.
+- A `DQ_DUCKDB_TEMP_DIRECTORY` setting, which the container sets to `/tmp/duckdb`.
+- Archived Trino, Docker and Airflow results in `docs/results/`.
+- A design-principles document and a SOLID audit: the lakehouse client import lives in one module, a new `NotificationError`, and stricter settings validation.
+
+### Fixed
+- `soda-dq seed` inside the read-only container: it now applies the httplib client and the temp directory, and runs DuckDB's Iceberg writer from a scratch working directory (so no stray `./data` folder appears).
+- README: the real-lakehouse snippet now exports `DQ_LDL_REPO_PATH` before it is used.
+
 ## [0.1.1] - 2026-10-13
 
 Verified end to end on macOS (arm64, Docker Desktop) against local-data-lakehouse.

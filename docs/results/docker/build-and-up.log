@@ -1,0 +1,102 @@
+docker compose -f docker/docker-compose.dq.yml up -d --build --wait
+ Image lakehouse-quality-gates:0.2.0 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 571B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 30B 0.0s
+#2 transferring dockerfile: 2.19kB 0.1s done
+#2 DONE 0.2s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#3 ...
+
+#4 [auth] library/python:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [internal] load metadata for ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#5 DONE 1.3s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#3 DONE 1.8s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 122B done
+#6 DONE 0.0s
+
+#7 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#7 DONE 0.0s
+
+#8 [build 1/7] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#8 DONE 0.0s
+
+#9 [internal] load build context
+#9 transferring context: 10.33kB 0.0s done
+#9 DONE 0.0s
+
+#10 [build 2/7] COPY --from=uv /uv /usr/local/bin/uv
+#10 CACHED
+
+#11 [build 3/7] WORKDIR /app
+#11 CACHED
+
+#12 [build 4/7] COPY pyproject.toml uv.lock README.md ./
+#12 CACHED
+
+#13 [build 5/7] RUN uv sync --frozen --no-dev --no-install-project --extra trino --extra lakehouse
+#13 CACHED
+
+#14 [build 6/7] COPY src ./src
+#14 DONE 0.1s
+
+#15 [build 7/7] RUN uv sync --frozen --no-dev --no-editable --extra trino --extra lakehouse
+#15 0.985    Building lakehouse-quality-gates @ file:///app
+#15 1.844       Built lakehouse-quality-gates @ file:///app
+#15 1.851 Prepared 1 package in 867ms
+#15 1.856 Installed 1 package in 4ms
+#15 2.325 Bytecode compiled 2319 files in 469ms
+#15 2.326  + lakehouse-quality-gates==0.2.0 (from file:///app)
+#15 DONE 2.4s
+
+#16 [stage-2 2/9] RUN groupadd --system --gid 10001 dq && useradd --system --uid 10001 --gid dq --home /home/dq --create-home dq
+#16 CACHED
+
+#17 [stage-2 3/9] COPY --from=build /opt/venv /opt/venv
+#17 DONE 5.0s
+
+#18 [stage-2 4/9] WORKDIR /opt/soda-dq
+#18 DONE 0.1s
+
+#19 [stage-2 5/9] COPY contracts ./contracts
+#19 DONE 0.0s
+
+#20 [stage-2 6/9] COPY datasources ./datasources
+#20 DONE 0.0s
+
+#21 [stage-2 7/9] COPY fixtures ./fixtures
+#21 DONE 0.0s
+
+#22 [stage-2 8/9] RUN mkdir -p /opt/soda-dq/reports && chown dq:dq /opt/soda-dq/reports
+#22 DONE 0.3s
+
+#23 [stage-2 9/9] RUN python -c "import duckdb; c = duckdb.connect(); [c.sql(f'INSTALL {e}') for e in ('httpfs', 'avro', 'iceberg')]"
+#23 5.486 100% ▕██████████████████████████████████████▏ (00:00:02.96 elapsed)     
+#23 DONE 5.7s
+
+#24 exporting to image
+#24 exporting layers
+#24 exporting layers 2.3s done
+#24 writing image sha256:66cb722d312c0963aa0786d20d8c699783499b8d887019aaa82d8f60978bf569 done
+#24 naming to docker.io/library/lakehouse-quality-gates:0.2.0 done
+#24 DONE 2.3s
+
+#25 resolving provenance for metadata file
+#25 DONE 0.0s
+ Image lakehouse-quality-gates:0.2.0 Built 
+ Container ldl-soda Recreate 
+ Container ldl-soda Recreated 
+ Container ldl-soda Starting 
+ Container ldl-soda Started 
+ Container ldl-soda Waiting 
+ Container ldl-soda Healthy 

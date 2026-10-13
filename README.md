@@ -1,4 +1,4 @@
-# soda-lakehouse-dq
+# lakehouse-quality-gates
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -17,6 +17,10 @@ land >> bronze >> [dq_bronze] >> silver >> [dq_silver] >> gold >> [dq_gold] >> q
                       ▲ a failed contract fails the Airflow task and stops promotion
 ```
 
+> **Names.** The repository and distribution are `lakehouse-quality-gates`, the CLI is `soda-dq`, and the
+> Python import package is `soda_lakehouse_dq` (kept to avoid churn in imports, the Airflow overlay and
+> Docker paths). The Docker image is `lakehouse-quality-gates:<version>`.
+
 - **5 contracts, 46 checks** over the retail medallion (`contracts/retail/{bronze,silver,gold}`). They cover
   schema, row count, freshness, missing, invalid (sets, regex, ranges, referential integrity), duplicate
   (one or more columns), `failed_rows` and a `metric` reconciliation between silver and gold.
@@ -30,7 +34,7 @@ land >> bronze >> [dq_bronze] >> silver >> [dq_silver] >> gold >> [dq_gold] >> q
 - **Orchestration.** A new Airflow DAG, `lakehouse_retail_medallion_dq`, sits next to the original one.
   The lakehouse repo is not modified.
 - **Design.** Ports and adapters with a single composition root (SOLID). The code passes ruff and
-  `mypy --strict`, and has 94 tests at 99% coverage, including real Soda runs on DuckDB.
+  `mypy --strict`, and has 96 tests at 99% coverage, including real Soda runs on DuckDB.
 
 > Soda Core 4.x is **proprietary**: free to use, but not OSI-licensed. This project accepts that
 > trade-off on purpose. See [ADR 0001](docs/adr/0001-soda-core-v4-proprietary-licence.md). Soda Cloud is
@@ -54,12 +58,14 @@ Verified on macOS on 2026-10-13. Full artefacts are in [docs/results](docs/resul
 | Check | Result |
 |---|---|
 | ruff · mypy --strict | ✅ clean |
-| pytest | ✅ 94 passed, 99% coverage ([HTML](docs/results/coverage/html/index.html)) |
+| pytest | ✅ 96 passed, 99% coverage ([HTML](docs/results/coverage/html/index.html)) |
 | Contracts (`soda-dq validate`) | ✅ 5/5 |
 | Good batch | ✅ bronze 14 · silver 21 · gold 11 passed |
 | Bad batch | ✅ all three gates blocked |
 | Live lakehouse (DuckDB → Lakekeeper Iceberg) | ✅ 46/46 passed |
-| Trino · Docker image · Airflow DAG | ✅ verified (see the runbook) |
+| Trino (good · bad) | ✅ 46/46 passed · blocked |
+| Docker image `lakehouse-quality-gates:0.2.0` (non-root, read-only) | ✅ good passed · bad blocked |
+| Airflow DAG (good · `inject_bad_batch`) | ✅ 9/9 tasks succeeded · `dq_bronze` failed, downstream `upstream_failed` |
 
 ## Quick start (no Docker, about a minute)
 
@@ -74,6 +80,7 @@ open reports/*_retail_silver.md # what was caught, and why
 
 ```bash
 cp .env.example .env            # set DQ_LDL_REPO_PATH to your local-data-lakehouse checkout
+export DQ_LDL_REPO_PATH=../local-data-lakehouse   # same path, for the next line
 (cd "$DQ_LDL_REPO_PATH" && make up-light && make demo-light)   # tables exist in Lakekeeper
 DQ_ENGINE=duckdb uv run soda-dq run                            # host DuckDB -> Iceberg REST
 # Trino (lakehouse: make up-full TRINO=1):
@@ -86,6 +93,8 @@ DQ_ENGINE=trino uv run soda-dq run
 (cd "$DQ_LDL_REPO_PATH" && make up-full)
 make airflow-dq-up              # ldl-soda runner on ldl-net + lakehouse Airflow + the gated DAG
 make airflow-dq-trigger         # runs lakehouse_retail_medallion_dq and waits
+make airflow-dq-trigger-bad     # same with the bad batch injected: dq_bronze fails, downstream is skipped
+# Airflow UI: http://localhost:${AIRFLOW_API_PORT:-8080} (set AIRFLOW_API_PORT=8090 if 8080 is taken)
 ```
 
 ## CLI

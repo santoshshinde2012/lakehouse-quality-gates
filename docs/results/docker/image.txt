@@ -1,0 +1,2 @@
+lakehouse-quality-gates:0.2.0 588MB 66cb722d312c
+user=dq readonly=true capdrop=[ALL] health=healthy

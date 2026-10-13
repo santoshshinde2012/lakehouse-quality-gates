@@ -1,0 +1,24 @@
+bronze.customers_raw             10 rows
+bronze.orders_raw                22 rows
+silver.customers                 10 rows
+silver.orders                    19 rows
+gold.daily_order_metrics          2 rows
+exit=0
+{"pipeline": "retail", "layer": "bronze", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T07:25:03.503471Z"}
+{"contract": "retail.bronze.customers_raw", "dataset": "lakehouse_duckdb/bronze/customers_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:03.939714Z"}
+{"contract": "retail.bronze.orders_raw", "dataset": "lakehouse_duckdb/bronze/orders_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:04.048688Z"}
+{"pipeline": "retail", "layer": "bronze", "run_id": "20261013T072503Z-23b9c2cc", "status": "passed", "passed": 14, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T07:25:04.112694Z"}
+{"pipeline": "retail", "layer": "bronze", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T07:25:04.112748Z"}
+{"pipeline": "retail", "layer": "silver", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T07:25:04.121488Z"}
+{"contract": "retail.silver.customers", "dataset": "lakehouse_duckdb/silver/customers", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:04.193117Z"}
+{"contract": "retail.silver.orders", "dataset": "lakehouse_duckdb/silver/orders", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:04.275311Z"}
+{"pipeline": "retail", "layer": "silver", "run_id": "20261013T072503Z-23b9c2cc", "status": "passed", "passed": 21, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T07:25:04.349551Z"}
+{"pipeline": "retail", "layer": "silver", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T07:25:04.349621Z"}
+{"pipeline": "retail", "layer": "gold", "contracts": 1, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T07:25:04.355262Z"}
+{"contract": "retail.gold.daily_order_metrics", "dataset": "lakehouse_duckdb/gold/daily_order_metrics", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T07:25:04.428084Z"}
+{"pipeline": "retail", "layer": "gold", "run_id": "20261013T072503Z-23b9c2cc", "status": "passed", "passed": 11, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T07:25:04.531463Z"}
+{"pipeline": "retail", "layer": "gold", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T07:25:04.531522Z"}
+retail/bronze: passed (14 checks, run 20261013T072503Z-23b9c2cc)
+retail/silver: passed (21 checks, run 20261013T072503Z-23b9c2cc)
+retail/gold: passed (11 checks, run 20261013T072503Z-23b9c2cc)
+exit=0

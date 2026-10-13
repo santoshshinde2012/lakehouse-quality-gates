@@ -7,7 +7,7 @@
 | Gate one layer | `uv run soda-dq verify silver` (engine from `DQ_ENGINE`, or `-e duckdb|duckdb-local|trino`) |
 | Whole medallion | `uv run soda-dq run` |
 | Contract syntax | `make validate` |
-| Airflow | `make airflow-dq-up && make airflow-dq-trigger` (UI: http://localhost:8080, DAG `lakehouse_retail_medallion_dq`) |
+| Airflow | `make airflow-dq-up && make airflow-dq-trigger` (UI: http://localhost:$AIRFLOW_API_PORT, default 8080, DAG `lakehouse_retail_medallion_dq`) |
 | Container | `make dq-up`, then `docker exec ldl-soda soda-dq run` |
 
 Exit codes: `0` passed (warnings allowed), `1` blocked, `2` configuration or usage error (missing
@@ -66,10 +66,13 @@ make up-full TRINO=1 && make e2e
 
 # container + Airflow (8080 was taken on this Mac, so the API server uses 8090)
 make dq-up
-AIRFLOW_API_PORT=8090 make airflow-dq-up && make airflow-dq-trigger
+make airflow-dq-up AIRFLOW_API_PORT=8090   # or set AIRFLOW_API_PORT in .env
+make airflow-dq-trigger                    # good data: every task succeeds
+make airflow-dq-trigger-bad                # fault injection: dq_bronze blocks, downstream upstream_failed
+make airflow-dq-trigger                    # restore good data
 ```
 
-Tear down with `make dq-down`, then `make down` in the lakehouse repo. Never use `-v`, because that deletes the lakehouse volumes.
+Tear down with `make dq-down` and `make airflow-dq-down` (or `make down` in the lakehouse repo). Never use `-v`, because that deletes the lakehouse volumes.
 
 Notes:
 - Tables written by Spark and DuckDB use `timestamp with time zone`; a contract that says `timestamp` fails the schema check.

@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites name="soda-dq retail/silver">
+  <testsuite name="retail.silver.customers" tests="9" failures="0" errors="0" skipped="0">
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="Silver customers schema is unchanged" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="Silver customers is not empty" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="customer_id: Customer id present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="customer_id: Customer id unique after dedup" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="name: Name present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="email: Email present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="email: Email is well-formed" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="email: Email unique" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/customers" name="signup_date: Signup date present" />
+  </testsuite>
+  <testsuite name="retail.silver.orders" tests="12" failures="0" errors="0" skipped="0">
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="Silver orders schema is unchanged" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="Silver orders is not empty" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="No order timestamped in the future" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="order_id: Order id present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="order_id: Order id unique after dedup" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="customer_id: Customer id present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="customer_id: Customer exists in silver.customers" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="order_ts: Order timestamp present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="status: Status is canonical" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="amount: Amount present" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="amount: Amount is not negative" />
+    <testcase classname="lakehouse_trino/lakehouse/silver/orders" name="amount: Amount below the outlier ceiling" />
+  </testsuite>
+</testsuites>

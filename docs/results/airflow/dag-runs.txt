@@ -1,0 +1,11 @@
+dag_id                         run_id                       state    run_after                         logical_date    start_date                        end_date
+lakehouse_retail_medallion_dq  manual__ldl_20261013T073733  success  2026-10-13T07:37:36.314248+00:00                  2026-10-13T07:37:36.584272+00:00  2026-10-13T07:44:50.965887+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T073406  failed   2026-10-13T07:34:10.889049+00:00                  2026-10-13T07:34:11.099421+00:00  2026-10-13T07:37:23.905055+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T072545  success  2026-10-13T07:25:47.895808+00:00                  2026-10-13T07:25:48.286456+00:00  2026-10-13T07:33:42.008723+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T072051  success  2026-10-13T07:20:54.135081+00:00                  2026-10-13T07:20:55.033030+00:00  2026-10-13T07:23:46.905112+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T071703  failed   2026-10-13T07:17:07.233213+00:00                  2026-10-13T07:17:07.369871+00:00  2026-10-13T07:20:35.973086+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T071119  success  2026-10-13T07:11:21.663599+00:00                  2026-10-13T07:11:22.125599+00:00  2026-10-13T07:16:42.329347+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T070636  success  2026-10-13T07:06:38.769125+00:00                  2026-10-13T07:06:39.195608+00:00  2026-10-13T07:09:02.106471+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T070527  failed   2026-10-13T07:05:29.612253+00:00                  2026-10-13T07:05:30.043776+00:00  2026-10-13T07:06:27.257222+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T070219  success  2026-10-13T07:02:22.331165+00:00                  2026-10-13T07:02:23.478652+00:00  2026-10-13T07:05:16.153040+00:00
+lakehouse_retail_medallion_dq  manual__ldl_20261013T060732  success  2026-10-13T06:07:34.071473+00:00                  2026-10-13T06:07:35.054948+00:00  2026-10-13T06:09:44.543864+00:00
