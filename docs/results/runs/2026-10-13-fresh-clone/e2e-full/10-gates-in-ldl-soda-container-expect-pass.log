@@ -1,0 +1,17 @@
+{"pipeline": "retail", "layer": "bronze", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T18:00:18.636323Z"}
+{"contract": "retail.bronze.customers_raw", "dataset": "lakehouse_duckdb/bronze/customers_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T18:00:19.303321Z"}
+{"contract": "retail.bronze.orders_raw", "dataset": "lakehouse_duckdb/bronze/orders_raw", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T18:00:19.557178Z"}
+{"pipeline": "retail", "layer": "bronze", "run_id": "20261013T180018Z-9cc80cf0", "status": "passed", "passed": 14, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T18:00:19.644030Z"}
+{"pipeline": "retail", "layer": "bronze", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T18:00:19.644079Z"}
+{"pipeline": "retail", "layer": "silver", "contracts": 2, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T18:00:19.651742Z"}
+{"contract": "retail.silver.customers", "dataset": "lakehouse_duckdb/silver/customers", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T18:00:19.714981Z"}
+{"contract": "retail.silver.orders", "dataset": "lakehouse_duckdb/silver/orders", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T18:00:19.821773Z"}
+{"pipeline": "retail", "layer": "silver", "run_id": "20261013T180018Z-9cc80cf0", "status": "passed", "passed": 21, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T18:00:19.926028Z"}
+{"pipeline": "retail", "layer": "silver", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T18:00:19.926089Z"}
+{"pipeline": "retail", "layer": "gold", "contracts": 1, "event": "dq.verify.start", "level": "info", "timestamp": "2026-10-13T18:00:19.930562Z"}
+{"contract": "retail.gold.daily_order_metrics", "dataset": "lakehouse_duckdb/gold/daily_order_metrics", "event": "dq.contract.verify", "level": "info", "timestamp": "2026-10-13T18:00:19.989631Z"}
+{"pipeline": "retail", "layer": "gold", "run_id": "20261013T180018Z-9cc80cf0", "status": "passed", "passed": 11, "warned": 0, "failed": 0, "event": "dq.gate.passed", "level": "info", "timestamp": "2026-10-13T18:00:20.084968Z"}
+{"pipeline": "retail", "layer": "gold", "status": "passed", "event": "dq.verify.done", "level": "info", "timestamp": "2026-10-13T18:00:20.085035Z"}
+retail/bronze: passed (14 checks, run 20261013T180018Z-9cc80cf0)
+retail/silver: passed (21 checks, run 20261013T180018Z-9cc80cf0)
+retail/gold: passed (11 checks, run 20261013T180018Z-9cc80cf0)

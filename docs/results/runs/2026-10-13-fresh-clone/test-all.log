@@ -1,0 +1,126 @@
+uv run --frozen ruff format --check .
+126 files already formatted
+uv run --frozen ruff check .
+[1;32mAll checks passed![0m
+uv run --frozen mypy
+Success: no issues found in 44 source files
+uv run --frozen pytest --cov=soda_lakehouse_dq --cov-report=term-missing
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/lqg-complete
+configfile: pyproject.toml
+testpaths: tests
+plugins: platformdirs-4.13.0, cov-7.1.0
+collected 115 items / 7 deselected / 108 selected
+
+tests/integration/test_cli_e2e.py .......                                [  6%]
+tests/integration/test_soda_duckdb.py .......                            [ 12%]
+tests/unit/test_airflow_dag.py ...                                       [ 15%]
+tests/unit/test_cli.py .......                                           [ 22%]
+tests/unit/test_contract_repository.py ...........                       [ 32%]
+tests/unit/test_diagrams.py ....                                         [ 36%]
+tests/unit/test_doc_snippets.py ....                                     [ 39%]
+tests/unit/test_docs_links.py ...                                        [ 42%]
+tests/unit/test_duckdb_provider.py ......                                [ 48%]
+tests/unit/test_env_example.py .                                         [ 49%]
+tests/unit/test_models.py .......                                        [ 55%]
+tests/unit/test_notifiers.py ........                                    [ 62%]
+tests/unit/test_quality_gate.py ...........                              [ 73%]
+tests/unit/test_settings_container.py .............                      [ 85%]
+tests/unit/test_sinks.py ....                                            [ 88%]
+tests/unit/test_soda_mapping.py .....                                    [ 93%]
+tests/unit/test_verify_layer.py .......                                  [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/soda_core/common/sql_ast.py:1030
+  /private/tmp/lqg-complete/.venv/lib/python3.12/site-packages/soda_core/common/sql_ast.py:1030: DeprecationWarning: Not fully supported for all datasources yet. Only tested/verified for Postgres and Redshift. Use with caution.
+    class UNION_ALL(UNION):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.12.9-final-0 _______________
+
+Name                                                            Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------------------
+src/soda_lakehouse_dq/__init__.py                                   1      0   100%
+src/soda_lakehouse_dq/adapters/__init__.py                          0      0   100%
+src/soda_lakehouse_dq/adapters/clock.py                             8      0   100%
+src/soda_lakehouse_dq/adapters/contracts.py                        58      0   100%
+src/soda_lakehouse_dq/adapters/datasources/__init__.py              0      0   100%
+src/soda_lakehouse_dq/adapters/datasources/base.py                 15      0   100%
+src/soda_lakehouse_dq/adapters/datasources/duckdb_provider.py      56      2    96%   121-122
+src/soda_lakehouse_dq/adapters/datasources/trino_provider.py       20      0   100%
+src/soda_lakehouse_dq/adapters/lakehouse_repo.py                   13      0   100%
+src/soda_lakehouse_dq/adapters/local_medallion.py                  46      1    98%   90
+src/soda_lakehouse_dq/adapters/notifiers/__init__.py                0      0   100%
+src/soda_lakehouse_dq/adapters/notifiers/console.py                13      0   100%
+src/soda_lakehouse_dq/adapters/notifiers/slack.py                  37      3    92%   25-29
+src/soda_lakehouse_dq/adapters/sinks/__init__.py                    0      0   100%
+src/soda_lakehouse_dq/adapters/sinks/iceberg_sink.py               22      1    95%   45
+src/soda_lakehouse_dq/adapters/sinks/json_sink.py                  11      0   100%
+src/soda_lakehouse_dq/adapters/sinks/junit_sink.py                 28      0   100%
+src/soda_lakehouse_dq/adapters/sinks/markdown_sink.py              24      0   100%
+src/soda_lakehouse_dq/adapters/sinks/serialize.py                   9      0   100%
+src/soda_lakehouse_dq/adapters/soda_verifier.py                    56      0   100%
+src/soda_lakehouse_dq/application/__init__.py                       0      0   100%
+src/soda_lakehouse_dq/application/quality_gate.py                  33      0   100%
+src/soda_lakehouse_dq/application/verify_layer.py                  49      0   100%
+src/soda_lakehouse_dq/cli.py                                       99      1    99%   164
+src/soda_lakehouse_dq/container.py                                 63      2    97%   72-73
+src/soda_lakehouse_dq/domain/__init__.py                            0      0   100%
+src/soda_lakehouse_dq/domain/errors.py                              9      0   100%
+src/soda_lakehouse_dq/domain/models.py                             89      0   100%
+src/soda_lakehouse_dq/domain/ports.py                              15      0   100%
+src/soda_lakehouse_dq/logging_config.py                             8      0   100%
+src/soda_lakehouse_dq/settings.py                                  44      0   100%
+---------------------------------------------------------------------------------------------
+TOTAL                                                             826     10    99%
+================ 108 passed, 7 deselected, 1 warning in 11.14s =================
+DQ_ENGINE=duckdb-local uv run --frozen soda-dq validate
+ok   retail.bronze.customers_raw
+ok   retail.bronze.orders_raw
+ok   retail.silver.customers
+ok   retail.silver.orders
+ok   retail.gold.daily_order_metrics
+==> good batch (expect: all gates pass)
+DQ_ENGINE=duckdb-local uv run --frozen soda-dq run --sample-dir fixtures/good_batch
+2026-10-13T17:54:48.494004Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-13T17:54:48.708595Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-13T17:54:48.722677Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-13T17:54:48.742208Z [info     ] dq.gate.passed                 failed=0 layer=bronze passed=14 pipeline=retail run_id=20261013T175448Z-ea2ba1f4 status=passed warned=0
+2026-10-13T17:54:48.742256Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=passed
+2026-10-13T17:54:48.746622Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-13T17:54:48.763899Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-13T17:54:48.780143Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-13T17:54:48.800826Z [info     ] dq.gate.passed                 failed=0 layer=silver passed=21 pipeline=retail run_id=20261013T175448Z-ea2ba1f4 status=passed warned=0
+2026-10-13T17:54:48.800877Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=passed
+2026-10-13T17:54:48.803422Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-13T17:54:48.819250Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-13T17:54:48.839966Z [info     ] dq.gate.passed                 failed=0 layer=gold passed=11 pipeline=retail run_id=20261013T175448Z-ea2ba1f4 status=passed warned=0
+2026-10-13T17:54:48.840014Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=passed
+retail/bronze: passed (14 checks, run 20261013T175448Z-ea2ba1f4)
+retail/silver: passed (21 checks, run 20261013T175448Z-ea2ba1f4)
+retail/gold: passed (11 checks, run 20261013T175448Z-ea2ba1f4)
+==> bad batch, every layer (expect: each gate blocks; non-zero exits are the point)
+2026-10-13T17:54:49.118100Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-13T17:54:49.353438Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-13T17:54:49.370862Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-13T17:54:49.392059Z [error    ] dq.gate.blocked                failed=2 layer=bronze passed=10 pipeline=retail reasons=['retail.bronze.orders_raw: failed: No order duplicated inside one source file', 'retail.bronze.orders_raw: failed: customer_id: Every order has a customer', 'retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)', 'retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)'] run_id=20261013T175449Z-7d19fb3b status=blocked warned=2
+2026-10-13T17:54:49.392125Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=blocked
+retail/bronze: blocked (14 checks, run 20261013T175449Z-7d19fb3b)
+OK: bronze blocked as expected
+2026-10-13T17:54:49.660049Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-13T17:54:49.884551Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-13T17:54:49.906263Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-13T17:54:49.927674Z [error    ] dq.gate.blocked                failed=6 layer=silver passed=14 pipeline=retail reasons=['retail.silver.customers: failed: email: Email is well-formed', 'retail.silver.customers: failed: email: Email unique', 'retail.silver.orders: failed: No order timestamped in the future', 'retail.silver.orders: failed: customer_id: Customer id present', 'retail.silver.orders: failed: customer_id: Customer exists in silver.customers', 'retail.silver.orders: failed: amount: Amount is not negative', 'retail.silver.orders: warned: amount: Amount below the outlier ceiling'] run_id=20261013T175449Z-3e1680d5 status=blocked warned=1
+2026-10-13T17:54:49.927734Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=blocked
+retail/silver: blocked (21 checks, run 20261013T175449Z-3e1680d5)
+OK: silver blocked as expected
+2026-10-13T17:54:50.209129Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-13T17:54:50.475798Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-13T17:54:50.501004Z [error    ] dq.gate.blocked                failed=1 layer=gold passed=9 pipeline=retail reasons=['retail.gold.daily_order_metrics: failed: No metrics for future days', 'retail.gold.daily_order_metrics: warned: avg_order_value: Average order value is plausible'] run_id=20261013T175450Z-438f5683 status=blocked warned=1
+2026-10-13T17:54:50.501059Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=blocked
+retail/gold: blocked (11 checks, run 20261013T175450Z-438f5683)
+OK: gold blocked as expected
+Reports: reports/*.md | *.json | *.xml
+test-all: PASS (T0 unit + T1 integration, contracts valid, demo gates behave)

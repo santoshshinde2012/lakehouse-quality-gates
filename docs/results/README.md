@@ -4,6 +4,8 @@ These are real artefacts from runs on macOS (arm64, Docker Desktop) on 2026-10-1
 Every file in this folder was produced by the commands below; only this README was written by hand.
 Live runs used local-data-lakehouse (Lakekeeper Iceberg REST, RustFS, Spark 4.1.3, Trino 483, Airflow 3).
 
+Fresh-clone run of every documented path (test tiers, e2e, benchmarks at small sizes): [runs/2026-10-13-fresh-clone](runs/2026-10-13-fresh-clone/README.md).
+
 ## Summary
 
 | Check | Command | Result | Evidence |

@@ -9,7 +9,7 @@ using DuckDB or Trino, and are orchestrated by Airflow, for
 [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse).
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.2-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.3.2)
+[![Release](https://img.shields.io/badge/release-v0.4.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.4.0)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)

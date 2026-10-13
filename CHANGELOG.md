@@ -3,6 +3,24 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.4.0] - 2026-10-13
+
+### Added
+
+- **Running and testing guide** (`docs/guides/running-and-testing.md`): prerequisites with versions and Docker resources (including Trino heap advice for 5M orders), setup, the four test tiers, every make target with pass criteria, benchmarks, regenerating docs and results, and troubleshooting.
+- `make test-all` (lint, mypy, T0 + T1, validate, demo), `make e2e-live` and `make e2e-full` via `scripts/e2e.sh`: pass/fail summary table, non-zero exit on failure, idempotent, per-step logs in `reports/e2e-<mode>/`, trap teardown of only what it started (`down`, never `-v`), `KEEP_UP=1`. Also `make test-live`, `make test-full`, `make bench-tiny`.
+- pytest markers `unit`, `integration`, `live`, `full`; `tests/live/` with live gate tests (good passes, bad blocks every layer) and full-stack tests (Trino gates, runner container and its hardening, Airflow health and DAG). They skip with the reason when the stack is down; CI still runs unit + integration.
+- A unit test that every setting is listed in `.env.example`.
+- Fresh-clone verification run in `docs/results/runs/2026-10-13-fresh-clone/`.
+
+### Changed
+
+- `.env.example` lists every `DQ_*` setting (previously 10 were missing) and `AIRFLOW_API_PORT`.
+- `make help` lists every target, grouped.
+- Benchmarks: `BENCH_OUT` / `DQ_BENCH_RESULTS` choose the output folder, `WARM`, `TOOL_SIZES` and `REPEATS` are settable; `benchmarks/tools/requirements.txt` is pinned; `run_tools.py` overwrites its CSV and records `tools_versions.json`.
+- The tiny tool comparison harness moved to `benchmarks/tools/tiny/` and is runnable (`make bench-tiny`; no `.venv` of its own, portable timing, relative data paths). Results stay in `docs/research/benchmark-tiny/results/`.
+- System design testing tiers now match the markers: T0 static + unit, T1 integration, T2 live light, T3 full.
+
 ## [0.3.2] - 2026-10-13
 
 ### Changed

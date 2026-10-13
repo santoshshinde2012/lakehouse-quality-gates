@@ -1,0 +1,16 @@
+rows,k,tool,repeat,process_s,run_s,cpu_s,max_rss_bytes,correct,wrong_checks,counts
+100000,100,soda,0,2.401,2.287,1.151,138657792,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,soda,1,0.424,0.337,0.38,114343936,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,soda,2,0.451,0.358,0.402,114655232,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,datacontract,0,16.593,16.366,2.734,178618368,True,,order_id_missing=None|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,datacontract,1,1.372,1.16,1.001,201981952,True,,order_id_missing=None|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,datacontract,2,1.073,0.876,0.922,202358784,True,,order_id_missing=None|customer_id_missing=100|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,gx,0,35.502,34.549,6.965,219463680,True,,order_id_missing=0|customer_id_missing=200|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,gx,1,6.924,5.857,4.484,268681216,True,,order_id_missing=0|customer_id_missing=200|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,gx,2,8.03,6.55,4.76,256212992,True,,order_id_missing=0|customer_id_missing=200|order_id_unique=100|status_valid=100|amount_min=100|customer_ref=100
+100000,100,pointblank,0,8.613,8.365,1.593,155762688,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=200
+100000,100,pointblank,1,0.883,0.698,0.62,149159936,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=200
+100000,100,pointblank,2,0.737,0.544,0.535,154550272,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=200
+100000,100,pandera,0,1.654,1.47,1.116,194658304,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=100
+100000,100,pandera,1,1.062,0.852,0.792,190349312,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=100
+100000,100,pandera,2,1.065,0.817,0.779,187990016,True,,order_id_missing=0|customer_id_missing=100|order_id_unique=200|status_valid=100|amount_min=100|customer_ref=100

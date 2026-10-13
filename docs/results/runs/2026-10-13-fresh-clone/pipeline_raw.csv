@@ -1,0 +1,11 @@
+rows,drop_s,bronze_s,silver_s,gold_s,table,table_rows,table_bytes
+10000,0.1,0.87,0.207,0.064,gold.daily_order_metrics,90,3414
+10000,0.1,0.87,0.207,0.064,silver.orders,10000,199773
+10000,0.1,0.87,0.207,0.064,silver.customers,1000,19982
+10000,0.1,0.87,0.207,0.064,bronze.orders_raw,10000,222556
+10000,0.1,0.87,0.207,0.064,bronze.customers_raw,1000,18256
+100000,0.091,0.995,0.307,0.092,gold.daily_order_metrics,90,3567
+100000,0.091,0.995,0.307,0.092,silver.orders,100000,2100489
+100000,0.091,0.995,0.307,0.092,silver.customers,10000,176239
+100000,0.091,0.995,0.307,0.092,bronze.orders_raw,100000,2217200
+100000,0.091,0.995,0.307,0.092,bronze.customers_raw,10000,158652
