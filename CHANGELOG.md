@@ -3,6 +3,25 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.3.0] - 2026-10-13
+
+### Added
+
+- **System design document** (docs/system-design.md): requirements and SLOs, tool selection, architecture, detailed design, sequences, orchestration, deployment, security, observability, measured benchmarks, FMEA, capacity planning, trade-offs, known limitations (including the `CREATE OR REPLACE` gap), the write-audit-publish roadmap, testing tiers, runbook summary and appendix.
+- **Benchmarks** on the live lakehouse (benchmarks/, `make bench`, `bench-accuracy`, `bench-spark`, `bench-tools`, `bench-report`): gate latency (cold and warm p50/p95), CPU, peak RSS, SQL query counts and Trino scan bytes per layer and engine at 10k to 5M orders; detection accuracy for 7 defect types at 0.1/1/10 %; gate time against the Spark jobs; a five-tool comparison. Raw CSV/JSON and summary tables in docs/results/benchmarks/.
+- `scripts/gen_scale_data.py`: deterministic retail batches of any size with optional defect injection and ground truth.
+- Diagrams 08 (write-audit-publish sequence), 09 (gate policy) and 10 (scaling chart, `xychart-beta`); the shared Mermaid theme now styles charts.
+- Quality-gate research (landscape, scoring matrix, tiny cross-tool benchmark) in docs/research/.
+
+### Changed
+
+- ADR 0001 amended: Soda Core v4 is licensed under ELv2 (source-available); the decision stands.
+- mypy and ruff now also cover benchmarks/ and scripts/.
+
+### Found
+
+- Trino with the lakehouse's default 1 GiB heap cannot evaluate the bronze and silver order checks at 5M orders (`EXCEEDED_LOCAL_MEMORY_LIMIT`); the gate blocks (fail closed). Documented as limitation L8 with mitigations.
+
 ## [0.2.3] - 2026-10-13
 
 ### Changed
