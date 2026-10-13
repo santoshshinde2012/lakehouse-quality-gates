@@ -1,10 +1,14 @@
 # Configuration and CLI reference
 
+> [!NOTE]
+> **At a glance.** Five CLI commands, three exit codes (`0` pass, `1` blocked, `2` configuration error) and
+> `DQ_*` environment variables for everything else.
+
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `soda-dq verify <layer> [-e ENGINE] [-p PIPELINE] [-s K=V]` | Gate one layer (`bronze`, `silver`, `gold`). Exit **0** passed, **1** blocked, **2** configuration error |
+| `soda-dq verify <layer> [-e ENGINE] [-p PIPELINE] [-s K=V]` | Gate one layer (`bronze`, `silver`, `gold`); see [exit codes](#exit-codes) |
 | `soda-dq run [-e ENGINE] [-p PIPELINE]` | Gate bronze → silver → gold, stopping at the first blocked layer |
 | `soda-dq validate [-p PIPELINE]` | Check the syntax of every contract with Soda, without touching data |
 | `soda-dq list [-e ENGINE]` | List contracts and their rendered dataset names |
@@ -35,7 +39,7 @@ pydantic-settings in [`settings.py`](../../src/soda_lakehouse_dq/settings.py).
 | `DQ_CATALOG_ALIAS` | `lakehouse` | DuckDB alias for the attached catalog |
 | `DQ_TRINO_HOST` / `DQ_TRINO_PORT` | `localhost` / `8088` | Trino coordinator |
 | `DQ_FAIL_ON_WARN` | `false` | Make warnings block |
-| `DQ_ALLOW_NOT_EVALUATED` | `false` | Let unevaluated checks pass |
+| `DQ_ALLOW_NOT_EVALUATED` | `false` | Let not-evaluated checks pass |
 | `DQ_SINKS` | `["json","junit","markdown"]` | Report formats written to `DQ_REPORTS_DIR` |
 | `DQ_ICEBERG_SINK` | `false` | Also append results to Iceberg `ops.dq_results` |
 | `DQ_SLACK_WEBHOOK_URL` | unset | Slack incoming webhook (HTTPS only, stored as a secret) |
@@ -46,4 +50,4 @@ pydantic-settings in [`settings.py`](../../src/soda_lakehouse_dq/settings.py).
 | `DQ_CONTRACTS_DIR`, `DQ_DATASOURCES_DIR`, `DQ_REPORTS_DIR`, `DQ_SAMPLE_DIR` | project folders | Path overrides |
 | `AIRFLOW_API_PORT` (Makefile) | `8080` | Airflow UI/API host port |
 
-`SODA_CORE_TELEMETRY_ENABLED` is always forced to `false`. Gate policy settings are explained in the [gate policy](../architecture/data-flow.md#gate-policy-decision-flow).
+`SODA_CORE_TELEMETRY_ENABLED` defaults to `false` (set in the image and at start-up unless you set it yourself). Gate policy settings are explained in the [gate policy](../architecture/data-flow.md#gate-policy-decision-flow).

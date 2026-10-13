@@ -46,3 +46,9 @@ repos:
         language: system
         pass_filenames: false
         files: \.md$
+      - id: docs-snippets
+        name: docs snippets in sync, no prose written twice
+        entry: python3 scripts/doc_snippets.py --check
+        language: system
+        pass_filenames: false
+        files: \.md$

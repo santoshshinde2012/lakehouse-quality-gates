@@ -9,7 +9,7 @@ using DuckDB or Trino, and are orchestrated by Airflow, for
 [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse).
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.3.1-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.3.1)
+[![Release](https://img.shields.io/badge/release-v0.3.2-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.3.2)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -43,7 +43,7 @@ do not block.
   `metric` reconciliation.
 - ⚙️ **Three engines, one set of contracts.** DuckDB attaches to the Lakekeeper Iceberg REST catalog
   (default). Trino 483 is optional. `duckdb-local` builds the same medallion from CSV files with no Docker.
-- 🚦 **Explicit gate policy.** A failure, an execution error or an unevaluated check blocks. A warning is
+- 🚦 **Explicit gate policy.** A failed check, an execution error or a not-evaluated check blocks. A warning is
   logged. `DQ_FAIL_ON_WARN=true` makes warnings block too.
 - 🧾 **Reports and alerts.** JSON, JUnit XML and Markdown for every run, an optional Iceberg table
   `ops.dq_results`, console output, and Slack alerts on problems.
@@ -51,7 +51,7 @@ do not block.
   DAG, which is left untouched. An `inject_bad_batch` switch shows a gate blocking for real.
 - 🐳 **Hardened runner container.** Non-root, read-only root filesystem, `cap_drop: ALL`, digest-pinned base images.
 - 🧱 **Clean architecture.** Ports and adapters with a single composition root. ruff, `mypy --strict`,
-  103 tests at 99% coverage.
+  107 tests at 99% coverage.
 
 ## Architecture
 
@@ -97,8 +97,8 @@ flowchart TB
     subgraph OUT["Outputs"]
       direction TB
       REP[("Gate reports<br/><small>JSON, JUnit, MD</small>")]:::store
-      DQR[("dq_results<br/><small>Iceberg table</small>")]:::store
-      SLK(["Slack alerts<br/><small>on block</small>"]):::actor
+      DQR[("ops.dq_results<br/><small>Iceberg table, optional</small>")]:::store
+      SLK(["Slack alerts<br/><small>on warn or block</small>"]):::actor
       REP ~~~ DQR ~~~ SLK
     end
     SRC -->|ingest| LAKE
@@ -125,20 +125,23 @@ flowchart TB
 **How to read it:** data flows left to right (Sources → Lakehouse platform → Quality gates → Outputs);
 indigo is this project; the red dotted path is a block; Airflow schedules every step.
 
-More views (context, code, gate policy, sequence, DAG, deployment, data model, write-audit-publish) are in
+More views (system context, code architecture, domain model, ports and adapters, data model, gate policy, gate run
+sequence, Airflow DAG, deployment, write-audit-publish) are in
 the [architecture pages](docs/architecture/README.md); the end-to-end design is [docs/system-design.md](docs/system-design.md).
 
 ## Quickstart
 
 No Docker needed; requires [uv](https://docs.astral.sh/uv/):
 
+<!-- include:docs/guides/quickstart.md#quickstart -->
 ```bash
 git clone https://github.com/santoshshinde2012/lakehouse-quality-gates.git && cd lakehouse-quality-gates
 uv sync --all-extras            # Python 3.12 venv: Soda Core 4.26.0, DuckDB 1.5.6, dev tools
 make validate                   # Soda parses every contract
 make demo                       # good batch: all gates pass; bad batch: every gate blocks
-open reports/*_retail_silver.md # what was caught, and why (xdg-open on Linux)
+open reports/*_retail_silver.md # what was caught, and why (use xdg-open on Linux)
 ```
+<!-- /include -->
 
 Against the live lakehouse (DuckDB or Trino), in the runner container or in Airflow:
 [quickstart guide](docs/guides/quickstart.md). Commands, exit codes and `DQ_*` settings:
@@ -149,17 +152,23 @@ Against the live lakehouse (DuckDB or Trino), in the runner container or in Airf
 | Verified on macOS, 2026-10-13 | Result |
 |---|---|
 | ruff · mypy --strict · markdownlint · link check | ✅ clean |
-| pytest | ✅ 103 passed, 99% coverage |
+| pytest | ✅ 107 passed, 99% coverage |
 | Good / bad batch, no Docker | ✅ 3/3 gates passed / 3/3 blocked |
 | Live DuckDB and Trino 483 on Lakekeeper Iceberg | ✅ 46/46 checks passed · bad batch blocked |
 | Runner container and Airflow DAG | ✅ good run succeeds · bad run stops at `dq_bronze` |
 
-| Benchmark (Apple M1 Pro, live stack) | Result |
+Benchmarks on an Apple M1 Pro laptop against the live stack:
+
+<!-- include:docs/benchmarks/README.md#headline -->
+| Headline | Value |
 |---|---|
 | Gate latency, host DuckDB, warm p50 per layer | 0.4–0.6 s up to 1M orders · 0.5–2.0 s at 5M |
-| Share of the Spark job time per layer | 4–5 % |
-| Detection, 7 defect types × 0.1/1/10 % + clean | 66/66 verdicts correct · precision 1.0 · recall 1.0 |
-| Peak memory at 5M orders | ≤ 780 MiB |
+| Worst warm p95 (DuckDB host or container) | 3.56 s (container, bronze, 5M) |
+| Gate time as a share of the Spark job (lakehouse sample) | 4–5 % per layer |
+| Peak gate memory at 5M orders | 780 MiB (container), 684 MiB (host) |
+| Detection accuracy (7 defect types × 3 rates + clean) | 66/66 verdicts, precision 1.0, recall 1.0 |
+| Same six checks at 1M rows | Soda 0.44 s, Pointblank 0.47 s, datacontract-cli 1.08 s, Pandera 2.83 s, GX Core 11.5 s |
+<!-- /include -->
 
 > [!WARNING]
 > Trino on the lakehouse's default 1 GiB heap cannot evaluate the order checks at 5M orders, so those gates
@@ -200,7 +209,7 @@ then make sure `make check validate demo` passes, which is exactly what CI runs.
 > [!NOTE]
 > Soda Core v4 is licensed under the Elastic License 2.0 (source-available, not OSI). Internal use is allowed;
 > this project accepts the trade-off on purpose ([ADR 0001](docs/adr/0001-soda-core-v4-proprietary-licence.md)).
-> Soda Cloud is not used, and telemetry is switched off.
+> Soda Cloud is not used, and Soda telemetry is off by default.
 
 ## Acknowledgements
 

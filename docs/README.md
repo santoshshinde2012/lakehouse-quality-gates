@@ -4,8 +4,14 @@ Everything about **lakehouse-quality-gates**: Soda Core v4 data contracts that a
 the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse).
 
 > [!TIP]
-> New here? Read the [use case](overview/use-case.md), run the [quickstart](guides/quickstart.md), then skim the
-> [architecture overview](architecture/overview.md). The [glossary](overview/glossary.md) defines every term we use.
+> **New here? Follow these four steps, about 30 minutes in total.**
+>
+> 1. [Use case](overview/use-case.md): the problem and what a gate guarantees (5 min).
+> 2. [Quickstart](guides/quickstart.md): run the good and the bad batch on your laptop, no Docker (5 min).
+> 3. [Architecture overview](architecture/overview.md): the system on one page (5 min).
+> 4. [System design](system-design.md): the requirements, decisions and risks, with links to every detail page (15 min).
+>
+> The [glossary](overview/glossary.md) defines every term.
 
 ## Who should read what
 
@@ -31,10 +37,10 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 
 | Document | What it covers |
 |---|---|
-| [System design](system-design.md) | The end-to-end design document (20 sections): requirements, design, benchmarks, risks, roadmap |
+| [System design](system-design.md) | The end-to-end narrative: problem, requirements, tool choice, decisions, risks, roadmap. Links to the pages below for detail |
 | [Architecture index](architecture/README.md) | Reading order for the focused pages below |
 | [Overview](architecture/overview.md) | System context and system architecture |
-| [Components](architecture/components.md) | Code architecture, domain model, modules, engines, sinks and errors |
+| [Components](architecture/components.md) | Code architecture, modules, domain model, ports and adapters, engines, sinks, errors |
 | [Data flow](architecture/data-flow.md) | Medallion gates, gate policy, gate run sequence, Airflow DAG, data model |
 | [Deployment](architecture/deployment.md) | Containers, ports, profiles and the runner image |
 | [Security](architecture/security.md) | Credentials, container hardening, secrets, licence |
@@ -73,6 +79,9 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 
 ## Conventions
 
+- Each fact lives on one page. The system design summarises and links; the focused pages hold the detail.
+- Text that must appear twice (the README quickstart and headline numbers) is written once as a region and copied
+  by `make docs`; the tests fail if a copy is stale or if a line of prose is written twice by hand.
 - Every diagram is Mermaid, kept as one source file in [`diagrams/`](diagrams/README.md) and synced into the pages by
   `make diagrams`. `make diagrams-check` and the tests fail if a copy is stale.
 - Terms follow the [glossary](overview/glossary.md). Numbers come from [`results/`](results/README.md); pages link to the raw data.

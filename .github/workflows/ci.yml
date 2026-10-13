@@ -34,10 +34,11 @@ jobs:
           uv run --frozen ruff check .
       - name: Type check (mypy --strict)
         run: uv run --frozen mypy
-      - name: Docs (links, anchors, Mermaid sync)
+      - name: Docs (links, anchors, Mermaid and snippet sync, duplicate prose)
         run: |
           python scripts/check_links.py
           python scripts/diagrams.py --check
+          python scripts/doc_snippets.py --check
       - name: Docs (markdownlint)
         run: npx --yes markdownlint-cli2@0.23.3
       - name: Contract syntax (Soda)

@@ -11,7 +11,7 @@
 | Container | Non-root user, read-only root filesystem, all capabilities dropped, `no-new-privileges`, digest-pinned base images, tmpfs for spills |
 | Airflow → container | Through the lakehouse's socket proxy, `exec` only; task commands are built from validated, quoted constants |
 | Secrets | `DQ_SLACK_WEBHOOK_URL` is a `SecretStr`, https-only, never logged; `.env` is git-ignored |
-| Telemetry | `SODA_CORE_TELEMETRY_ENABLED=false` is forced |
+| Telemetry | `SODA_CORE_TELEMETRY_ENABLED=false` by default, in the image and at start-up |
 | Supply chain | Versions pinned in `uv.lock`; pre-commit runs ruff, mypy, detect-private-key and YAML checks |
 | Licence compliance | Our code: MIT. Soda Core v4: Elastic License 2.0 (source-available): internal use is allowed; offering Soda as a managed service is not. Kept out of `local-data-lakehouse`, whose rule is OSI-only dependencies (ADR 0001) |
 

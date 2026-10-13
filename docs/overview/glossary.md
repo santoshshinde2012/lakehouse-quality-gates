@@ -23,10 +23,10 @@ A **check outcome** belongs to one check; a **gate status** belongs to the whole
 | **warn** (`warned`) | check | A check with `level: warn` did not hold. Recorded and alerted, but does not block by default |
 | **fail** (`failed`) | check | A check with the default `level: fail` did not hold |
 | **not evaluated** (`not_evaluated`) | check | The check could not be computed (e.g. the engine ran out of memory) |
-| **passed** | gate | No failure, error or unevaluated check, and no warning. Exit code 0 |
+| **passed** | gate | No failure, error or not-evaluated check, and no warning. Exit code 0 |
 | **passed with warnings** | gate | Only warnings. Exit code 0; the next layer runs |
-| **block** (`blocked`) | gate | At least one failure, error or unevaluated check, or no contracts at all. Exit code 1; the Airflow task fails and downstream tasks do not run |
-| **Fail closed** | gate | A gate that could not prove the data is good blocks. Errors and unevaluated checks count as failures |
+| **block** (`blocked`) | gate | At least one failure, error or not-evaluated check, or no contracts at all. Exit code 1; the Airflow task fails and downstream tasks do not run |
+| **Fail closed** | gate | A gate that could not prove the data is good blocks. Errors and not-evaluated checks count as failures |
 
 ## Platform terms
 

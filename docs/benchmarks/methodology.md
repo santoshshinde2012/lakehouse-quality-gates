@@ -12,9 +12,8 @@
 | Docker | Docker 29.8.1, VM with 10 CPUs and 7.65 GiB; Trino 483 (JVM `-Xmx1G`, the lakehouse default) |
 | Software | Python 3.12.9, soda-core 4.26.0, DuckDB 1.5.6 (tool comparison venv: soda-core 4.27.0) |
 | Data | `scripts/gen_scale_data.py`, seed 42: 10k, 100k, 1M, 5M orders in 5 files, customers = orders / 10, 90 days |
-| Engines | `duckdb` (host CLI process), `trino` (host process, Trino does the work), `container` (`ldl-soda`, read-only, DuckDB inside) |
+| Engines | `duckdb` on the host, `trino` (host client; the Trino server does the work), and `duckdb` inside the `ldl-soda` runner (labelled *container* in the tables) |
 | Runs | Per size × engine × layer: 1 cold (first after the seed) + 5 warm. Every run is a new process |
-| Timings | `gate_s` = `VerifyLayerUseCase.execute` wall time (sinks off); `process s` adds interpreter start and imports |
 | Stats | p50 = median of 5; **p95 = nearest rank of 5, which is the slowest warm run**; σ = population std-dev of 5 |
 | Not controlled | Laptop background load, Docker Desktop VM, thermal state. Expect ±20 % run to run; see σ |
 
@@ -50,4 +49,4 @@ server-side count matched the client count in every run.
 
 ---
 
-[← Benchmarks index](README.md) · [Benchmarks index](README.md) · [Results →](results.md)
+[← Benchmarks index](README.md) · [Results →](results.md)

@@ -77,8 +77,9 @@ The retail Iceberg tables the gates check, and the `ops.dq_results` table the Ic
 %% Last updated: 2026-10-13
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 erDiagram
-  BRONZE_CUSTOMERS_RAW ||--o{ SILVER_CUSTOMERS : "cleaned into"
-  BRONZE_ORDERS_RAW ||--o{ SILVER_ORDERS : "cleaned into"
+  direction LR
+  BRONZE_CUSTOMERS_RAW ||--o| SILVER_CUSTOMERS : "cleaned into"
+  BRONZE_ORDERS_RAW ||--o| SILVER_ORDERS : "cleaned into"
   SILVER_CUSTOMERS ||--o{ SILVER_ORDERS : "customer_id"
   SILVER_ORDERS }o--|| GOLD_DAILY_ORDER_METRICS : "aggregated by day"
   BRONZE_ORDERS_RAW {
@@ -88,6 +89,7 @@ erDiagram
     varchar status
     double amount
     varchar _source_file
+    timestamptz _ingested_at
   }
   BRONZE_CUSTOMERS_RAW {
     varchar customer_id
@@ -96,6 +98,7 @@ erDiagram
     varchar city
     date signup_date
     varchar _source_file
+    timestamptz _ingested_at
   }
   SILVER_ORDERS {
     varchar order_id PK
@@ -103,6 +106,8 @@ erDiagram
     timestamptz order_ts
     varchar status
     double amount
+    varchar _source_file
+    timestamptz _ingested_at
   }
   SILVER_CUSTOMERS {
     varchar customer_id PK
@@ -110,6 +115,8 @@ erDiagram
     varchar email
     varchar city
     date signup_date
+    varchar _source_file
+    timestamptz _ingested_at
   }
   GOLD_DAILY_ORDER_METRICS {
     date order_date PK
@@ -119,12 +126,18 @@ erDiagram
     bigint cancelled_orders
     bigint refunded_orders
   }
-  DQ_RESULTS {
+  OPS_DQ_RESULTS {
     varchar run_id
+    timestamptz created_at
+    varchar pipeline
     varchar layer
+    varchar engine
     varchar gate_status
     varchar contract
+    varchar dataset
     varchar check_name
+    varchar check_type
+    varchar column_name
     varchar outcome
   }
 ```
@@ -132,41 +145,18 @@ erDiagram
 
 **How to read it:**
 
-- Bronze keeps raw values plus lineage columns (`_source_file`, `_ingested_at`); silver is cleaned and typed; gold is one row per day.
-- Crow's feet mean one-to-many. `silver.orders.customer_id` must exist in `silver.customers` (a `valid_reference_data` check).
+- Bronze keeps raw values; silver is cleaned, typed and deduplicated; both carry the lineage columns `_source_file` and `_ingested_at`. Gold is one row per day.
+- Each bronze row becomes at most one silver row (`|o`). A crow's foot means *many*: one customer has many orders, and many orders aggregate into one day. `silver.orders.customer_id` must exist in `silver.customers` (a `valid_reference_data` check).
 - Gold reconciles with silver: `SUM(orders)` must equal the silver row count.
-- `DQ_RESULTS` (`ops.dq_results`) is only written with `DQ_ICEBERG_SINK=true`, one row per check. Column lists are abridged.
+- `OPS_DQ_RESULTS` (`ops.dq_results`) is written only with `DQ_ICEBERG_SINK=true`, one row per check.
+- Columns and types are the ones the contracts' schema checks enforce.
 
 ## What each gate checks
 
-One YAML file per dataset under `contracts/retail/<layer>/`. Bronze keeps raw values, so value problems
-**warn** there and are **enforced** in silver; structural problems fail at bronze.
-
-| Layer | Dataset | Check | Type | Level |
-|---|---|---|---|---|
-| bronze | `orders_raw` | Schema is unchanged | schema | fail |
-| bronze | `orders_raw` | Batch is not empty | row_count ≥ 1 | fail |
-| bronze | `orders_raw` | Ingested within `BRONZE_MAX_AGE_HOURS` (24) | freshness on `_ingested_at` | fail |
-| bronze | `orders_raw` | No order duplicated inside one source file | duplicate (`order_id`, `_source_file`) | fail |
-| bronze | `orders_raw` | Every order has an id, a customer, a timestamp, an amount | missing × 4 | fail |
-| bronze | `orders_raw` | Status is a known value (case-insensitive) | invalid, `LOWER(TRIM(status))` | warn |
-| bronze | `orders_raw` | Amount is not negative | invalid, `valid_min: 0` | warn |
-| bronze | `customers_raw` | Schema, not empty, every customer has an id | schema, row_count, missing | fail |
-| bronze | `customers_raw` | Email is present | missing | warn |
-| silver | `orders` | Schema, not empty | schema, row_count | fail |
-| silver | `orders` | No order timestamped in the future | failed_rows | fail |
-| silver | `orders` | Order id present and unique after dedup | missing, duplicate | fail |
-| silver | `orders` | Customer exists in `silver.customers` | invalid, `valid_reference_data` | fail |
-| silver | `orders` | Status is canonical; amount present and not negative | invalid, missing | fail |
-| silver | `orders` | Amount below `MAX_ORDER_AMOUNT` (10,000) | invalid, `valid_max` | warn |
-| silver | `customers` | Schema, not empty, id present and unique, name, email present, well-formed and unique, signup date present | schema, row_count, missing, duplicate, regex | fail |
-| gold | `daily_order_metrics` | Schema, at least one day, one row per day, order date present | schema, row_count, duplicate, missing | fail |
-| gold | `daily_order_metrics` | Cancelled + refunded never exceed orders; no future days | failed_rows | fail |
-| gold | `daily_order_metrics` | Order count reconciles with `silver.orders` | metric (SQL), must be 0 | fail |
-| gold | `daily_order_metrics` | Orders ≥ 1, revenue and average order value not negative | invalid | fail |
-| gold | `daily_order_metrics` | Average order value ≤ `MAX_AVG_ORDER_VALUE` (1,000) | invalid | warn |
-
-Totals: 14 bronze, 21 silver and 11 gold checks (46). Full text in [contracts.md](../guides/contracts.md).
+One contract per dataset under `contracts/retail/<layer>/`: 14 checks in the bronze gate, 21 in silver and 11 in
+gold. Bronze keeps raw values, so value problems **warn** there and are **enforced** in silver; structural problems
+(schema drift, an empty batch, missing keys, duplicates within a file) fail at bronze. Every check, with its type
+and level, is listed in the [contracts guide](../guides/contracts.md#checks-per-contract).
 
 ## Gate policy decision flow
 
@@ -179,45 +169,40 @@ How `GatePolicy` turns the check outcomes of one layer into *passed*, *passed wi
 %% Purpose: How GatePolicy turns check outcomes into passed, passed with warnings or blocked
 %% Last updated: 2026-10-13
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
-flowchart TB
-  IN(["Contract results<br/><small>for one layer</small>"]):::actor
-  Z{"No contracts<br/>verified?"}:::node
-  E{"Execution<br/>error?"}:::node
-  F{"Any check<br/>failed?"}:::node
-  N{"Any check<br/>not evaluated?"}:::node
+flowchart LR
+  IN(["Contract results<br/><small>one layer</small>"]):::actor
+  Q{"Any blocking<br/>condition?"}:::node
   W{"Any check<br/>warned?"}:::node
+  FW{"DQ_FAIL_ON_WARN<br/>= true?"}:::node
   B(["Blocked<br/><small>exit 1</small>"]):::blocked
   PW(["Passed with warnings<br/><small>exit 0</small>"]):::ours
   P(["Passed<br/><small>exit 0</small>"]):::pass
-  IN --> Z
-  Z -->|no| E
-  E -->|no| F
-  F -->|no| N
-  N -->|no| W
+  C["<b>Blocking conditions</b><br/>no contracts verified<br/>a contract execution error<br/>a failed check<br/>a not-evaluated check<br/><small>unless DQ_ALLOW_NOT_EVALUATED=true</small>"]:::store
+  IN --> Q
+  Q -->|no| W
   W -->|no| P
-  W -->|yes| PW
-  Z -->|yes| B
-  E -->|yes| B
-  F -->|yes| B
-  N -->|"yes, unless<br/>DQ_ALLOW_NOT_EVALUATED"| B
-  PW -. "DQ_FAIL_ON_WARN=true" .-> B
+  W -->|yes| FW
+  FW -->|no| PW
+  Q -->|yes| B
+  FW -->|yes| B
+  C -.- Q
   classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
   classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
   classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
   classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
   classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
   classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
-  linkStyle 5 stroke:#16a34a,stroke-width:2px
-  linkStyle 6 stroke:#4f46e5,stroke-width:1.5px
-  linkStyle 7,8,9,10,11 stroke:#dc2626,stroke-width:1.5px
+  linkStyle 2 stroke:#16a34a,stroke-width:2px
+  linkStyle 4 stroke:#4f46e5,stroke-width:1.5px
+  linkStyle 5,6 stroke:#dc2626,stroke-width:1.5px
 ```
 <!-- /diagram -->
 
 **How to read it:**
 
-- Questions are asked top to bottom; any *yes* on a red path **blocks** (exit code 1).
-- The gate **fails closed**: no contracts, an execution error or an unevaluated check all block by default.
-- The only overrides are `DQ_ALLOW_NOT_EVALUATED` and `DQ_FAIL_ON_WARN` (plus `allow_empty`, in code only).
+- Read left to right. Any of the blocking conditions in the grey box **blocks** (exit code 1).
+- The gate **fails closed**: no contracts, an execution error or a not-evaluated check all block by default.
+- Warnings pass unless `DQ_FAIL_ON_WARN=true`. The only other override is `DQ_ALLOW_NOT_EVALUATED=true` (plus `allow_empty`, in code only).
 - The policy evaluates every rule and reports **all** reasons, not just the first one.
 
 | Situation | Default | Override |
@@ -225,7 +210,7 @@ flowchart TB
 | A check **failed** | block | none |
 | A contract raised an **execution error** (SQL error, missing table) | block | none (fail closed) |
 | A check is **not evaluated** (e.g. a metric could not be computed) | block | `DQ_ALLOW_NOT_EVALUATED=true` |
-| A check **warned** | pass with warnings | `DQ_FAIL_ON_WARN=true` blocks |
+| A check **warned** | passed with warnings | `DQ_FAIL_ON_WARN=true` blocks |
 | The layer has **no contracts** | block | `allow_empty` in code only |
 
 Reasons are collected in a stable order (errors, failures, not evaluated, warnings) and printed, written to
@@ -261,7 +246,7 @@ sequenceDiagram
   L-->>S: rows aggregated by SQL
   S-->>-V: ContractResult list
   V->>P: decide(results)
-  Note over P: Fail closed: an error or an<br/>unevaluated check also blocks
+  Note over P: Fail closed: an error or a<br/>not-evaluated check also blocks
   P-->>V: GateDecision
   V->>K: write(report), notify(report)
   V-->>-C: GateReport
@@ -281,8 +266,8 @@ sequenceDiagram
 - The `alt` box shows the two exits: 1 (blocked) and 0 (passed, with or without warnings).
 
 Soda issues one metadata query (schema) and one batched aggregate query per dataset, plus extra queries for
-reference, failed-rows and SQL-metric checks. Measured per layer: bronze 4, silver 5, gold 3 queries
-(identical on DuckDB and Trino; Trino's own query log confirms the counts, the [benchmarks](../benchmarks/results.md)).
+reference, failed-rows and SQL-metric checks. Measured per layer: bronze 4, silver 5, gold 3 queries, identical on
+DuckDB and Trino and confirmed by Trino's own query log ([methodology](../benchmarks/methodology.md)).
 
 ## Airflow DAG `lakehouse_retail_medallion_dq`
 
@@ -296,7 +281,7 @@ The tasks of the gated DAG and how a failed gate stops the run.
 %% Last updated: 2026-10-13
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
-  subgraph LOAD["Load"]
+  subgraph LOAD["Load and bronze"]
     direction TB
     ST[["land_smoke"]]:::node
     BR[["bronze"]]:::node
@@ -309,7 +294,7 @@ flowchart LR
     F1(["Run failed"]):::blocked
     DB -. exit 1 .-> F1
   end
-  subgraph QS["Silver"]
+  subgraph QS["Silver build and gate"]
     direction TB
     SI[["silver"]]:::node
     DS("dq_silver"):::ours
@@ -317,7 +302,7 @@ flowchart LR
     SI --> DS
     DS -. exit 1 .-> F2
   end
-  subgraph QG["Gold"]
+  subgraph QG["Gold build and gate"]
     direction TB
     GO[["gold"]]:::node
     DG("dq_gold"):::ours

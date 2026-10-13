@@ -11,6 +11,7 @@
 | [Results](results.md) | Latency, resources, detection accuracy, overhead against Spark, tool comparison |
 | [Analysis](analysis.md) | SLO verdicts, what the numbers mean for the design, capacity planning, caveats |
 
+<!-- region:headline -->
 | Headline | Value |
 |---|---|
 | Gate latency, host DuckDB, warm p50 per layer | 0.4–0.6 s up to 1M orders · 0.5–2.0 s at 5M |
@@ -19,6 +20,7 @@
 | Peak gate memory at 5M orders | 780 MiB (container), 684 MiB (host) |
 | Detection accuracy (7 defect types × 3 rates + clean) | 66/66 verdicts, precision 1.0, recall 1.0 |
 | Same six checks at 1M rows | Soda 0.44 s, Pointblank 0.47 s, datacontract-cli 1.08 s, Pandera 2.83 s, GX Core 11.5 s |
+<!-- /region -->
 
 **Raw data:** [`docs/results/benchmarks/`](../results/benchmarks/summary.md) (CSV, JSON, gzipped JSON lines and the generated
 `summary.md`). **Harness:** [`benchmarks/`](../../benchmarks/README.md); reproduce with `make bench-all`.

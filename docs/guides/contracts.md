@@ -63,7 +63,7 @@ columns:
 
 Totals per gate: bronze 14, silver 21, gold 11 (46).
 
-Where each check sits and why bronze **warns** while silver **fails**: [data flow](../architecture/data-flow.md#what-each-gate-checks).
+Why bronze **warns** where silver **fails**: [use case](../overview/use-case.md#solution).
 
 ## Adding a contract
 

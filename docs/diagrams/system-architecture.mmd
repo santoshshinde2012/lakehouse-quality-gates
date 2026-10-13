@@ -35,8 +35,8 @@ flowchart TB
     subgraph OUT["Outputs"]
       direction TB
       REP[("Gate reports<br/><small>JSON, JUnit, MD</small>")]:::store
-      DQR[("dq_results<br/><small>Iceberg table</small>")]:::store
-      SLK(["Slack alerts<br/><small>on block</small>"]):::actor
+      DQR[("ops.dq_results<br/><small>Iceberg table, optional</small>")]:::store
+      SLK(["Slack alerts<br/><small>on warn or block</small>"]):::actor
       REP ~~~ DQR ~~~ SLK
     end
     SRC -->|ingest| LAKE

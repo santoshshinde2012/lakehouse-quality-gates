@@ -26,7 +26,7 @@ flowchart LR
     direction LR
     subgraph ORCH["Orchestration"]
       direction TB
-      AF["Airflow :8090"]:::node
+      AF["Airflow :8080"]:::node
       PX["Docker proxy"]:::node
       AF --> PX
     end
@@ -64,7 +64,7 @@ flowchart LR
 
 **How to read it:**
 
-- The dashed boundary is the Docker network `ldl-net`; `:NNNN` are host ports.
+- The dashed boundary is the Docker network `ldl-net`; `:NNNN` are host ports (defaults).
 - `ldl-soda` (indigo) is this project; every other container belongs to `local-data-lakehouse`.
 - Airflow reaches containers only through the Docker socket proxy, which allows `exec` and little else.
 - `ldl-trino` runs only in the lakehouse's full profile with `TRINO=1`.
@@ -73,7 +73,7 @@ flowchart LR
 
 | Component | Image / version | Host port | Notes |
 |---|---|---|---|
-| Airflow api-server, scheduler, dag-processor | Apache Airflow 3 | 8090 (`AIRFLOW_API_PORT`) | Mounts our DAG through our own compose overlay |
+| Airflow api-server, scheduler, dag-processor | Apache Airflow 3 | 8080 by default (`AIRFLOW_API_PORT`) | Mounts our DAG through our own compose overlay |
 | docker-proxy | socket proxy | none | Allowlist widened to `exec` for `ldl-soda` |
 | `ldl-spark` | Spark 4.1.3, Iceberg 1.12 | none | Runs the jobs |
 | `ldl-soda` | `lakehouse-quality-gates:<version>` | none | Non-root `dq`, read-only root FS, `cap_drop: ALL`, `no-new-privileges`, tmpfs `/tmp` |

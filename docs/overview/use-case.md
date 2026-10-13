@@ -24,7 +24,7 @@ Each layer gets Soda data contracts, and a gate verifies them before the next la
 
 What happens when a gate fails:
 
-- the gate task fails and the run stops, so the next layer isn't built from bad data;
+- the gate task fails and the run stops, so the next layer is not built from bad data;
 - the console and, if configured, Slack say which checks failed and why;
 - `reports/` gets JSON (machine-readable), JUnit XML (CI test view) and Markdown (for humans, and the
   GitHub step summary).
@@ -52,6 +52,7 @@ data has been cleaned.
 
 - The Spark jobs use `CREATE OR REPLACE`, so a blocked silver gate stops gold from being built, but silver
   itself has already been overwritten. Real write-audit-publish (an Iceberg branch per run, verify, then
-  fast-forward `main`) would isolate even the failing layer. That's the natural next step: see [write-audit-publish](../architecture/write-audit-publish.md).
-- Group-by checks, reconciliation checks and percentage thresholds on `failed_rows` need a Soda licence. These
-  contracts stay inside what the free Soda Core supports.
+  fast-forward `main`) would isolate even the failing layer. That is the natural next step: see [write-audit-publish](../architecture/write-audit-publish.md).
+- Soda's dedicated group-by and reconciliation check types, and percentage thresholds on `failed_rows`, need a
+  paid Soda licence. These contracts stay inside the free Soda Core: the gold-to-silver reconciliation is a SQL
+  `metric` check.

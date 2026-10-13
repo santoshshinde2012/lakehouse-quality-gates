@@ -3,6 +3,19 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.3.2] - 2026-10-13
+
+### Changed
+
+- **One home per fact.** `docs/system-design.md` is now the end-to-end narrative (problem, requirements, tool choice, decisions, risks, roadmap) and links to the focused pages for detail; it shrank from 83 KB to 34 KB. Duplicated sections (goals, SLO table, check list, exit codes) now live on one page and are linked from the others.
+- Removed the five "moved" stub pages at the `docs/` root; every link points at the new paths.
+- Diagrams: the domain model is split into **domain model** (value objects and enums) and a new **ports and adapters** view, both without crossing lines; the gate policy is a compact left-to-right flow; the data model shows every column the schema checks enforce; the hero shows Slack alerts on warn or block; the deployment view shows Airflow's default port 8080. 13 diagrams in total.
+- Proofread every page: glossary terms used consistently (*not evaluated*, engine vs runner); corrected the gold-gate overhead at 5M orders (93 % of its build, not more), the object store (RustFS, not MinIO), the sink count (four), the telemetry wording, the structlog event list and the mypy scope. The docs hub opens with a four-step reading path.
+
+### Added
+
+- `scripts/doc_snippets.py` with tests: text that must appear twice (the README quickstart and headline numbers) is written once as a region and copied by `make docs`; `make docs-check`, pre-commit and CI fail on a stale copy or on prose written twice by hand.
+
 ## [0.3.1] - 2026-10-13
 
 ### Changed

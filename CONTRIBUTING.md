@@ -8,5 +8,7 @@
 4. `make check validate demo` must pass. CI runs the same targets.
 5. Contract changes: update [docs/guides/contracts.md](docs/guides/contracts.md) and, when behaviour changes, `fixtures/bad_batch`.
 6. Add an entry under a new *Unreleased* heading at the top of `CHANGELOG.md`; record significant decisions as an ADR in `docs/adr/`.
-7. Docs changes: keep diagrams in `docs/diagrams/*.mmd` (run `make diagrams`), and run `make docs-check`
-   (links, anchors, markdownlint). The [documentation hub](docs/README.md) lists every page.
+7. Docs changes: write each fact on one page and link to it from the others. Diagrams live in
+   `docs/diagrams/*.mmd`; text that must appear twice is a `region` copied by an `include` (see
+   `scripts/doc_snippets.py`). Run `make docs`, then `make docs-check` (links, anchors, markdownlint, sync, no
+   prose written twice). The [documentation hub](docs/README.md) lists every page.

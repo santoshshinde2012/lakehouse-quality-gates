@@ -4,8 +4,9 @@
 %% Last updated: 2026-10-13
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 erDiagram
-  BRONZE_CUSTOMERS_RAW ||--o{ SILVER_CUSTOMERS : "cleaned into"
-  BRONZE_ORDERS_RAW ||--o{ SILVER_ORDERS : "cleaned into"
+  direction LR
+  BRONZE_CUSTOMERS_RAW ||--o| SILVER_CUSTOMERS : "cleaned into"
+  BRONZE_ORDERS_RAW ||--o| SILVER_ORDERS : "cleaned into"
   SILVER_CUSTOMERS ||--o{ SILVER_ORDERS : "customer_id"
   SILVER_ORDERS }o--|| GOLD_DAILY_ORDER_METRICS : "aggregated by day"
   BRONZE_ORDERS_RAW {
@@ -15,6 +16,7 @@ erDiagram
     varchar status
     double amount
     varchar _source_file
+    timestamptz _ingested_at
   }
   BRONZE_CUSTOMERS_RAW {
     varchar customer_id
@@ -23,6 +25,7 @@ erDiagram
     varchar city
     date signup_date
     varchar _source_file
+    timestamptz _ingested_at
   }
   SILVER_ORDERS {
     varchar order_id PK
@@ -30,6 +33,8 @@ erDiagram
     timestamptz order_ts
     varchar status
     double amount
+    varchar _source_file
+    timestamptz _ingested_at
   }
   SILVER_CUSTOMERS {
     varchar customer_id PK
@@ -37,6 +42,8 @@ erDiagram
     varchar email
     varchar city
     date signup_date
+    varchar _source_file
+    timestamptz _ingested_at
   }
   GOLD_DAILY_ORDER_METRICS {
     date order_date PK
@@ -46,11 +53,17 @@ erDiagram
     bigint cancelled_orders
     bigint refunded_orders
   }
-  DQ_RESULTS {
+  OPS_DQ_RESULTS {
     varchar run_id
+    timestamptz created_at
+    varchar pipeline
     varchar layer
+    varchar engine
     varchar gate_status
     varchar contract
+    varchar dataset
     varchar check_name
+    varchar check_type
+    varchar column_name
     varchar outcome
   }

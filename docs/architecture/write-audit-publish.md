@@ -43,7 +43,7 @@ sequenceDiagram
 
 **How to read it:**
 
-- This is a **proposal**; it is not implemented yet (see [Write-audit-publish](write-audit-publish.md)).
+- This is a **proposal**; nothing on this page is implemented yet.
 - Numbers give the order of steps; notes mark the key decisions.
 - Readers of `main` never see the `audit_RUN` branch: a blocked batch is simply never published.
 - Publishing runs on Spark because Trino 483 cannot create or fast-forward branches.

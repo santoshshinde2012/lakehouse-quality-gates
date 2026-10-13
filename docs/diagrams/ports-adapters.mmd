@@ -1,0 +1,43 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+%% Title: Ports and adapters
+%% Purpose: Which adapter implements each domain port, and what the use case depends on
+%% Last updated: 2026-10-13
+%% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
+flowchart LR
+  subgraph APP["Application"]
+    direction TB
+    UC["VerifyLayerUseCase<br/><small>RunMedallionUseCase</small>"]:::ours
+    POL["GatePolicy<br/><small>decide(results)</small>"]:::ours
+    UC --> POL
+  end
+  subgraph PORTS["Domain ports (Protocols)"]
+    direction TB
+    P1["ContractRepository<br/><small>list_contracts</small>"]:::ours
+    P2["ContractVerifier<br/><small>verify</small>"]:::ours
+    P3["ResultSink<br/><small>write</small>"]:::ours
+    P4["Notifier<br/><small>notify</small>"]:::ours
+    P5["Clock<br/><small>now, new_run_id</small>"]:::ours
+  end
+  subgraph ADP["Adapters"]
+    direction TB
+    A1["FileContractRepository"]:::node
+    A2["SodaContractVerifier<br/><small>with DuckDBProvider or TrinoProvider</small>"]:::node
+    A3["JsonFileSink<br/>JUnitXmlSink<br/>MarkdownSink<br/>IcebergSink"]:::node
+    A4["ConsoleNotifier<br/>SlackWebhookNotifier"]:::node
+    A5["SystemClock"]:::node
+  end
+  APP -->|depends on| PORTS
+  P1 -. implemented by .-> A1
+  P2 -. implemented by .-> A2
+  P3 -. implemented by .-> A3
+  P4 -. implemented by .-> A4
+  P5 -. implemented by .-> A5
+  classDef node fill:#ffffff,stroke:#94a3b8,stroke-width:1px,color:#0f172a
+  classDef store fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef ours fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef actor fill:#ffffff,stroke:#64748b,stroke-width:1px,color:#0f172a
+  classDef blocked fill:#fef2f2,stroke:#dc2626,stroke-width:1.5px,color:#7f1d1d
+  classDef pass fill:#f0fdf4,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  style APP fill:#f5f7ff,stroke:#a5b4fc,stroke-width:1.5px,color:#3730a3
+  style PORTS fill:#f5f7ff,stroke:#a5b4fc,stroke-width:1.5px,color:#3730a3
+  style ADP fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155

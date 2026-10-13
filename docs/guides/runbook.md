@@ -14,8 +14,7 @@
 | Airflow | `make airflow-dq-up && make airflow-dq-trigger` (UI: `http://localhost:$AIRFLOW_API_PORT`, default 8080, DAG `lakehouse_retail_medallion_dq`) |
 | Container | `make dq-up`, then `docker exec ldl-soda soda-dq run` |
 
-Exit codes: `0` passed (warnings allowed), `1` blocked, `2` configuration or usage error (missing
-contracts, unknown sink, bad `--set`).
+Exit codes and their effect in Airflow: [configuration](configuration.md#exit-codes).
 
 ## A gate blocked: triage
 
@@ -32,7 +31,7 @@ contracts, unknown sink, bad `--set`).
    - **A threshold is too tight.** Override it for one run (`--set MAX_ORDER_AMOUNT=50000`) or change the
      default in the contract.
 4. Re-run: in Airflow, clear the failed `dq_<layer>` task. Retries are off on purpose, because data
-   problems don't fix themselves.
+   problems do not fix themselves.
 
 ## Configuration
 

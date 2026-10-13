@@ -26,7 +26,7 @@ def test_markdown_blocks_match_sources() -> None:
 
 def test_every_source_uses_the_shared_theme() -> None:
     sources = sorted((ROOT / "docs" / "diagrams").glob("*.mmd"))
-    assert len(sources) == 12
+    assert len(sources) == 13
     first_lines = {s.read_text(encoding="utf-8").splitlines()[0] for s in sources}
     for source in sources:
         header = source.read_text(encoding="utf-8").splitlines()[1:4]

@@ -22,7 +22,7 @@ sequenceDiagram
   L-->>S: rows aggregated by SQL
   S-->>-V: ContractResult list
   V->>P: decide(results)
-  Note over P: Fail closed: an error or an<br/>unevaluated check also blocks
+  Note over P: Fail closed: an error or a<br/>not-evaluated check also blocks
   P-->>V: GateDecision
   V->>K: write(report), notify(report)
   V-->>-C: GateReport

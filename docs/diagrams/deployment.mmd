@@ -14,7 +14,7 @@ flowchart LR
     direction LR
     subgraph ORCH["Orchestration"]
       direction TB
-      AF["Airflow :8090"]:::node
+      AF["Airflow :8080"]:::node
       PX["Docker proxy"]:::node
       AF --> PX
     end

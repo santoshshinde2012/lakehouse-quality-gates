@@ -96,8 +96,8 @@ flowchart TB
     subgraph OUT["Outputs"]
       direction TB
       REP[("Gate reports<br/><small>JSON, JUnit, MD</small>")]:::store
-      DQR[("dq_results<br/><small>Iceberg table</small>")]:::store
-      SLK(["Slack alerts<br/><small>on block</small>"]):::actor
+      DQR[("ops.dq_results<br/><small>Iceberg table, optional</small>")]:::store
+      SLK(["Slack alerts<br/><small>on warn or block</small>"]):::actor
       REP ~~~ DQR ~~~ SLK
     end
     SRC -->|ingest| LAKE
@@ -136,27 +136,10 @@ flowchart TB
 | Quality gates | `soda-dq`: renders contracts, verifies them through an engine, applies the gate policy |
 | Outputs | Reports per gate, optional `ops.dq_results` Iceberg table, Slack alerts, Airflow task state |
 
-## Goals
+## Goals and non-goals
 
-| # | Goal | Measure |
-|---|---|---|
-| G1 | Block promotion of a layer that violates its contract | 100% of injected blocking defects block the right gate (the [benchmarks](../benchmarks/results.md)) |
-| G2 | Never block clean data | 0 false blocks on clean batches at every scale |
-| G3 | Cheap enough to run after every layer | Gate p95 well inside the latency budget in section 3.2 |
-| G4 | Contracts as reviewable code | Plain Soda contract YAML per dataset, in git, validated in CI |
-| G5 | Same contracts on every engine | One contract file runs on DuckDB and Trino unchanged |
-| G6 | Zero changes to `local-data-lakehouse` | Referenced by path; its git tree stays clean |
-| G7 | Explainable outcomes | Every block names the contract, column, check and metric |
-
-## Non-goals
-
-- Anomaly detection, profiling or ML-based monitoring (Soda Cloud territory; see section 15).
-- Quarantining or repairing bad rows. The gate decides; humans or upstream jobs fix.
-- Multi-table atomic publishing. Iceberg has no cross-table transactions on this catalog.
-- Replacing the lakehouse's original DAG. The gated DAG is a sibling (ADR 0004).
-- A hosted service. This runs on a laptop or a single VM next to the lakehouse.
-
-The full requirements and SLOs are in the [system design](../system-design.md#3-requirements).
+The goals (G1 to G7), how each is measured, and what is out of scope are in
+[system design § 2](../system-design.md#2-problem-statement-goals-and-non-goals).
 
 ---
 

@@ -98,7 +98,7 @@ Iceberg data sizes (Trino `$files`): bronze orders 0.2 / 2.1 / 22 / 112 MiB and 
 the orders table's data size (the aggregate pass plus the duplicate or reference pass); DuckDB's iceberg
 extension does not expose scan bytes, and its scans are the same SQL. Host DuckDB uses more CPU than wall
 time (multi-threaded scans); the container is slower per CPU-second because Docker Desktop's VM file and
-network path sits between it and MinIO.
+network path sits between it and the RustFS object store.
 
 ## Detection accuracy
 
@@ -138,7 +138,7 @@ On the lakehouse's own sample, running the real Spark jobs (`spark-submit --mast
 Much of Spark's time at this size is JVM and session start-up, so at sample size the ratio flatters the gate. At
 scale the layers were built with DuckDB running the same SQL (Spark at 5M on this laptop was not measured),
 which is a much faster writer; even against it the bronze and silver gates cost **37 to 60 %** of the build
-at 1M and 5M, and the gold gate costs more than its 90-row build in absolute terms of less than 0.6 s.
+at 1M and 5M. The gold gate takes 2.4 times its 90-row build at 1M and 93 % of it at 5M; both stay under 0.6 s.
 
 ## Tool comparison
 

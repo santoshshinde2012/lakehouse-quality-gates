@@ -6,7 +6,7 @@
 
 | Signal | Where | Use |
 |---|---|---|
-| Structured logs | structlog (`DQ_LOG_JSON=true` for JSON), events `dq.verify.start`, `dq.contract.verify`, `dq.verify.done`, `dq.notify.failed` | Debugging, log shipping |
+| Structured logs | structlog (`DQ_LOG_JSON=true` for JSON), events `dq.verify.start`, `dq.contract.verify`, `dq.verify.done`, `dq.gate.passed`, `dq.gate.passed_with_warnings`, `dq.gate.blocked`, `dq.medallion.blocked`, `dq.notify.failed` | Debugging, log shipping |
 | Gate reports | `reports/*.json`, `*.xml`, `*.md` | Audit trail per run; JUnit renders in CI |
 | Iceberg history | `ops.dq_results` (one row per check: run id, created at, pipeline, layer, engine, gate status, contract, dataset, check name and type, column, outcome) | Trend queries in Trino or DuckDB, e.g. failure rate per check per week |
 | Airflow | Task state, logs, durations | Gate latency per run, alert on task failure |
