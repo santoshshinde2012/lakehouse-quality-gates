@@ -62,7 +62,7 @@ help:
 	@echo "  make bench-all          all of the above"
 	@echo ""
 	@echo "Docs and housekeeping"
-	@echo "  make docs | docs-check  refresh | check links, markdownlint, Mermaid and snippet sync"
+	@echo "  make docs | docs-check  refresh | check links, markdownlint, Mermaid and snippet sync, quoted numbers"
 	@echo "  make diagrams | diagrams-check   render SVGs | parse every .mmd with mermaid-cli"
 	@echo "  make clean | dist       caches and reports | SODA.tar.gz without .venv"
 
@@ -185,6 +185,7 @@ docs-check: ## Relative links and anchors, markdownlint, Mermaid and snippet syn
 	npx -y markdownlint-cli2@0.23.3
 	python3 scripts/diagrams.py --check
 	python3 scripts/doc_snippets.py --check
+	python3 scripts/check_numbers.py
 
 diagrams-check:
 	python3 scripts/diagrams.py --check

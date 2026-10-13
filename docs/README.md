@@ -3,15 +3,15 @@
 Everything about **lakehouse-quality-gates**: Soda Core v4 data contracts that act as quality gates between
 the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse).
 
-> [!TIP]
-> **New here? Follow these four steps, about 30 minutes in total.**
->
-> 1. [Use case](overview/use-case.md): the problem and what a gate guarantees (5 min).
-> 2. [Quickstart](guides/quickstart.md): run the good and the bad batch on your laptop, no Docker (5 min).
-> 3. [Architecture overview](architecture/overview.md): the system on one page (5 min).
-> 4. [System design](system-design.md): the requirements, decisions and risks, with links to every detail page (15 min).
->
-> The [glossary](overview/glossary.md) defines every term.
+## Reading path
+
+1. [Use case](overview/use-case.md): the problem and what a gate guarantees (5 min).
+2. [Quickstart](guides/quickstart.md): set up and run the good and bad batch, no Docker (10 min).
+3. [Architecture overview](architecture/overview.md): the system on one page (5 min).
+4. [Running and testing](guides/running-and-testing.md): the test tiers, the live stack and the benchmarks (10 min).
+5. [System design](system-design.md): requirements, decisions and risks, linking every detail page (15 min).
+
+Terms are defined once in the [glossary](overview/glossary.md); measured evidence is in [results](results/README.md).
 
 ## Who should read what
 
@@ -53,11 +53,11 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 
 | Document | What it covers |
 |---|---|
-| [Quickstart](guides/quickstart.md) | Run the gates in a minute without Docker, then against the live lakehouse |
+| [Quickstart](guides/quickstart.md) | The canonical setup: numbered steps for the local demo, the live stack and the full stack |
 | [Running and testing](guides/running-and-testing.md) | Prerequisites, setup, the four test tiers, every make target, benchmarks, regenerating docs |
 | [Contracts](guides/contracts.md) | Contract conventions, every check per layer, and how to add one |
 | [Configuration](guides/configuration.md) | CLI commands, exit codes and every `DQ_*` setting |
-| [Runbook](guides/runbook.md) | Daily operation, triaging a blocked gate, the verified macOS walkthrough |
+| [Runbook](guides/runbook.md) | Daily operation, triaging a blocked gate, a manual walkthrough of every component |
 | [Troubleshooting](guides/troubleshooting.md) | Symptoms and fixes |
 
 ### Benchmarks
@@ -76,13 +76,13 @@ the bronze, silver and gold layers of [local-data-lakehouse](https://github.com/
 | [ADRs](adr/README.md) | Architecture decision records |
 | [Research](research/README.md) | The quality-gate tool landscape and scoring |
 | [Diagrams](diagrams/README.md) | Catalogue of every Mermaid source and the shared [theme](diagrams/THEME.md) |
-| [Verification results](results/README.md) | Logs, reports and coverage from the verified runs |
+| [Verification results](results/README.md) | Every verified run, newest first, with date, commit, machine and the make target to reproduce it |
 | [Changelog](../CHANGELOG.md) | Release history |
 
 ## Conventions
 
 - Each fact lives on one page. The system design summarises and links; the focused pages hold the detail.
-- Text that must appear twice (the README quickstart and headline numbers) is written once as a region and copied
+- Text that must appear twice (the README quick start steps and the headline numbers) is written once as a region and copied
   by `make docs`; the tests fail if a copy is stale or if a line of prose is written twice by hand.
 - Every diagram is Mermaid, kept as one source file in [`diagrams/`](diagrams/README.md) and synced into the pages by
   `make diagrams`. `make diagrams-check` and the tests fail if a copy is stale.

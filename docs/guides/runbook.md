@@ -37,30 +37,31 @@ Exit codes and their effect in Airflow: [configuration](configuration.md#exit-co
 
 Every `DQ_*` setting is listed in [configuration](configuration.md).
 
-## Verified macOS walkthrough (2026-10-13)
+## Manual walkthrough
+
+`make e2e-live` and `make e2e-full` script all of this (see [running and testing](running-and-testing.md)). To drive
+each piece yourself, after the [quickstart](quickstart.md) setup and with `DQ_LDL_REPO_PATH` in `.env`:
 
 ```bash
-# SODA
-cp .env.example .env   # set DQ_LDL_REPO_PATH=/Users/<you>/.../local-data-lakehouse
-uv sync && make lint typecheck test validate demo-good demo-bad
-
-# lakehouse (in its repo)
+# lakehouse repo: light profile and the retail tables
 make up-light && .venv/bin/python scripts/light_demo.py retail
-# back in SODA: live DuckDB gates (expect 14 / 21 / 11 passed)
-.venv/bin/soda-dq run --engine duckdb
-.venv/bin/soda-dq seed fixtures/bad_batch --yes && .venv/bin/soda-dq run --engine duckdb   # all three layers block
+# this repo: live DuckDB gates (expect 14 / 21 / 11 passed)
+uv run soda-dq run --engine duckdb
+uv run soda-dq seed fixtures/bad_batch --yes && uv run soda-dq run --engine duckdb   # blocks at bronze
+uv run soda-dq seed fixtures/good_batch --yes                                        # restore
 
-# full profile with Trino + Spark (lakehouse repo)
+# lakehouse repo: full profile with Trino and Spark
 make up-full TRINO=1 && make e2e
-.venv/bin/soda-dq run --engine trino
-
-# container + Airflow (8080 was taken on this Mac, so the API server uses 8090)
-make dq-up
-make airflow-dq-up AIRFLOW_API_PORT=8090   # or set AIRFLOW_API_PORT in .env
-make airflow-dq-trigger                    # good data: every task succeeds
-make airflow-dq-trigger-bad                # fault injection: dq_bronze blocks, downstream upstream_failed
-make airflow-dq-trigger                    # restore good data
+# this repo
+uv run soda-dq run --engine trino
+make dq-up && docker exec ldl-soda soda-dq run
+make airflow-dq-up            # add AIRFLOW_API_PORT=8090 if 8080 is taken (or set it in .env)
+make airflow-dq-trigger       # good data: every task succeeds
+make airflow-dq-trigger-bad   # fault injection: dq_bronze blocks, downstream upstream_failed
+make airflow-dq-trigger       # restore good data
 ```
+
+The verified output of each command is in [results](../results/README.md).
 
 Tear down with `make dq-down` and `make airflow-dq-down` (or `make down` in the lakehouse repo).
 
@@ -70,7 +71,7 @@ Tear down with `make dq-down` and `make airflow-dq-down` (or `make down` in the 
 Notes:
 
 - Tables written by Spark and DuckDB use `timestamp with time zone`; a contract that says `timestamp` fails the schema check.
-- After a bad-batch seed, run `make e2e` (lakehouse repo) to restore the good data.
+- After a bad-batch seed, restore the good data with `uv run soda-dq seed fixtures/good_batch --yes` (or `make e2e` in the lakehouse repo).
 - To rerun one gate in Airflow: `airflow tasks test lakehouse_retail_medallion_dq dq_silver <date>`.
 
 ## Troubleshooting

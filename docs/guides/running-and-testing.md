@@ -44,22 +44,10 @@ At 5M orders the Trino gates fail with `EXCEEDED_LOCAL_MEMORY_LIMIT`. For that s
 
 ## Setup
 
-```bash
-git clone https://github.com/santoshshinde2012/lakehouse-quality-gates.git
-cd lakehouse-quality-gates
-make venv        # uv sync --all-extras: .venv with the package, Soda Core, DuckDB, Trino client and dev tools
-make env         # .env from .env.example
-```
-
-For T2, T3 and the benchmarks, point `.env` at the lakehouse checkout:
-
-```bash
-DQ_LDL_REPO_PATH=../local-data-lakehouse    # relative to this repo, or absolute
-AIRFLOW_API_PORT=8090                       # only if something else already uses 8080
-```
-
-[`.env.example`](../../.env.example) lists every setting with its default; [configuration](configuration.md) explains each.
-A unit test fails if a setting is missing from it. Optional: `uv run pre-commit install` runs the hooks on commit.
+Follow the [quickstart](quickstart.md): steps 1 to 4 install everything for T0 and T1, and the live steps add
+`DQ_LDL_REPO_PATH` for T2, T3 and the benchmarks. Set `AIRFLOW_API_PORT=8090` in `.env` if something else uses 8080.
+[`.env.example`](../../.env.example) lists every setting with its default and [configuration](configuration.md) explains
+each; a unit test fails if a setting is missing from it. Optional: `uv run pre-commit install` runs the hooks on commit.
 
 ## Test tiers at a glance
 
@@ -67,8 +55,8 @@ A unit test fails if a setting is missing from it. Optional: `uv run pre-commit 
 |---|---|---|---|---|---|
 | T0 | `unit` | policy, models, rendering, sinks, notifiers, settings, CLI, DAG wiring, docs tooling, with fakes for every port | Python | `make test-unit` | about 4 s |
 | T1 | `integration` | real Soda Core against in-memory DuckDB built from `fixtures/`: good batch passes, bad batch blocks every layer | Python | `make test-integration` | about 4 s |
-| T2 | `live` | gates on the running light lakehouse (Lakekeeper + RustFS) with host DuckDB, good and bad batch | Docker, `DQ_LDL_REPO_PATH` | `make e2e-live` | about 1.5 min |
-| T3 | `full` | lakehouse Spark pipeline, Trino gates, the `ldl-soda` container, the Airflow good and bad runs | Docker (8 GB), `DQ_LDL_REPO_PATH` | `make e2e-full` | about 15 min |
+| T2 | `live` | gates on the running light lakehouse (Lakekeeper + RustFS) with host DuckDB, good and bad batch | Docker, `DQ_LDL_REPO_PATH` | `make e2e-live` | 25 s to 1.5 min |
+| T3 | `full` | lakehouse Spark pipeline, Trino gates, the `ldl-soda` container, the Airflow good and bad runs | Docker (8 GB), `DQ_LDL_REPO_PATH` | `make e2e-full` | 17 to 30 min |
 
 pytest selects T0 and T1 by default (`addopts = -m 'not live and not full'`); CI runs exactly those plus lint, mypy and
 the docs checks. The `live` and `full` tests skip with the reason (for example `Lakekeeper is not reachable at
@@ -86,7 +74,7 @@ on every contract, then the demo (good batch on CSV fixtures, then the bad batch
 Pass criteria:
 
 - `All checks passed!` from ruff and `Success: no issues found` from mypy.
-- pytest: `108 passed, 7 deselected` (the 7 are the live and full tests) and coverage of at least 95%.
+- pytest: `110 passed, 7 deselected` (the 7 are the live and full tests) and coverage of at least 95%.
 - `validate`: every contract reported valid.
 - Demo good: three `PASSED` gates, exit 0. Demo bad: `OK: bronze|silver|gold blocked as expected`.
 - Last line: `test-all: PASS (...)`.
@@ -149,7 +137,7 @@ afterwards. `BENCH_OUT=dir` writes a run to its own folder so it never mixes wit
 | `make bench-report` | `summary.md` from the raw files in `BENCH_OUT` | `make bench-report BENCH_OUT=...` | file written |
 
 `bench-tools` records the exact package versions in `tools_versions.json` next to `tools.csv`. The full published run
-(10k to 5M orders) took about two hours; the quick sizes above take about 15 minutes. Method and caveats:
+(10k to 5M orders) took about two hours; the quick sizes above take about 5 minutes. Method and caveats:
 [benchmarks README](../../benchmarks/README.md) and [benchmark results](../benchmarks/results.md).
 
 ## Regenerating docs, diagrams and results

@@ -70,7 +70,7 @@ Why bronze **warns** where silver **fails**: [use case](../overview/use-case.md#
 1. Create `contracts/retail/<layer>/<table>.yml` with `dataset: "{{ dataset_root }}/<layer>/<table>"`.
 2. `make validate`: Soda parses it and reports typos such as `Invalid check type 'missingg'`.
 3. Add a defect for it to `fixtures/bad_batch` and assert on it in `tests/integration/test_soda_duckdb.py`.
-4. `make check demo`.
+4. `make test-all` (and `make e2e-live` to see the check on the live tables).
 
 ## Check types available in the free Soda Core 4.26
 

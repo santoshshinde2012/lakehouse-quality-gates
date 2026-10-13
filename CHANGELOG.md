@@ -3,6 +3,19 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.4.1] - 2026-10-14
+
+### Changed
+
+- **README rewritten** to be short and scannable: tagline, six badges, what it does, the architecture diagram, numbered quick start steps with one command and one expected result each, live and full-stack steps, a testing table, results at a glance and a documentation table. Long feature lists, the roadmap and duplicate explanations moved to the docs.
+- **One canonical setup flow:** `docs/guides/quickstart.md` holds the numbered steps as regions that the README copies; running-and-testing and the runbook link to it instead of repeating setup. The runbook's dated walkthrough became a manual walkthrough of every component.
+- Documentation hub: a five-step reading path; descriptions updated for v0.4.0 targets and tiers. Stale commands fixed in the contracts guide and troubleshooting.
+- **Results reorganised:** `docs/results/README.md` indexes every run newest first with date, commit, machine and the make target to reproduce it. The v0.2.1 component verification moved to `runs/2026-10-13-v0.2-verification/`; early Airflow debugging runs moved to `archive/` with a note; the 1.6 MB coverage HTML was dropped (XML and the test log summary remain).
+
+### Added
+
+- `scripts/check_numbers.py`, run by `make docs-check` and the unit tests: the test count, coverage, total checks, accuracy verdicts and e2e step counts quoted in the README and docs must match the result files.
+
 ## [0.4.0] - 2026-10-13
 
 ### Added
