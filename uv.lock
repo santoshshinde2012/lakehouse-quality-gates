@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = "==3.12.*"
 
 [[package]]
@@ -396,6 +396,66 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d3/59/322338183ecda247fb5d1763a6cbe46eff7222eaeebafd9fa65d4bf5cb11/jmespath-1.1.0.tar.gz", hash = "sha256:472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d", size = 27377, upload-time = "2026-01-22T16:35:26.279Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/14/2f/967ba146e6d58cf6a652da73885f52fc68001525b4197effc174321d70b4/jmespath-1.1.0-py3-none-any.whl", hash = "sha256:a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64", size = 20419, upload-time = "2026-01-22T16:35:24.919Z" },
+]
+
+[[package]]
+name = "lakehouse-quality-gates"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "duckdb" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "soda-core" },
+    { name = "soda-duckdb" },
+    { name = "structlog" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+lakehouse = [
+    { name = "pyarrow" },
+    { name = "pyiceberg", extra = ["pyarrow", "s3fs"] },
+]
+trino = [
+    { name = "soda-trino" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "types-pyyaml" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "duckdb", specifier = "==1.5.6" },
+    { name = "pyarrow", marker = "extra == 'lakehouse'", specifier = "==25.0.1" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
+    { name = "pydantic-settings", specifier = ">=2.4,<3" },
+    { name = "pyiceberg", extras = ["pyarrow", "s3fs"], marker = "extra == 'lakehouse'", specifier = "==0.12.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "soda-core", specifier = "==4.26.0" },
+    { name = "soda-duckdb", specifier = "==4.26.0" },
+    { name = "soda-trino", marker = "extra == 'trino'", specifier = "==4.26.0" },
+    { name = "structlog", specifier = ">=24.1" },
+    { name = "typer", specifier = ">=0.12,<1" },
+]
+provides-extras = ["trino", "lakehouse"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pre-commit", specifier = ">=3.7" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-cov", specifier = ">=5" },
+    { name = "ruff", specifier = ">=0.6" },
+    { name = "types-pyyaml" },
 ]
 
 [[package]]
@@ -1161,66 +1221,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/59/01/8ecc95b09517753374aeff5bd8d561b356ebb54b038228202c386958d95c/soda_duckdb-4.26.0.tar.gz", hash = "sha256:ab645fa2118843d2236677a8212112b580bf7756140de6fdd6586123df7d5d3d", size = 6299, upload-time = "2026-10-06T11:45:24.413Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bd/f9/e686de21a0bfcc684a0efe216c176df42707dec02e59338390421aee13b3/soda_duckdb-4.26.0-py3-none-any.whl", hash = "sha256:e352bd618dc4883b6d9f2f6834d23592e344334fe64b59789e8a86e39e2b565f", size = 7252, upload-time = "2026-10-06T11:45:23.653Z" },
-]
-
-[[package]]
-name = "soda-lakehouse-dq"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "duckdb" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pyyaml" },
-    { name = "soda-core" },
-    { name = "soda-duckdb" },
-    { name = "structlog" },
-    { name = "typer" },
-]
-
-[package.optional-dependencies]
-lakehouse = [
-    { name = "pyarrow" },
-    { name = "pyiceberg", extra = ["pyarrow", "s3fs"] },
-]
-trino = [
-    { name = "soda-trino" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "types-pyyaml" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "duckdb", specifier = "==1.5.6" },
-    { name = "pyarrow", marker = "extra == 'lakehouse'", specifier = "==25.0.1" },
-    { name = "pydantic", specifier = ">=2.11,<3" },
-    { name = "pydantic-settings", specifier = ">=2.4,<3" },
-    { name = "pyiceberg", extras = ["pyarrow", "s3fs"], marker = "extra == 'lakehouse'", specifier = "==0.12.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "soda-core", specifier = "==4.26.0" },
-    { name = "soda-duckdb", specifier = "==4.26.0" },
-    { name = "soda-trino", marker = "extra == 'trino'", specifier = "==4.26.0" },
-    { name = "structlog", specifier = ">=24.1" },
-    { name = "typer", specifier = ">=0.12,<1" },
-]
-provides-extras = ["trino", "lakehouse"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.11" },
-    { name = "pre-commit", specifier = ">=3.7" },
-    { name = "pytest", specifier = ">=8" },
-    { name = "pytest-cov", specifier = ">=5" },
-    { name = "ruff", specifier = ">=0.6" },
-    { name = "types-pyyaml" },
 ]
 
 [[package]]

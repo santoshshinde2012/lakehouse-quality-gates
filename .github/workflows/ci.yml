@@ -55,8 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build runner image
-        run: docker build -f docker/Dockerfile -t soda-lakehouse-dq:ci .
+        run: docker build -f docker/Dockerfile -t lakehouse-quality-gates:ci .
       - name: Smoke test inside the image
         run: |
-          docker run --rm -e DQ_ENGINE=duckdb-local soda-lakehouse-dq:ci soda-dq validate
-          docker run --rm -e DQ_ENGINE=duckdb-local soda-lakehouse-dq:ci soda-dq run
+          docker run --rm -e DQ_ENGINE=duckdb-local lakehouse-quality-gates:ci soda-dq validate
+          docker run --rm -e DQ_ENGINE=duckdb-local lakehouse-quality-gates:ci soda-dq run

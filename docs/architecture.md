@@ -17,7 +17,7 @@ flowchart LR
     TR["Trino (optional)"]:::ext
     OS[("RustFS object store<br/>s3://lake/warehouse")]:::store
   end
-  subgraph DQ["soda-lakehouse-dq"]
+  subgraph DQ["lakehouse-quality-gates"]
     CLI["soda-dq CLI<br/>Soda Core 4.26 contracts"]:::dq
     REP[("reports/<br/>JSON · JUnit · Markdown")]:::store
   end
@@ -191,7 +191,7 @@ flowchart TB
       SP["ldl-spark"]:::ext
       TR["ldl-trino :8088 (full profile)"]:::ext
       AF["Airflow api-server :8090 (AIRFLOW_API_PORT)<br/>scheduler · dag-processor · docker-proxy"]:::ext
-      SO["ldl-soda<br/>image soda-lakehouse-dq:0.1.0"]:::dq
+      SO["ldl-soda<br/>image lakehouse-quality-gates:0.2.0"]:::dq
     end
     VENV["SODA/.venv<br/>soda-dq on host"]:::dq
     TG["typeglass-libsql :8080 (unrelated, untouched)"]:::fail

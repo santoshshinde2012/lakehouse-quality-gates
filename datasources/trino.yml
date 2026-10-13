@@ -11,4 +11,4 @@ connection:
   http_scheme: http
   auth_type: NoAuthentication
   user: soda-dq
-  source: soda-lakehouse-dq
+  source: lakehouse-quality-gates

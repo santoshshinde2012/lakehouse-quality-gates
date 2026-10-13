@@ -8,7 +8,7 @@ flowchart LR
     TR["Trino (optional)"]:::ext
     OS[("RustFS object store<br/>s3://lake/warehouse")]:::store
   end
-  subgraph DQ["soda-lakehouse-dq"]
+  subgraph DQ["lakehouse-quality-gates"]
     CLI["soda-dq CLI<br/>Soda Core 4.26 contracts"]:::dq
     REP[("reports/<br/>JSON · JUnit · Markdown")]:::store
   end
