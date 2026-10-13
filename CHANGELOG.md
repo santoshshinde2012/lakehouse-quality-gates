@@ -3,6 +3,18 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.2.2] - 2026-10-13
+
+### Changed
+
+- Diagrams are now Mermaid only. README.md shows the layered architecture, the medallion flow with gates and the deployment inline; docs/architecture.md has all seven views (also the gate sequence, Airflow DAG, domain and ports, and system context).
+- Every diagram uses one shared theme (`base` with explicit fills, dark text and borders, one accent per layer, green pass and red fail edges), so it reads on GitHub light and dark. Documented in docs/diagrams/THEME.md.
+- `make diagrams` syncs the Markdown copies from docs/diagrams/*.mmd (scripts/diagrams.py) and renders SVGs with mermaid-cli. `make diagrams-check` fails on stale copies and parses every source. The stale-copy check also runs in pytest, so CI enforces it.
+
+### Removed
+
+- The draw.io sources, PNG exports and docs/diagrams/src/build_drawio.py, the draw.io export in `make diagrams`, and the docs/diagrams pre-commit exclusion.
+
 ## [0.2.1] - 2026-10-13
 
 ### Fixed

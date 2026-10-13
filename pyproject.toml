@@ -1,6 +1,6 @@
 [project]
 name = "lakehouse-quality-gates"
-version = "0.2.1"
+version = "0.2.2"
 description = "Contract-gated medallion: Soda Core v4 data contracts as quality gates for local-data-lakehouse"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"

@@ -22,3 +22,6 @@ readme.original.md.bak
 !docs/results/**
 .verify-progress.md
 .preview/
+
+# rendered by make diagrams (README uses inline Mermaid)
+docs/diagrams/svg/

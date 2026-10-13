@@ -1,21 +1,34 @@
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 flowchart LR
-  ST["land_smoke<br/>(ldl-spark)"]:::ext
-  BR["bronze"]:::ext
-  IN["inject_bad_batch<br/>no-op unless conf flag"]:::dq
-  DB{"dq_bronze<br/>(ldl-soda)"}:::gate
-  SI["silver"]:::ext
-  DS{"dq_silver"}:::gate
-  GO["gold"]:::ext
-  DG{"dq_gold"}:::gate
-  EN["query_timetravel"]:::gate
-  FX(["DAG run failed<br/>downstream: upstream_failed"]):::fail
-  ST --> BR --> IN --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
+  ST["land_smoke<br/><small>ldl-spark</small>"]:::platform
+  BR["bronze"]:::platform
+  IN["inject_bad_batch<br/><small>no-op unless<br/>conf inject_bad_batch=true</small>"]:::xcut
+  DB{{"dq_bronze<br/><small>ldl-soda</small>"}}:::app
+  SI["silver"]:::platform
+  DS{{"dq_silver"}}:::app
+  GO["gold"]:::platform
+  DG{{"dq_gold"}}:::app
+  EN(["query_timetravel"]):::pass
+  FX(["DAG run failed<br/><small>downstream: upstream_failed</small>"]):::fail
+  ST --> BR
+  BR --> IN
+  IN --> DB
+  DB -->|exit 0| SI
+  SI --> DS
+  DS -->|exit 0| GO
+  GO --> DG
+  DG -->|exit 0| EN
   DB -->|exit 1| FX
   DS -->|exit 1| FX
   DG -->|exit 1| FX
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  linkStyle 3,5,7 stroke:#16a34a,stroke-width:2.5px
+  linkStyle 8,9,10 stroke:#dc2626,stroke-width:2px,stroke-dasharray:6 4

@@ -1,23 +1,97 @@
 # Architecture
 
-Mermaid renders every diagram natively on GitHub. The sources (`.mmd`) and rendered SVGs live in [`diagrams/`](diagrams/).
-Re-render with `npx -y @mermaid-js/mermaid-cli -i docs/diagrams/<name>.mmd -o docs/diagrams/<name>.svg -b transparent`.
+Every diagram here is a native Mermaid block that GitHub renders inline. The sources are in
+[`diagrams/`](diagrams/) as `.mmd` files and share one theme, documented in
+[diagrams/THEME.md](diagrams/THEME.md): one accent per layer (sky entry points, slate composition root,
+indigo application, violet domain, teal adapters, amber data platform), green for pass and red for blocked.
+Edit a source, then run `make diagrams` to sync the copies below; `make diagrams-check` catches drift.
 
-**Palette** (it uses the `base` theme with explicit node colours, so it reads the same in GitHub light and dark mode):
+## 1. Layered reference architecture
 
-| Colour | Meaning |
-|---|---|
-| 🟦 indigo | lakehouse platform and external systems |
-| 🟦 sky | this project (soda-dq) and outputs |
-| 🟪 violet | data stores |
-| 🟩 green | quality gates and the happy path |
-| 🟨 amber | sources |
-| 🟪 fuchsia | orchestration |
-| 🟥 red | failure paths |
-
-## Layered reference architecture
-
-[![Layered reference architecture](diagrams/drawio/layered-architecture.drawio.png)](diagrams/drawio/layered-architecture.drawio)
+<!-- diagram:01-layered-architecture -->
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart TB
+  subgraph ENTRY["1 · Entry points"]
+    direction LR
+    E1["soda-dq CLI<br/><small>cli.py · Typer</small>"]:::entry
+    E2["Airflow DAG<br/><small>lakehouse_retail_medallion_dq</small>"]:::entry
+    E3["Docker runner<br/><small>ldl-soda</small>"]:::entry
+    E4["Makefile · CI<br/><small>make verify / demo</small>"]:::entry
+    E1 ~~~ E2 ~~~ E3 ~~~ E4
+  end
+  subgraph ROOT["Composition root · container.py"]
+    direction LR
+    R1["Settings<br/><small>pydantic-settings · DQ_*</small>"]:::root
+    R2["build_container()"]:::root
+    R3["build_provider() · build_sinks()<br/>build_notifiers()"]:::root
+    R1 ~~~ R2 ~~~ R3
+  end
+  subgraph APP["2 · Application"]
+    direction LR
+    A1["RunMedallionUseCase"]:::app
+    A2["VerifyLayerUseCase"]:::app
+    A3["GatePolicy → GateDecision"]:::app
+    A4["raise_if_blocked()"]:::app
+    A1 ~~~ A2 ~~~ A3 ~~~ A4
+  end
+  subgraph DOM["3 · Domain · stdlib only"]
+    direction LR
+    D1["Models<br/><small>ContractSpec · CheckResult<br/>ContractResult · GateReport</small>"]:::domain
+    D2["Ports «Protocol»<br/><small>ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock</small>"]:::domain
+    D3["Errors<br/><small>GateBlockedError · DataSourceError</small>"]:::domain
+    D1 ~~~ D2 ~~~ D3
+  end
+  subgraph ADP["4 · Adapters · implement the ports"]
+    direction LR
+    P1["SodaContractVerifier<br/><small>DuckDBProvider · TrinoProvider</small>"]:::adapter
+    P2["FileContractRepository"]:::adapter
+    P3["Sinks<br/><small>JsonFileSink · JUnitXmlSink<br/>MarkdownSink · IcebergSink</small>"]:::adapter
+    P4["Notifiers<br/><small>ConsoleNotifier · SlackWebhookNotifier</small>"]:::adapter
+    P5["SystemClock"]:::adapter
+    P1 ~~~ P2 ~~~ P3 ~~~ P4 ~~~ P5
+  end
+  subgraph PLAT["5 · Data platform · local-data-lakehouse"]
+    direction LR
+    L1["Soda Core 4.26"]:::platform
+    L2["DuckDB · Trino"]:::platform
+    L3["Lakekeeper<br/><small>Iceberg REST</small>"]:::platform
+    L4[("RustFS S3<br/><small>bronze · silver · gold</small>")]:::platform
+    L5["Slack · reports/"]:::platform
+    L1 ~~~ L2 ~~~ L3 ~~~ L4 ~~~ L5
+  end
+  subgraph XC["Cross-cutting · every layer"]
+    direction LR
+    X1["Observability<br/><small>structlog · JSON / JUnit / Markdown</small>"]:::xcut
+    X2["Configuration<br/><small>Settings · .env · DQ_*</small>"]:::xcut
+    X3["Security<br/><small>non-root read-only image · SecretStr</small>"]:::xcut
+    X1 ~~~ X2 ~~~ X3
+  end
+  ENTRY ==>|calls| ROOT
+  ROOT ==>|wires use cases| APP
+  APP ==>|depends on models + ports| DOM
+  DOM ==>|ports implemented by| ADP
+  ADP ==>|talks to| PLAT
+  PLAT ~~~ XC
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  style ENTRY fill:#f0f9ff,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  style ROOT fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  style APP fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  style DOM fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  style ADP fill:#f0fdfa,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  style PLAT fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  style XC fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:6 4,color:#1e293b
+  linkStyle 20,21,22,23,24 stroke:#475569,stroke-width:2px
+```
+<!-- /diagram -->
 
 | # | Layer | Contents (real names) | May depend on |
 |---|---|---|---|
@@ -35,145 +109,130 @@ third-party imports. The application layer never imports Soda, DuckDB or Slack: 
 **observability** (structlog events and reports), **configuration** (pydantic-settings, `DQ_*`) and
 **security** (vended S3 credentials, a non-root read-only container, `SecretStr` for the Slack URL).
 
-### Medallion flow with quality gates
+## 2. Medallion data flow with quality gates
 
-[![Medallion flow with quality gates](diagrams/drawio/medallion-flow.drawio.png)](diagrams/drawio/medallion-flow.drawio)
-
-### Deployment
-
-[![Deployment on Docker network ldl-net](diagrams/drawio/deployment.drawio.png)](diagrams/drawio/deployment.drawio)
-
-The three draw.io diagrams (`diagrams/drawio/*.drawio`) are generated by [`diagrams/src/build_drawio.py`](diagrams/src/build_drawio.py) and exported with `make diagrams`. The PNGs embed the diagram, so they stay editable in draw.io.
-
-## 1. C4 level 1: System context
-
+<!-- diagram:02-medallion-flow -->
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 flowchart LR
-  ENG(["Data engineer"]):::ext
-  SL(["Slack"]):::ext
-  subgraph LDL["local-data-lakehouse (referenced by path, unchanged)"]
-    AF["Airflow 3<br/>scheduler + DAG processor"]:::ext
-    SP["Spark jobs<br/>bronze / silver / gold"]:::ext
-    LK["Lakekeeper<br/>Iceberg REST catalog"]:::ext
-    TR["Trino (optional)"]:::ext
-    OS[("RustFS object store<br/>s3://lake/warehouse")]:::store
+  SRC[("Raw CSV<br/><small>good or bad batch</small>")]:::platform
+  subgraph BRZ["Bronze"]
+    direction TB
+    B["bronze.orders<br/>bronze.customers"]:::platform
+    GB{{"Bronze gate<br/><small>14 checks</small>"}}:::app
   end
-  subgraph DQ["lakehouse-quality-gates"]
-    CLI["soda-dq CLI<br/>Soda Core 4.26 contracts"]:::dq
-    REP[("reports/<br/>JSON · JUnit · Markdown")]:::store
+  subgraph SLV["Silver"]
+    direction TB
+    S["silver.orders<br/>silver.customers"]:::platform
+    GS{{"Silver gate<br/><small>21 checks</small>"}}:::app
   end
-  ENG -- "make verify / seed" --> CLI
-  AF -- "docker exec ldl-spark" --> SP
-  AF -- "docker exec ldl-soda soda-dq verify &lt;layer&gt;" --> CLI
-  SP -- "writes Iceberg" --> LK
-  CLI -- "DuckDB ATTACH (default)" --> LK
-  CLI -. "engine=trino" .-> TR
-  TR --> LK
-  LK --> OS
-  CLI --> REP
-  CLI -. "webhook on block" .-> SL
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
-  style LDL fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-  style DQ fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  subgraph GLD["Gold"]
+    direction TB
+    G["gold.daily_order_metrics"]:::platform
+    GG{{"Gold gate<br/><small>11 checks</small>"}}:::app
+  end
+  OK(["Published<br/><small>BI · time travel</small>"]):::pass
+  X(["Blocked<br/><small>exit 1 · task fails · Slack alert<br/>downstream not run</small>"]):::fail
+  SRC -->|ingest| B
+  B --> GB
+  GB -->|pass| S
+  S --> GS
+  GS -->|pass| G
+  G --> GG
+  GG -->|pass| OK
+  GB -->|fail| X
+  GS -->|fail| X
+  GG -->|fail| X
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  style BRZ fill:#fdf4ec,stroke:#b45309,stroke-width:1.5px,color:#451a03
+  style SLV fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,color:#0f172a
+  style GLD fill:#fefce8,stroke:#ca8a04,stroke-width:1.5px,color:#422006
+  linkStyle 2,4,6 stroke:#16a34a,stroke-width:2.5px
+  linkStyle 7,8,9 stroke:#dc2626,stroke-width:2px,stroke-dasharray:6 4
 ```
+<!-- /diagram -->
 
-SVG: [01-system-context.svg](diagrams/01-system-context.svg)
+## 3. Deployment: Docker network `ldl-net`
 
-## 2. C4 level 2/3: Containers and components (ports and adapters)
-
+<!-- diagram:03-deployment -->
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 flowchart TB
-  subgraph COMP["Composition root"]
-    CLI["cli.py (Typer)"]:::dq
-    SET["settings.py (pydantic-settings)"]:::dq
-    CON["container.py"]:::dq
+  subgraph HOST["Developer machine · Docker Desktop"]
+    direction TB
+    subgraph CLIENTS["Host clients"]
+      direction LR
+      BRW["Browser<br/><small>localhost:8090 · AIRFLOW_API_PORT</small>"]:::entry
+      VENV["SODA/.venv · soda-dq<br/><small>localhost:8181 · localhost:9000</small>"]:::entry
+    end
+    subgraph NET["Docker network · ldl-net"]
+      direction TB
+      subgraph ORCH["Orchestration"]
+        direction LR
+        AF["airflow api-server :8090<br/><small>scheduler · dag-processor</small>"]:::app
+        DP["docker-proxy<br/><small>exec only</small>"]:::root
+      end
+      subgraph RUN["Compute"]
+        direction LR
+        SP["ldl-spark<br/><small>bronze · silver · gold jobs</small>"]:::platform
+        SO["ldl-soda<br/><small>lakehouse-quality-gates:0.2.2<br/>non-root · read-only · cap_drop ALL</small>"]:::adapter
+        TR["ldl-trino :8088<br/><small>full profile</small>"]:::platform
+      end
+      subgraph STORE["Catalog and storage"]
+        direction LR
+        LK["ldl-lakekeeper :8181<br/><small>Iceberg REST</small>"]:::domain
+        PG[("ldl-postgres<br/><small>catalog DB</small>")]:::domain
+        OS[("ldl-objectstore :9000<br/><small>RustFS · s3://lake</small>")]:::domain
+      end
+    end
   end
-  subgraph APP["Application"]
-    RM["RunMedallionUseCase"]:::gate
-    VL["VerifyLayerUseCase"]:::gate
-    GP["GatePolicy"]:::gate
-  end
-  subgraph DOM["Domain (stdlib only)"]
-    M["models: ContractSpec · CheckResult · GateReport"]:::store
-    P["ports: ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock"]:::store
-  end
-  subgraph ADP["Adapters"]
-    FR["FileContractRepository"]:::dq
-    SV["SodaContractVerifier"]:::dq
-    DP["DuckDBProvider"]:::dq
-    TP["TrinoProvider"]:::dq
-    SK["Sinks: JSON · JUnit · Markdown · Iceberg"]:::dq
-    NT["Notifiers: Console · Slack"]:::dq
-  end
-  SODA["Soda Core 4.26"]:::ext
-  CLI --> CON
-  SET --> CON
-  CON --> RM --> VL --> GP
-  VL --> P
-  GP --> M
-  FR -. implements .-> P
-  SV -. implements .-> P
-  SK -. implements .-> P
-  NT -. implements .-> P
-  SV --> DP
-  SV --> TP
-  SV --> SODA
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
-  style COMP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-  style APP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-  style DOM fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-  style ADP fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+  BRW --> AF
+  AF -->|docker exec| DP
+  DP --> SP
+  DP --> SO
+  SP -->|write Iceberg| LK
+  SO -->|read Iceberg| LK
+  SO -. "engine=trino" .-> TR
+  TR --> LK
+  VENV -->|REST + S3| LK
+  LK --> PG
+  LK --> OS
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  style HOST fill:#ffffff,stroke:#94a3b8,stroke-width:1.5px,color:#0f172a
+  style CLIENTS fill:#f0f9ff,stroke:#0284c7,stroke-width:1px,color:#0c4a6e
+  style NET fill:#f8fafc,stroke:#475569,stroke-width:1.5px,stroke-dasharray:6 4,color:#0f172a
+  style ORCH fill:#eef2ff,stroke:#4f46e5,stroke-width:1px,color:#1e1b4b
+  style RUN fill:#fffbeb,stroke:#d97706,stroke-width:1px,color:#451a03
+  style STORE fill:#f5f3ff,stroke:#7c3aed,stroke-width:1px,color:#2e1065
 ```
+<!-- /diagram -->
 
-SVG: [02-components.svg](diagrams/02-components.svg)
-
-## 3. Medallion data flow with quality gates
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
-flowchart LR
-  SRC[("Sample CSV / bad batch")]:::store
-  B["bronze.orders<br/>bronze.customers"]:::store
-  GB{"Bronze gate<br/>14 checks"}:::gate
-  S["silver.orders<br/>silver.customers"]:::store
-  GS{"Silver gate<br/>21 checks"}:::gate
-  G["gold.daily_order_metrics"]:::store
-  GG{"Gold gate<br/>11 checks"}:::gate
-  OK(["Published for BI"]):::gate
-  X(["Task fails · Slack alert<br/>downstream not run"]):::fail
-  SRC -- ingest --> B --> GB
-  GB -- pass --> S --> GS
-  GS -- pass --> G --> GG
-  GG -- pass --> OK
-  GB -- fail --> X
-  GS -- fail --> X
-  GG -- fail --> X
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
-```
-
-SVG: [03-medallion-flow.svg](diagrams/03-medallion-flow.svg)
+Host ports were verified on macOS. Airflow's port is set by `AIRFLOW_API_PORT` (8090 in the runbook).
 
 ## 4. Gate run sequence
 
+<!-- diagram:04-gate-sequence -->
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 sequenceDiagram
   autonumber
-  actor U as Airflow task / engineer
+  participant U as Airflow task / engineer
   participant C as soda-dq CLI
   participant V as VerifyLayerUseCase
   participant R as FileContractRepository
@@ -181,117 +240,166 @@ sequenceDiagram
   participant D as DuckDBProvider
   participant L as Lakekeeper (Iceberg)
   participant P as GatePolicy
-  participant K as Sinks / Notifiers
-  U->>C: soda-dq verify silver
-  C->>V: execute(retail, silver, vars)
-  V->>R: list_contracts(retail, silver)
-  R-->>V: ContractSpec[] (dataset_root rendered)
-  V->>S: verify(contracts, vars)
-  S->>D: open()
-  D->>L: ATTACH + USE first schema
-  S->>D: prepare(dataset) (DESCRIBE warm-up)
-  S->>S: verify_contract_locally()
-  S-->>V: ContractResult[] (+ schema details)
-  V->>P: decide(results)
-  P-->>V: GateDecision
-  V->>K: write(report) / notify(report)
-  alt blocked
-    C-->>U: exit 1 (task fails)
-  else passed or warned
-    C-->>U: exit 0
+  participant K as Sinks · Notifiers
+  rect rgb(248, 250, 252)
+    U->>C: soda-dq verify silver
+    C->>+V: execute(retail, silver, variables)
+    V->>R: list_contracts(retail, silver)
+    R-->>V: ContractSpec[]
+    V->>+S: verify(contracts, variables)
+    S->>D: open()
+    D->>L: ATTACH catalog
+    S->>S: verify_contract_locally()
+    S-->>-V: ContractResult[]
+    V->>P: decide(results)
+    P-->>V: GateDecision
+    V->>K: write(report) · notify(report)
+    V-->>-C: GateReport
+    alt blocked
+      rect rgb(254, 226, 226)
+        C-->>U: exit 1 · task fails, downstream skipped
+      end
+    else passed or warned
+      rect rgb(220, 252, 231)
+        C-->>U: exit 0 · promote layer
+      end
+    end
   end
 ```
-
-SVG: [04-gate-sequence.svg](diagrams/04-gate-sequence.svg)
+<!-- /diagram -->
 
 ## 5. Airflow DAG `lakehouse_retail_medallion_dq`
 
+<!-- diagram:05-airflow-dag -->
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 flowchart LR
-  ST["land_smoke<br/>(ldl-spark)"]:::ext
-  BR["bronze"]:::ext
-  IN["inject_bad_batch<br/>no-op unless conf flag"]:::dq
-  DB{"dq_bronze<br/>(ldl-soda)"}:::gate
-  SI["silver"]:::ext
-  DS{"dq_silver"}:::gate
-  GO["gold"]:::ext
-  DG{"dq_gold"}:::gate
-  EN["query_timetravel"]:::gate
-  FX(["DAG run failed<br/>downstream: upstream_failed"]):::fail
-  ST --> BR --> IN --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
+  ST["land_smoke<br/><small>ldl-spark</small>"]:::platform
+  BR["bronze"]:::platform
+  IN["inject_bad_batch<br/><small>no-op unless<br/>conf inject_bad_batch=true</small>"]:::xcut
+  DB{{"dq_bronze<br/><small>ldl-soda</small>"}}:::app
+  SI["silver"]:::platform
+  DS{{"dq_silver"}}:::app
+  GO["gold"]:::platform
+  DG{{"dq_gold"}}:::app
+  EN(["query_timetravel"]):::pass
+  FX(["DAG run failed<br/><small>downstream: upstream_failed</small>"]):::fail
+  ST --> BR
+  BR --> IN
+  IN --> DB
+  DB -->|exit 0| SI
+  SI --> DS
+  DS -->|exit 0| GO
+  GO --> DG
+  DG -->|exit 0| EN
   DB -->|exit 1| FX
   DS -->|exit 1| FX
   DG -->|exit 1| FX
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  linkStyle 3,5,7 stroke:#16a34a,stroke-width:2.5px
+  linkStyle 8,9,10 stroke:#dc2626,stroke-width:2px,stroke-dasharray:6 4
 ```
+<!-- /diagram -->
 
-SVG: [05-airflow-dag.svg](diagrams/05-airflow-dag.svg)
+`inject_bad_batch` is a no-op unless the run is triggered with `{"inject_bad_batch": true}`
+(`make airflow-dq-trigger-bad`); then `dq_bronze` exits 1 and every downstream task is `upstream_failed`.
 
-## 6. Deployment: Docker network `ldl-net`, ports verified on macOS
+## 6. Domain model and ports
 
+<!-- diagram:06-domain-ports -->
 ```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
-flowchart TB
-  subgraph HOST["Developer Mac (Docker Desktop)"]
-    subgraph NET["docker network ldl-net"]
-      LK["ldl-lakekeeper :8181"]:::ext
-      OS[("ldl-objectstore (RustFS) :9000")]:::store
-      PG[("ldl-postgres")]:::store
-      SP["ldl-spark"]:::ext
-      TR["ldl-trino :8088 (full profile)"]:::ext
-      AF["Airflow api-server :8090 (AIRFLOW_API_PORT)<br/>scheduler · dag-processor · docker-proxy"]:::ext
-      SO["ldl-soda<br/>image lakehouse-quality-gates:0.2.1"]:::dq
-    end
-    VENV["SODA/.venv<br/>soda-dq on host"]:::dq
-    TG["typeglass-libsql :8080 (unrelated, untouched)"]:::fail
-  end
-  AF -- "docker exec via proxy" --> SP
-  AF -- "docker exec via proxy" --> SO
-  SO -- "Iceberg REST, httplib" --> LK
-  VENV -- "localhost:8181" --> LK
-  LK --> PG
-  LK --> OS
-  TR --> LK
-  classDef ext fill:#e0e7ff,stroke:#4338ca,stroke-width:1.5px,color:#1e1b4b
-  classDef dq fill:#e0f2fe,stroke:#0369a1,stroke-width:1.5px,color:#082f49
-  classDef store fill:#ede9fe,stroke:#6d28d9,stroke-width:1.5px,color:#2e1065
-  classDef gate fill:#dcfce7,stroke:#15803d,stroke-width:1.5px,color:#052e16
-  classDef fail fill:#fee2e2,stroke:#b91c1c,stroke-width:1.5px,color:#450a0a
-  style HOST fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-  style NET fill:#f8fafc,stroke:#94a3b8,color:#0f172a
-```
-
-SVG: [06-deployment.svg](diagrams/06-deployment.svg)
-
-## 7. Domain model and ports
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 classDiagram
   direction LR
-  class ContractSpec { +pipeline +layer +name +dataset +path +references +datasets() }
-  class CheckResult { +name +outcome +details }
-  class ContractResult { +contract +checks +outcome }
-  class GateDecision { +status +reasons }
-  class GateReport { +run_id +layer +decision +results }
-  class ContractRepository { <<Protocol>> +list_contracts(pipeline, layer) }
-  class ContractVerifier { <<Protocol>> +verify(contracts, variables) }
-  class ResultSink { <<Protocol>> +write(report) }
-  class Notifier { <<Protocol>> +notify(report) }
-  class DataSourceProvider { <<Protocol>> +open() SodaDataSources }
-  class GatePolicy { +fail_on_warn +decide(results) GateDecision }
+  namespace domain {
+    class ContractSpec {
+      +pipeline
+      +layer
+      +name
+      +dataset
+      +path
+      +datasets()
+    }
+    class CheckResult {
+      +name
+      +outcome
+      +details
+    }
+    class ContractResult {
+      +contract
+      +checks
+      +outcome
+    }
+    class GateReport {
+      +run_id
+      +layer
+      +decision
+      +results
+    }
+    class ContractRepository {
+      <<Protocol>>
+      +list_contracts(pipeline, layer)
+    }
+    class ContractVerifier {
+      <<Protocol>>
+      +verify(contracts, variables)
+    }
+    class ResultSink {
+      <<Protocol>>
+      +write(report)
+    }
+    class Notifier {
+      <<Protocol>>
+      +notify(report)
+    }
+    class Clock {
+      <<Protocol>>
+      +now()
+    }
+  }
+  namespace application {
+    class GateDecision {
+      +status
+      +reasons
+    }
+    class GatePolicy {
+      +fail_on_warn
+      +decide(results) GateDecision
+    }
+    class VerifyLayerUseCase {
+      +execute(pipeline, layer, variables) GateReport
+    }
+  }
+  namespace adapters {
+    class SodaContractVerifier
+    class DataSourceProvider {
+      <<Protocol>>
+      +open() SodaDataSources
+    }
+    class DuckDBProvider
+    class TrinoProvider
+    class FileContractRepository
+    class JsonFileSink
+    class SlackWebhookNotifier
+  }
   ContractResult o-- CheckResult
   ContractResult --> ContractSpec
   GateReport o-- ContractResult
-  GateReport --> GateDecision
   GatePolicy ..> GateDecision
-  ContractVerifier ..> ContractResult
-  ContractRepository ..> ContractSpec
+  VerifyLayerUseCase --> ContractRepository
+  VerifyLayerUseCase --> ContractVerifier
+  VerifyLayerUseCase --> GatePolicy
+  VerifyLayerUseCase --> ResultSink
+  VerifyLayerUseCase --> Notifier
+  VerifyLayerUseCase --> Clock
   SodaContractVerifier ..|> ContractVerifier
   SodaContractVerifier --> DataSourceProvider
   DuckDBProvider ..|> DataSourceProvider
@@ -299,9 +407,73 @@ classDiagram
   FileContractRepository ..|> ContractRepository
   JsonFileSink ..|> ResultSink
   SlackWebhookNotifier ..|> Notifier
+  style ContractSpec fill:#ede9fe,stroke:#7c3aed,color:#2e1065
+  style CheckResult fill:#ede9fe,stroke:#7c3aed,color:#2e1065
+  style ContractResult fill:#ede9fe,stroke:#7c3aed,color:#2e1065
+  style GateReport fill:#ede9fe,stroke:#7c3aed,color:#2e1065
+  style ContractRepository fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  style ContractVerifier fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  style ResultSink fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  style Notifier fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  style Clock fill:#f5f3ff,stroke:#7c3aed,color:#2e1065
+  style GateDecision fill:#e0e7ff,stroke:#4f46e5,color:#1e1b4b
+  style GatePolicy fill:#e0e7ff,stroke:#4f46e5,color:#1e1b4b
+  style VerifyLayerUseCase fill:#e0e7ff,stroke:#4f46e5,color:#1e1b4b
+  style SodaContractVerifier fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style DataSourceProvider fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style DuckDBProvider fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style TrinoProvider fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style FileContractRepository fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style JsonFileSink fill:#ccfbf1,stroke:#0d9488,color:#134e4a
+  style SlackWebhookNotifier fill:#ccfbf1,stroke:#0d9488,color:#134e4a
 ```
+<!-- /diagram -->
 
-SVG: [07-domain-classes.svg](diagrams/07-domain-classes.svg)
+## 7. System context
+
+<!-- diagram:07-system-context -->
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart LR
+  ENG(["Data engineer"]):::entry
+  subgraph DQ["lakehouse-quality-gates"]
+    direction TB
+    CLI["soda-dq<br/><small>Soda Core 4.26 data contracts</small>"]:::app
+    REP[("reports/<br/><small>JSON · JUnit · Markdown</small>")]:::adapter
+  end
+  subgraph LDL["local-data-lakehouse · referenced by path, unchanged"]
+    direction TB
+    AF["Airflow 3"]:::platform
+    SP["Spark jobs<br/><small>bronze · silver · gold</small>"]:::platform
+    LK["Lakekeeper<br/><small>Iceberg REST catalog</small>"]:::platform
+    TR["Trino<br/><small>optional engine</small>"]:::platform
+    OS[("RustFS<br/><small>s3://lake/warehouse</small>")]:::platform
+  end
+  SL(["Slack"]):::entry
+  ENG -->|make verify · seed| CLI
+  AF -->|docker exec ldl-spark| SP
+  AF -->|docker exec ldl-soda| CLI
+  SP -->|writes Iceberg| LK
+  CLI -->|DuckDB iceberg ext| LK
+  CLI -. "engine=trino" .-> TR
+  TR --> LK
+  LK --> OS
+  CLI --> REP
+  CLI -. "webhook on block" .-> SL
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  style DQ fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  style LDL fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  linkStyle 9 stroke:#dc2626,stroke-width:1.5px,stroke-dasharray:6 4
+```
+<!-- /diagram -->
 
 ## Layering rules
 
@@ -323,39 +495,6 @@ How SOLID applies here:
 - **I**nterface segregation. Each port has one method; no adapter implements methods it doesn't use.
 - **D**ependency inversion. The application depends on `Protocol`s, and Soda types never leave
   `adapters/soda_verifier.py`.
-
-## One gate, step by step
-
-```mermaid
-sequenceDiagram
-  participant AF as Airflow dq_silver
-  participant CLI as soda-dq verify silver
-  participant UC as VerifyLayerUseCase
-  participant REP as FileContractRepository
-  participant V as SodaContractVerifier
-  participant P as DuckDBProvider
-  participant S as Soda Core 4.26
-  participant G as GatePolicy
-  AF->>CLI: docker exec ldl-soda ...
-  CLI->>UC: execute("retail", SILVER, vars)
-  UC->>REP: list_contracts
-  REP-->>UC: rendered specs ({{ dataset_root }} -> lakehouse_duckdb)
-  UC->>V: verify(specs, vars)
-  V->>P: open()
-  P->>P: lakehouse_client.duckdb_connect() + USE lakehouse
-  P-->>V: DuckDBDataSourceImpl.from_existing_cursor(con)
-  loop each contract
-    V->>S: verify_contract_locally(data_sources, contract, variables)
-    S-->>V: ContractVerificationSessionResult
-    V->>V: map to domain ContractResult
-  end
-  V-->>UC: results
-  UC->>G: decide(results)
-  G-->>UC: BLOCKED + reasons
-  UC->>UC: sinks.write · notifiers.notify
-  UC-->>CLI: GateReport
-  CLI-->>AF: exit 1 → task failed → gold never runs
-```
 
 ## Engines
 

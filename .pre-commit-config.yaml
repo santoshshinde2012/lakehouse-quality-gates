@@ -1,5 +1,5 @@
-# Generated artefacts (verification results, rendered diagrams) are kept byte-for-byte.
-exclude: ^docs/(results|diagrams)/.*\.(xml|svg|json|html|log|md|css|js|png)$
+# Generated verification results are kept byte-for-byte.
+exclude: ^docs/results/.*\.(xml|svg|json|html|log|md|css|js|png)$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

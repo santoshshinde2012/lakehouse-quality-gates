@@ -1,0 +1,80 @@
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
+flowchart TB
+  subgraph ENTRY["1 · Entry points"]
+    direction LR
+    E1["soda-dq CLI<br/><small>cli.py · Typer</small>"]:::entry
+    E2["Airflow DAG<br/><small>lakehouse_retail_medallion_dq</small>"]:::entry
+    E3["Docker runner<br/><small>ldl-soda</small>"]:::entry
+    E4["Makefile · CI<br/><small>make verify / demo</small>"]:::entry
+    E1 ~~~ E2 ~~~ E3 ~~~ E4
+  end
+  subgraph ROOT["Composition root · container.py"]
+    direction LR
+    R1["Settings<br/><small>pydantic-settings · DQ_*</small>"]:::root
+    R2["build_container()"]:::root
+    R3["build_provider() · build_sinks()<br/>build_notifiers()"]:::root
+    R1 ~~~ R2 ~~~ R3
+  end
+  subgraph APP["2 · Application"]
+    direction LR
+    A1["RunMedallionUseCase"]:::app
+    A2["VerifyLayerUseCase"]:::app
+    A3["GatePolicy → GateDecision"]:::app
+    A4["raise_if_blocked()"]:::app
+    A1 ~~~ A2 ~~~ A3 ~~~ A4
+  end
+  subgraph DOM["3 · Domain · stdlib only"]
+    direction LR
+    D1["Models<br/><small>ContractSpec · CheckResult<br/>ContractResult · GateReport</small>"]:::domain
+    D2["Ports «Protocol»<br/><small>ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock</small>"]:::domain
+    D3["Errors<br/><small>GateBlockedError · DataSourceError</small>"]:::domain
+    D1 ~~~ D2 ~~~ D3
+  end
+  subgraph ADP["4 · Adapters · implement the ports"]
+    direction LR
+    P1["SodaContractVerifier<br/><small>DuckDBProvider · TrinoProvider</small>"]:::adapter
+    P2["FileContractRepository"]:::adapter
+    P3["Sinks<br/><small>JsonFileSink · JUnitXmlSink<br/>MarkdownSink · IcebergSink</small>"]:::adapter
+    P4["Notifiers<br/><small>ConsoleNotifier · SlackWebhookNotifier</small>"]:::adapter
+    P5["SystemClock"]:::adapter
+    P1 ~~~ P2 ~~~ P3 ~~~ P4 ~~~ P5
+  end
+  subgraph PLAT["5 · Data platform · local-data-lakehouse"]
+    direction LR
+    L1["Soda Core 4.26"]:::platform
+    L2["DuckDB · Trino"]:::platform
+    L3["Lakekeeper<br/><small>Iceberg REST</small>"]:::platform
+    L4[("RustFS S3<br/><small>bronze · silver · gold</small>")]:::platform
+    L5["Slack · reports/"]:::platform
+    L1 ~~~ L2 ~~~ L3 ~~~ L4 ~~~ L5
+  end
+  subgraph XC["Cross-cutting · every layer"]
+    direction LR
+    X1["Observability<br/><small>structlog · JSON / JUnit / Markdown</small>"]:::xcut
+    X2["Configuration<br/><small>Settings · .env · DQ_*</small>"]:::xcut
+    X3["Security<br/><small>non-root read-only image · SecretStr</small>"]:::xcut
+    X1 ~~~ X2 ~~~ X3
+  end
+  ENTRY ==>|calls| ROOT
+  ROOT ==>|wires use cases| APP
+  APP ==>|depends on models + ports| DOM
+  DOM ==>|ports implemented by| ADP
+  ADP ==>|talks to| PLAT
+  PLAT ~~~ XC
+  classDef entry fill:#e0f2fe,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  classDef root fill:#e2e8f0,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  classDef app fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  classDef domain fill:#ede9fe,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  classDef adapter fill:#ccfbf1,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  classDef platform fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  classDef xcut fill:#f1f5f9,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:4 3,color:#1e293b
+  classDef pass fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#7f1d1d
+  style ENTRY fill:#f0f9ff,stroke:#0284c7,stroke-width:1.5px,color:#0c4a6e
+  style ROOT fill:#f8fafc,stroke:#475569,stroke-width:1.5px,color:#0f172a
+  style APP fill:#eef2ff,stroke:#4f46e5,stroke-width:1.5px,color:#1e1b4b
+  style DOM fill:#f5f3ff,stroke:#7c3aed,stroke-width:1.5px,color:#2e1065
+  style ADP fill:#f0fdfa,stroke:#0d9488,stroke-width:1.5px,color:#134e4a
+  style PLAT fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#451a03
+  style XC fill:#f8fafc,stroke:#64748b,stroke-width:1.5px,stroke-dasharray:6 4,color:#1e293b
+  linkStyle 20,21,22,23,24 stroke:#475569,stroke-width:2px

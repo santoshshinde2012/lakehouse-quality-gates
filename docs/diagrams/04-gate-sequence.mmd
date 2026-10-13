@@ -1,7 +1,7 @@
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Segoe UI, Helvetica, Arial, sans-serif", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "primaryColor": "#e0e7ff", "primaryBorderColor": "#4338ca", "secondaryColor": "#dcfce7", "tertiaryColor": "#f8fafc", "edgeLabelBackground": "#f8fafc", "actorBkg": "#e0e7ff", "actorBorder": "#4338ca", "noteBkgColor": "#fef3c7", "noteBorderColor": "#b45309", "signalColor": "#334155", "signalTextColor": "#0f172a"}}}%%
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#eef2ff','primaryTextColor':'#0f172a','primaryBorderColor':'#6366f1','secondaryColor':'#f1f5f9','secondaryTextColor':'#0f172a','secondaryBorderColor':'#94a3b8','tertiaryColor':'#f8fafc','tertiaryTextColor':'#0f172a','tertiaryBorderColor':'#cbd5e1','lineColor':'#64748b','textColor':'#0f172a','nodeTextColor':'#0f172a','titleColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#94a3b8','edgeLabelBackground':'#ffffff','noteBkgColor':'#fef9c3','noteTextColor':'#422006','noteBorderColor':'#ca8a04','actorBkg':'#eef2ff','actorBorder':'#6366f1','actorTextColor':'#1e1b4b','actorLineColor':'#94a3b8','signalColor':'#334155','signalTextColor':'#0f172a','labelBoxBkgColor':'#eef2ff','labelBoxBorderColor':'#6366f1','labelTextColor':'#1e1b4b','loopTextColor':'#1e1b4b','activationBkgColor':'#e0e7ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a'}}}%%
 sequenceDiagram
   autonumber
-  actor U as Airflow task / engineer
+  participant U as Airflow task / engineer
   participant C as soda-dq CLI
   participant V as VerifyLayerUseCase
   participant R as FileContractRepository
@@ -9,22 +9,28 @@ sequenceDiagram
   participant D as DuckDBProvider
   participant L as Lakekeeper (Iceberg)
   participant P as GatePolicy
-  participant K as Sinks / Notifiers
-  U->>C: soda-dq verify silver
-  C->>V: execute(retail, silver, vars)
-  V->>R: list_contracts(retail, silver)
-  R-->>V: ContractSpec[] (dataset_root rendered)
-  V->>S: verify(contracts, vars)
-  S->>D: open()
-  D->>L: ATTACH + USE first schema
-  S->>D: prepare(dataset) (DESCRIBE warm-up)
-  S->>S: verify_contract_locally()
-  S-->>V: ContractResult[] (+ schema details)
-  V->>P: decide(results)
-  P-->>V: GateDecision
-  V->>K: write(report) / notify(report)
-  alt blocked
-    C-->>U: exit 1 (task fails)
-  else passed or warned
-    C-->>U: exit 0
+  participant K as Sinks · Notifiers
+  rect rgb(248, 250, 252)
+    U->>C: soda-dq verify silver
+    C->>+V: execute(retail, silver, variables)
+    V->>R: list_contracts(retail, silver)
+    R-->>V: ContractSpec[]
+    V->>+S: verify(contracts, variables)
+    S->>D: open()
+    D->>L: ATTACH catalog
+    S->>S: verify_contract_locally()
+    S-->>-V: ContractResult[]
+    V->>P: decide(results)
+    P-->>V: GateDecision
+    V->>K: write(report) · notify(report)
+    V-->>-C: GateReport
+    alt blocked
+      rect rgb(254, 226, 226)
+        C-->>U: exit 1 · task fails, downstream skipped
+      end
+    else passed or warned
+      rect rgb(220, 252, 231)
+        C-->>U: exit 0 · promote layer
+      end
+    end
   end
