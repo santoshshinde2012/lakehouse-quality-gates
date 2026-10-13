@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
+import tempfile
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from soda_lakehouse_dq.adapters.datasources.duckdb_provider import lakehouse_connection_factory
+from soda_lakehouse_dq.adapters.datasources.duckdb_provider import (
+    apply_session_settings,
+    lakehouse_connection_factory,
+)
 from soda_lakehouse_dq.adapters.local_medallion import load_medallion
 from soda_lakehouse_dq.container import build_container
 from soda_lakehouse_dq.domain.errors import DataQualityError
@@ -115,7 +120,11 @@ def seed(
             settings.catalog_alias,
         )()
         try:
-            counts = load_medallion(con, sample_dir)
+            apply_session_settings(con, settings.duckdb_httpfs_client, settings.duckdb_temp_directory)
+            # DuckDB's Iceberg writer creates a scratch ./data directory; keep it out of the project
+            # (and off a read-only container root filesystem).
+            with tempfile.TemporaryDirectory() as scratch, contextlib.chdir(scratch):
+                counts = load_medallion(con, sample_dir.resolve())
         finally:
             con.close()
     except DataQualityError as exc:

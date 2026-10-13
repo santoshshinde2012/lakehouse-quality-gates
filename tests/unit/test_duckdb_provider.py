@@ -18,7 +18,9 @@ class Recorder:
 
     def execute(self, sql, params=None):
         self.statements.append(sql)
-        if sql.startswith("SET httpfs"):  # httpfs isn't loaded in a plain in-memory DuckDB
+        if sql.startswith(
+            ("SET httpfs", "SET temp_directory")
+        ):  # httpfs isn't loaded in a plain in-memory DuckDB
             return None
         return self.con.execute(sql, params) if params is not None else self.con.execute(sql)
 
@@ -75,3 +77,9 @@ def test_missing_catalog_raises_and_closes():
         pass
     with pytest.raises(duckdb.ConnectionException):
         con.execute("SELECT 1")
+
+
+def test_configure_sets_temp_directory_for_read_only_containers():
+    rec = Recorder(_catalog())
+    DuckDBProvider(lambda: rec, "ds", "lakehouse", temp_directory="/tmp/duckdb").configure(rec)
+    assert rec.statements[0] == "SET temp_directory = ?"

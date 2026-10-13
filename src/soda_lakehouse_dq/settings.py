@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     lakekeeper_warehouse: str = "lakehouse"
     catalog_alias: str = "lakehouse"
     duckdb_httpfs_client: Literal["default", "httplib", "curl"] | None = None
+    duckdb_temp_directory: str | None = None  # writable spill dir (e.g. /tmp/duckdb on a read-only rootfs)
 
     contracts_dir: Path = PROJECT_ROOT / "contracts"
     datasources_dir: Path = PROJECT_ROOT / "datasources"

@@ -25,6 +25,22 @@ def _quote_ident(name: str) -> str:
     return f'"{name}"'
 
 
+def apply_session_settings(
+    con: Any, httpfs_client: str | None = None, temp_directory: str | None = None
+) -> None:
+    """Container-friendly DuckDB session settings, shared by the provider and ``soda-dq seed``.
+
+    * ``httpfs_client``: inside a container the curl client resolves ``*.localhost`` (the S3 endpoint
+      Lakekeeper vends) to loopback; ``httplib`` asks Docker's DNS, which knows the objectstore alias.
+    * ``temp_directory``: DuckDB spills to ``./.tmp`` by default, which fails on a read-only root
+      filesystem; point it at a writable tmpfs.
+    """
+    if httpfs_client:
+        con.execute("SET httpfs_client_implementation = ?", [httpfs_client])
+    if temp_directory:
+        con.execute("SET temp_directory = ?", [temp_directory])
+
+
 class DuckDBProvider:
     """Wraps any DuckDB connection factory; Soda reuses the connection via ``from_existing_cursor``."""
 
@@ -36,11 +52,13 @@ class DuckDBProvider:
         name: str,
         catalog_alias: str,
         httpfs_client: str | None = None,
+        temp_directory: str | None = None,
     ) -> None:
         self.name = name
         self._factory = connection_factory
         self._alias = catalog_alias
         self._httpfs_client = httpfs_client
+        self._temp_directory = temp_directory
 
     @contextmanager
     def open(self) -> Iterator[SodaDataSources]:
@@ -57,11 +75,8 @@ class DuckDBProvider:
             con.close()
 
     def configure(self, con: Any) -> None:
-        """Session setup before Soda gets the connection: HTTP client, then the current catalog."""
-        if self._httpfs_client:
-            # Inside a container the curl client resolves *.localhost (the S3 endpoint Lakekeeper
-            # vends) to loopback; httplib asks Docker's DNS, which knows the objectstore alias.
-            con.execute("SET httpfs_client_implementation = ?", [self._httpfs_client])
+        """Session setup before Soda gets the connection: container settings, then the current catalog."""
+        apply_session_settings(con, self._httpfs_client, self._temp_directory)
         con.execute(f"USE {self._default_schema(con)}")
 
     def _warm(self, con: Any, dataset: str) -> None:

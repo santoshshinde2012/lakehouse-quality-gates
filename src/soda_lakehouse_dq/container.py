@@ -52,6 +52,7 @@ def build_provider(settings: Settings) -> DataSourceProvider:
                 settings.duckdb_datasource_name,
                 settings.catalog_alias,
                 httpfs_client=settings.duckdb_httpfs_client,
+                temp_directory=settings.duckdb_temp_directory,
             )
         case Engine.DUCKDB_LOCAL:
             return DuckDBProvider(

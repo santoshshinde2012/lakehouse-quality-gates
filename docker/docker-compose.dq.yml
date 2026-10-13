@@ -2,14 +2,14 @@
 # Separate compose project; local-data-lakehouse files stay untouched.
 #   docker compose -f docker/docker-compose.dq.yml up -d --build      # make dq-up
 # Requires the lakehouse light or full profile to be up first (network ldl-net must exist).
-name: soda-lakehouse-dq
+name: lakehouse-quality-gates
 
 services:
   soda-dq:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: soda-lakehouse-dq:0.1.0
+    image: lakehouse-quality-gates:0.2.0
     container_name: ${LDL_SODA_CONTAINER:-ldl-soda}
     environment:
       # Not DQ_ENGINE: the host .env (exported by make) usually says duckdb-local.
@@ -20,6 +20,8 @@ services:
       DQ_LDL_REPO_PATH: /opt/ldl
       # curl (DuckDB's default here) sends objectstore.localhost to loopback inside the container.
       DQ_DUCKDB_HTTPFS_CLIENT: httplib
+      # The root filesystem is read-only; DuckDB spills (CREATE TABLE AS on Iceberg) go to the tmpfs.
+      DQ_DUCKDB_TEMP_DIRECTORY: /tmp/duckdb
       DQ_TRINO_HOST: trino
       DQ_TRINO_PORT: "8080"
       DQ_FAIL_ON_WARN: ${DQ_FAIL_ON_WARN:-false}
