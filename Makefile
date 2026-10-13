@@ -1,4 +1,4 @@
-# soda-lakehouse-dq: Soda Core v4 contract gates for local-data-lakehouse (see README.md).
+# lakehouse-quality-gates: Soda Core v4 contract gates for local-data-lakehouse (see README.md).
 SHELL := /bin/bash
 UV ?= uv
 RUN := $(UV) run --frozen
@@ -6,15 +6,19 @@ SODA_HOME := $(abspath .)
 -include .env
 export
 DQ_LDL_REPO_PATH ?= $(abspath ../local-data-lakehouse)
+# Host port for the Airflow UI/API. The lakehouse default is 8080; override when it is taken,
+# e.g. `make airflow-dq-up AIRFLOW_API_PORT=8090` (also settable in .env).
+AIRFLOW_API_PORT ?= 8080
+export AIRFLOW_API_PORT
 LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
 	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml --profile full
 
 .PHONY: help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
-	airflow-dq-up airflow-dq-trigger clean dist
+	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down clean dist
 
 help:
-	@echo "soda-lakehouse-dq (Soda Core 4.26 data contracts as medallion quality gates)"
+	@echo "lakehouse-quality-gates (Soda Core 4.26 data contracts as medallion quality gates)"
 	@echo "  make venv               uv sync (all extras + dev group) into .venv"
 	@echo "  make check              ruff + mypy --strict + pytest (what CI runs)"
 	@echo "  make validate           parse every contract with Soda (no data access)"
@@ -24,6 +28,9 @@ help:
 	@echo "  make dq-up | dq-down    runner container ldl-soda on ldl-net (lakehouse must be up)"
 	@echo "  make airflow-dq-up      lakehouse Airflow + Soda-gated DAG (needs DQ_LDL_REPO_PATH)"
 	@echo "  make airflow-dq-trigger trigger lakehouse_retail_medallion_dq and wait"
+	@echo "  make airflow-dq-trigger-bad  same, with the bad batch injected (dq_bronze must fail)"
+	@echo "  make airflow-dq-down    stop Airflow + lakehouse (volumes kept)"
+	@echo "  AIRFLOW_API_PORT=8080   Airflow host port (override if taken, e.g. 8090)"
 	@echo "  make dist               SODA.tar.gz without .venv / caches / reports"
 
 env:
@@ -103,6 +110,14 @@ airflow-dq-up: dq-up
 
 airflow-dq-trigger:
 	cd "$(DQ_LDL_REPO_PATH)" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_dq
+
+# Fault-injection run: seeds fixtures/bad_batch after the bronze Spark job, so dq_bronze must block
+# (the make target exits non-zero on purpose). Restore with a normal `make airflow-dq-trigger`.
+airflow-dq-trigger-bad:
+	cd "$(DQ_LDL_REPO_PATH)" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_dq '{"inject_bad_batch": true}'
+
+airflow-dq-down:
+	cd "$(DQ_LDL_REPO_PATH)" && SODA_HOME="$(SODA_HOME)" $(LDL_COMPOSE) down
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache .coverage reports/*.json reports/*.xml reports/*.md reports/rendered
