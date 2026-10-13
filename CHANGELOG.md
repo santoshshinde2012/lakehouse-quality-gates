@@ -1,0 +1,41 @@
+# Changelog
+
+All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
+versioning: [SemVer](https://semver.org/).
+
+## [0.1.1] - 2026-10-13
+
+Verified end to end on macOS (arm64, Docker Desktop) against local-data-lakehouse.
+
+### Added
+- `soda-dq seed SAMPLE_DIR --yes`: rebuilds the live retail Iceberg tables from CSVs (for example `fixtures/bad_batch`) for gate demos.
+- Schema check details (missing, unexpected and mistyped columns, order) in reports, gate reasons, JUnit and Markdown.
+- `DQ_DUCKDB_HTTPFS_CLIENT` setting (`httplib` inside containers).
+- Seven Mermaid architecture diagrams with SVGs in `docs/diagrams/`.
+
+### Fixed
+- DuckDB on the Lakekeeper REST catalog: `USE` the first schema (the catalog has no `main` schema), and warm tables with `DESCRIBE` before the schema check (columns load lazily).
+- Contracts expect `timestamp with time zone`, which is what Spark and DuckDB write to Iceberg.
+- Trino datasource sends `user: soda-dq` (Trino returns 401 without one).
+- Docker image: non-editable install, pre-installed `avro` extension (read-only root filesystem), `DQ_CONTAINER_ENGINE` so the host `.env` no longer leaks into the container.
+- Airflow overlay: the DQ DAG ships as a second DAG bundle (`soda-dq`) instead of a nested mount into the read-only dags folder.
+
+## [0.1.0] - 2026-10-13
+
+### Added
+- Soda Core 4.26.0 data contracts for the retail medallion: `bronze.orders_raw`, `bronze.customers_raw`,
+  `silver.orders`, `silver.customers`, `gold.daily_order_metrics` (46 checks).
+- Ports-and-adapters package `soda_lakehouse_dq`: gate policy, verify-layer and run-medallion use cases,
+  Soda verifier, DuckDB providers (`lakehouse_client.duckdb_connect()` + `from_existing_cursor`, and
+  a Docker-free CSV medallion), Trino provider, file contract repository with `{{ dataset_root }}` rendering.
+- Sinks: JSON, JUnit XML, Markdown; optional Iceberg `ops.dq_results`. Notifiers: console (structlog),
+  Slack incoming webhook.
+- Typer CLI `soda-dq` (`verify`, `run`, `validate`, `list`) with exit codes 0/1/2.
+- Airflow DAG `lakehouse_retail_medallion_dq` with gate tasks after each layer (original DAG untouched).
+- Docker runner image + `ldl-net` compose file + Airflow overlay (socket-proxy allowlist incl. `ldl-soda`).
+- `good_batch` / `bad_batch` fixtures; Makefile; uv lock; ruff, mypy --strict, pre-commit; GitHub Actions CI.
+- Docs: README, architecture, use case, contracts, runbook, ADRs 0001-0005.
+
+### Notes
+- Numeric contract variables passed as strings are coerced (`--set MAX=48` -> 48): Soda 4.26 rejects strings
+  for numeric threshold keys.

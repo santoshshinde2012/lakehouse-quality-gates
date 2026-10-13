@@ -1,0 +1,11 @@
+customer_id,name,email,city,signup_date
+c-01,Santosh Shinde,santosh.shinde@example.com,Pune,2023-01-15
+c-02,Priya Sharma,priya.sharma@example.com,Bengaluru,2023-02-02
+c-03,Jordan Miles,jordan.miles@example.com,Austin,2023-02-20
+c-04,Aisha Khan,aisha.khan@example.com,Hyderabad,2023-03-08
+c-05,Emily Carter,emily.carter@example.com,Seattle,2023-03-22
+c-06,Rahul Mehta,rahul.mehta@example.com,Mumbai,2023-04-01
+c-07,Marcus Chen,marcus.chen@example.com,San Francisco,2023-04-18
+c-08,Ananya Iyer,ananya.iyer@example.com,Chennai,2023-05-05
+c-09,Sofia Ramirez,sofia.ramirez@example.com,Chicago,2023-05-30
+c-10,Vikram Patel,vikram.patel@example.com,Ahmedabad,2023-06-12

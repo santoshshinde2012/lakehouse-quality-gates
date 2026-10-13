@@ -1,0 +1,14 @@
+# Soda Core v4 data source for Trino 483 (local-data-lakehouse: --profile trino, port 8088 on the host).
+# Trino reads the same Iceberg tables through Lakekeeper (config/trino/catalog/lakehouse.properties).
+# Contracts address tables as lakehouse_trino/<catalog>/<schema>/<table>.
+# The local Trino has no authentication, but Trino still requires a user name (X-Trino-User): `user`.
+type: trino
+name: lakehouse_trino
+connection:
+  host: ${env.DQ_TRINO_HOST}
+  port: ${env.DQ_TRINO_PORT}
+  catalog: lakehouse
+  http_scheme: http
+  auth_type: NoAuthentication
+  user: soda-dq
+  source: soda-lakehouse-dq

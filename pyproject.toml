@@ -1,0 +1,66 @@
+[project]
+name = "soda-lakehouse-dq"
+version = "0.1.0"
+description = "Contract-gated medallion: Soda Core v4 data contracts as quality gates for local-data-lakehouse"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Santosh Shinde" }]
+dependencies = [
+  "soda-core==4.26.0",
+  "soda-duckdb==4.26.0",
+  "duckdb==1.5.6",
+  "typer>=0.12,<1",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.4,<3",
+  "structlog>=24.1",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+trino = ["soda-trino==4.26.0"]
+lakehouse = ["pyiceberg[pyarrow,s3fs]==0.12.0", "pyarrow==25.0.1"]
+
+[project.scripts]
+soda-dq = "soda_lakehouse_dq.cli:app"
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "mypy>=1.11", "types-PyYAML", "pre-commit>=3.7"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/soda_lakehouse_dq"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF", "PL", "PT", "C4", "TID", "ANN", "S"]
+# PLC0415: optional/heavy deps (soda, duckdb, pyarrow, lakehouse_client) are imported lazily on purpose.
+ignore = ["PLR0913", "S101", "ANN401", "S603", "S607", "PLC0415"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "PLR2004", "S"]
+"airflow/**" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["soda_lakehouse_dq"]
+
+[[tool.mypy.overrides]]
+module = ["soda_core.*", "soda_duckdb.*", "soda_trino.*", "duckdb.*", "lakehouse_client.*", "pyiceberg.*", "pyarrow.*"]
+ignore_missing_imports = true
+follow_untyped_imports = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["integration: runs real Soda verification against DuckDB (no containers)"]
+addopts = "-ra"

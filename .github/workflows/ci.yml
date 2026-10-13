@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SODA_CORE_TELEMETRY_ENABLED: "false"
+  DQ_ENGINE: duckdb-local
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.23"
+          enable-cache: true
+      - run: uv python install 3.12
+      - run: uv sync --frozen --all-extras
+      - name: Lint
+        run: |
+          uv run --frozen ruff format --check .
+          uv run --frozen ruff check .
+      - name: Type check (mypy --strict)
+        run: uv run --frozen mypy
+      - name: Contract syntax (Soda)
+        run: uv run --frozen soda-dq validate
+      - name: Tests (unit + real Soda/DuckDB integration)
+        run: uv run --frozen pytest --cov=soda_lakehouse_dq --cov-report=xml --junitxml=reports/pytest.xml
+      - name: Demo gates (good passes, bad blocks)
+        run: make demo
+      - name: Gate summary
+        if: always()
+        run: cat reports/*_retail_*.md >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dq-reports
+          path: reports/
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build runner image
+        run: docker build -f docker/Dockerfile -t soda-lakehouse-dq:ci .
+      - name: Smoke test inside the image
+        run: |
+          docker run --rm -e DQ_ENGINE=duckdb-local soda-lakehouse-dq:ci soda-dq validate
+          docker run --rm -e DQ_ENGINE=duckdb-local soda-lakehouse-dq:ci soda-dq run

@@ -1,0 +1,71 @@
+# Bronze gate for lakehouse.bronze.orders_raw (written by src/jobs/retail/02_ingest_bronze.py).
+# Bronze keeps raw values, so value-level problems WARN here and are enforced in silver.
+# Structural problems (schema drift, empty batch, missing keys, stale ingest) FAIL.
+dataset: "{{ dataset_root }}/bronze/orders_raw"
+
+variables:
+  BRONZE_MAX_AGE_HOURS:
+    default: 24
+
+attributes:
+  layer: bronze
+  pipeline: retail
+
+checks:
+  - schema:
+      name: Bronze orders schema is unchanged
+  - row_count:
+      name: Batch is not empty
+      threshold:
+        must_be_greater_than_or_equal: 1
+  - freshness:
+      name: Bronze was ingested recently
+      column: _ingested_at
+      threshold:
+        unit: hour
+        must_be_less_than: ${var.BRONZE_MAX_AGE_HOURS}
+  - duplicate:
+      name: No order duplicated inside one source file
+      columns: [order_id, _source_file]
+
+columns:
+  - name: order_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Every order has an id
+  - name: customer_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Every order has a customer
+  - name: order_ts
+    data_type: timestamp with time zone
+    checks:
+      - missing:
+          name: Every order has a timestamp
+  - name: status
+    data_type: varchar
+    checks:
+      - invalid:
+          name: Status is a known value (case-insensitive)
+          column_expression: LOWER(TRIM(status))
+          valid_values: [paid, shipped, cancelled, refunded, pending]
+          threshold:
+            must_be: 0
+            level: warn
+  - name: amount
+    data_type: double
+    checks:
+      - missing:
+          name: Every order has an amount
+      - invalid:
+          name: Amount is not negative (enforced in silver)
+          valid_min: 0
+          threshold:
+            must_be: 0
+            level: warn
+  - name: _source_file
+    data_type: varchar
+  - name: _ingested_at
+    data_type: timestamp with time zone

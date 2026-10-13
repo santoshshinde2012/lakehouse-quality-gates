@@ -1,0 +1,19 @@
+flowchart LR
+  ST["land_smoke<br/>(ldl-spark)"]:::ext
+  BR["bronze"]:::ext
+  DB{"dq_bronze<br/>(ldl-soda)"}:::gate
+  SI["silver"]:::ext
+  DS{"dq_silver"}:::gate
+  GO["gold"]:::ext
+  DG{"dq_gold"}:::gate
+  EN["query_timetravel"]:::gate
+  FX(["DAG run failed<br/>later tasks: upstream_failed"]):::fail
+  ST --> BR --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
+  DB -->|exit 1| FX
+  DS -->|exit 1| FX
+  DG -->|exit 1| FX
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

@@ -1,0 +1,27 @@
+classDiagram
+  direction LR
+  class ContractSpec { +pipeline +layer +name +dataset +path +references +datasets() }
+  class CheckResult { +name +outcome +details }
+  class ContractResult { +contract +checks +outcome }
+  class GateDecision { +status +reasons }
+  class GateReport { +run_id +layer +decision +results }
+  class ContractRepository { <<Protocol>> +list_contracts(pipeline, layer) }
+  class ContractVerifier { <<Protocol>> +verify(contracts, variables) }
+  class ResultSink { <<Protocol>> +write(report) }
+  class Notifier { <<Protocol>> +notify(report) }
+  class DataSourceProvider { <<Protocol>> +open() SodaDataSources }
+  class GatePolicy { +fail_on_warn +decide(results) GateDecision }
+  ContractResult o-- CheckResult
+  ContractResult --> ContractSpec
+  GateReport o-- ContractResult
+  GateReport --> GateDecision
+  GatePolicy ..> GateDecision
+  ContractVerifier ..> ContractResult
+  ContractRepository ..> ContractSpec
+  SodaContractVerifier ..|> ContractVerifier
+  SodaContractVerifier --> DataSourceProvider
+  DuckDBProvider ..|> DataSourceProvider
+  TrinoProvider ..|> DataSourceProvider
+  FileContractRepository ..|> ContractRepository
+  JsonFileSink ..|> ResultSink
+  SlackWebhookNotifier ..|> Notifier

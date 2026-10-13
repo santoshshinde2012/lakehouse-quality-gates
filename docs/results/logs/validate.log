@@ -1,0 +1,6 @@
+ok   retail.bronze.customers_raw
+ok   retail.bronze.orders_raw
+ok   retail.silver.customers
+ok   retail.silver.orders
+ok   retail.gold.daily_order_metrics
+exit=0

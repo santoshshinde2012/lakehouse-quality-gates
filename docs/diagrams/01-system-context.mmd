@@ -1,0 +1,29 @@
+flowchart LR
+  ENG(["Data engineer"]):::ext
+  SL(["Slack"]):::ext
+  subgraph LDL["local-data-lakehouse (referenced by path, unchanged)"]
+    AF["Airflow 3<br/>scheduler + DAG processor"]:::ext
+    SP["Spark jobs<br/>bronze / silver / gold"]:::ext
+    LK["Lakekeeper<br/>Iceberg REST catalog"]:::ext
+    TR["Trino (optional)"]:::ext
+    OS[("RustFS object store<br/>s3://lake/warehouse")]:::store
+  end
+  subgraph DQ["soda-lakehouse-dq"]
+    CLI["soda-dq CLI<br/>Soda Core 4.26 contracts"]:::dq
+    REP[("reports/<br/>JSON · JUnit · Markdown")]:::store
+  end
+  ENG -- "make verify / seed" --> CLI
+  AF -- "docker exec ldl-spark" --> SP
+  AF -- "docker exec ldl-soda soda-dq verify &lt;layer&gt;" --> CLI
+  SP -- "writes Iceberg" --> LK
+  CLI -- "DuckDB ATTACH (default)" --> LK
+  CLI -. "engine=trino" .-> TR
+  TR --> LK
+  LK --> OS
+  CLI --> REP
+  CLI -. "webhook on block" .-> SL
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

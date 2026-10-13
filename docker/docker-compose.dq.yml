@@ -1,0 +1,43 @@
+# soda-dq runner joined to the lakehouse network (ldl-net, created by local-data-lakehouse).
+# Separate compose project; local-data-lakehouse files stay untouched.
+#   docker compose -f docker/docker-compose.dq.yml up -d --build      # make dq-up
+# Requires the lakehouse light or full profile to be up first (network ldl-net must exist).
+name: soda-lakehouse-dq
+
+services:
+  soda-dq:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: soda-lakehouse-dq:0.1.0
+    container_name: ${LDL_SODA_CONTAINER:-ldl-soda}
+    environment:
+      # Not DQ_ENGINE: the host .env (exported by make) usually says duckdb-local.
+      DQ_ENGINE: ${DQ_CONTAINER_ENGINE:-duckdb}
+      # Inside ldl-net the catalog is the lakekeeper service; S3 is the objectstore.localhost alias.
+      DQ_LAKEKEEPER_URL: http://lakekeeper:8181
+      DQ_LAKEKEEPER_WAREHOUSE: ${LAKEKEEPER_WAREHOUSE:-lakehouse}
+      DQ_LDL_REPO_PATH: /opt/ldl
+      # curl (DuckDB's default here) sends objectstore.localhost to loopback inside the container.
+      DQ_DUCKDB_HTTPFS_CLIENT: httplib
+      DQ_TRINO_HOST: trino
+      DQ_TRINO_PORT: "8080"
+      DQ_FAIL_ON_WARN: ${DQ_FAIL_ON_WARN:-false}
+      DQ_SLACK_WEBHOOK_URL: ${DQ_SLACK_WEBHOOK_URL:-}
+      DQ_ICEBERG_SINK: ${DQ_ICEBERG_SINK:-false}
+    volumes:
+      # local-data-lakehouse referenced by path: only its host client package is needed (read-only).
+      - ${DQ_LDL_REPO_PATH:?set DQ_LDL_REPO_PATH in .env}/src/lakehouse_client:/opt/ldl/src/lakehouse_client:ro
+      - ../contracts:/opt/soda-dq/contracts:ro
+      - ../reports:/opt/soda-dq/reports
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [lakehouse]
+
+networks:
+  lakehouse:
+    name: ldl-net
+    external: true

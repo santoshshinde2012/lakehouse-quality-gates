@@ -1,0 +1,313 @@
+# Architecture
+
+Every diagram below is also checked in as Mermaid source and a rendered SVG in [`diagrams/`](diagrams/).
+Re-render with `npx -y @mermaid-js/mermaid-cli -i docs/diagrams/<name>.mmd -o docs/diagrams/<name>.svg -b white`.
+Colours: blue = this project, grey = lakehouse / external, yellow = data stores, green = gates and the happy path, red = failure.
+
+## 1. System context
+
+```mermaid
+flowchart LR
+  ENG(["Data engineer"]):::ext
+  SL(["Slack"]):::ext
+  subgraph LDL["local-data-lakehouse (referenced by path, unchanged)"]
+    AF["Airflow 3<br/>scheduler + DAG processor"]:::ext
+    SP["Spark jobs<br/>bronze / silver / gold"]:::ext
+    LK["Lakekeeper<br/>Iceberg REST catalog"]:::ext
+    TR["Trino (optional)"]:::ext
+    OS[("RustFS object store<br/>s3://lake/warehouse")]:::store
+  end
+  subgraph DQ["soda-lakehouse-dq"]
+    CLI["soda-dq CLI<br/>Soda Core 4.26 contracts"]:::dq
+    REP[("reports/<br/>JSON · JUnit · Markdown")]:::store
+  end
+  ENG -- "make verify / seed" --> CLI
+  AF -- "docker exec ldl-spark" --> SP
+  AF -- "docker exec ldl-soda soda-dq verify &lt;layer&gt;" --> CLI
+  SP -- "writes Iceberg" --> LK
+  CLI -- "DuckDB ATTACH (default)" --> LK
+  CLI -. "engine=trino" .-> TR
+  TR --> LK
+  LK --> OS
+  CLI --> REP
+  CLI -. "webhook on block" .-> SL
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
+Rendered: [diagrams/01-system-context.svg](diagrams/01-system-context.svg)
+
+## 2. Containers and components (ports and adapters)
+
+```mermaid
+flowchart TB
+  subgraph COMP["Composition root"]
+    CLI["cli.py (Typer)"]:::dq
+    SET["settings.py (pydantic-settings)"]:::dq
+    CON["container.py"]:::dq
+  end
+  subgraph APP["Application"]
+    RM["RunMedallionUseCase"]:::gate
+    VL["VerifyLayerUseCase"]:::gate
+    GP["GatePolicy"]:::gate
+  end
+  subgraph DOM["Domain (stdlib only)"]
+    M["models: ContractSpec · CheckResult · GateReport"]:::store
+    P["ports: ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock"]:::store
+  end
+  subgraph ADP["Adapters"]
+    FR["FileContractRepository"]:::dq
+    SV["SodaContractVerifier"]:::dq
+    DP["DuckDBProvider"]:::dq
+    TP["TrinoProvider"]:::dq
+    SK["Sinks: JSON · JUnit · Markdown · Iceberg"]:::dq
+    NT["Notifiers: Console · Slack"]:::dq
+  end
+  SODA["Soda Core 4.26"]:::ext
+  CLI --> CON
+  SET --> CON
+  CON --> RM --> VL --> GP
+  VL --> P
+  GP --> M
+  FR -. implements .-> P
+  SV -. implements .-> P
+  SK -. implements .-> P
+  NT -. implements .-> P
+  SV --> DP
+  SV --> TP
+  SV --> SODA
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
+Rendered: [diagrams/02-components.svg](diagrams/02-components.svg)
+
+## 3. Medallion data flow with quality gates
+
+```mermaid
+flowchart LR
+  SRC[("Sample CSV / bad batch")]:::store
+  B["bronze.orders<br/>bronze.customers"]:::store
+  GB{"Bronze gate<br/>14 checks"}:::gate
+  S["silver.orders<br/>silver.customers"]:::store
+  GS{"Silver gate<br/>21 checks"}:::gate
+  G["gold.daily_order_metrics"]:::store
+  GG{"Gold gate<br/>11 checks"}:::gate
+  OK(["Published for BI"]):::gate
+  X(["Task fails · Slack alert<br/>downstream not run"]):::fail
+  SRC -- ingest --> B --> GB
+  GB -- pass --> S --> GS
+  GS -- pass --> G --> GG
+  GG -- pass --> OK
+  GB -- fail --> X
+  GS -- fail --> X
+  GG -- fail --> X
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
+Rendered: [diagrams/03-medallion-flow.svg](diagrams/03-medallion-flow.svg)
+
+## 4. Gate run sequence
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Airflow task / engineer
+  participant C as soda-dq CLI
+  participant V as VerifyLayerUseCase
+  participant R as FileContractRepository
+  participant S as SodaContractVerifier
+  participant D as DuckDBProvider
+  participant L as Lakekeeper (Iceberg)
+  participant P as GatePolicy
+  participant K as Sinks / Notifiers
+  U->>C: soda-dq verify silver
+  C->>V: execute(retail, silver, vars)
+  V->>R: list_contracts(retail, silver)
+  R-->>V: ContractSpec[] (dataset_root rendered)
+  V->>S: verify(contracts, vars)
+  S->>D: open()
+  D->>L: ATTACH + USE first schema
+  S->>D: prepare(dataset) (DESCRIBE warm-up)
+  S->>S: verify_contract_locally()
+  S-->>V: ContractResult[] (+ schema details)
+  V->>P: decide(results)
+  P-->>V: GateDecision
+  V->>K: write(report) / notify(report)
+  alt blocked
+    C-->>U: exit 1 (task fails)
+  else passed or warned
+    C-->>U: exit 0
+  end
+```
+
+Rendered: [diagrams/04-gate-sequence.svg](diagrams/04-gate-sequence.svg)
+
+## 5. Airflow DAG `lakehouse_retail_medallion_dq`
+
+```mermaid
+flowchart LR
+  ST["land_smoke<br/>(ldl-spark)"]:::ext
+  BR["bronze"]:::ext
+  DB{"dq_bronze<br/>(ldl-soda)"}:::gate
+  SI["silver"]:::ext
+  DS{"dq_silver"}:::gate
+  GO["gold"]:::ext
+  DG{"dq_gold"}:::gate
+  EN["query_timetravel"]:::gate
+  FX(["DAG run failed<br/>later tasks: upstream_failed"]):::fail
+  ST --> BR --> DB -->|exit 0| SI --> DS -->|exit 0| GO --> DG -->|exit 0| EN
+  DB -->|exit 1| FX
+  DS -->|exit 1| FX
+  DG -->|exit 1| FX
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
+Rendered: [diagrams/05-airflow-dag.svg](diagrams/05-airflow-dag.svg)
+
+## 6. Deployment (Docker network `ldl-net`, ports verified on macOS)
+
+```mermaid
+flowchart TB
+  subgraph HOST["Developer Mac (Docker Desktop)"]
+    subgraph NET["docker network ldl-net"]
+      LK["ldl-lakekeeper :8181"]:::ext
+      OS[("ldl-objectstore (RustFS) :9000")]:::store
+      PG[("ldl-postgres")]:::store
+      SP["ldl-spark"]:::ext
+      TR["ldl-trino :8088 (full profile)"]:::ext
+      AF["Airflow api-server :8090 (AIRFLOW_API_PORT)<br/>scheduler · dag-processor · docker-proxy"]:::ext
+      SO["ldl-soda<br/>image soda-lakehouse-dq:0.1.0"]:::dq
+    end
+    VENV["SODA/.venv<br/>soda-dq on host"]:::dq
+    TG["typeglass-libsql :8080 (unrelated, untouched)"]:::fail
+  end
+  AF -- "docker exec via proxy" --> SP
+  AF -- "docker exec via proxy" --> SO
+  SO -- "Iceberg REST, httplib" --> LK
+  VENV -- "localhost:8181" --> LK
+  LK --> PG
+  LK --> OS
+  TR --> LK
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d
+```
+
+Rendered: [diagrams/06-deployment.svg](diagrams/06-deployment.svg)
+
+## 7. Domain model and ports
+
+```mermaid
+classDiagram
+  direction LR
+  class ContractSpec { +pipeline +layer +name +dataset +path +references +datasets() }
+  class CheckResult { +name +outcome +details }
+  class ContractResult { +contract +checks +outcome }
+  class GateDecision { +status +reasons }
+  class GateReport { +run_id +layer +decision +results }
+  class ContractRepository { <<Protocol>> +list_contracts(pipeline, layer) }
+  class ContractVerifier { <<Protocol>> +verify(contracts, variables) }
+  class ResultSink { <<Protocol>> +write(report) }
+  class Notifier { <<Protocol>> +notify(report) }
+  class DataSourceProvider { <<Protocol>> +open() SodaDataSources }
+  class GatePolicy { +fail_on_warn +decide(results) GateDecision }
+  ContractResult o-- CheckResult
+  ContractResult --> ContractSpec
+  GateReport o-- ContractResult
+  GateReport --> GateDecision
+  GatePolicy ..> GateDecision
+  ContractVerifier ..> ContractResult
+  ContractRepository ..> ContractSpec
+  SodaContractVerifier ..|> ContractVerifier
+  SodaContractVerifier --> DataSourceProvider
+  DuckDBProvider ..|> DataSourceProvider
+  TrinoProvider ..|> DataSourceProvider
+  FileContractRepository ..|> ContractRepository
+  JsonFileSink ..|> ResultSink
+  SlackWebhookNotifier ..|> Notifier
+```
+
+Rendered: [diagrams/07-domain-classes.svg](diagrams/07-domain-classes.svg)
+
+## Layering rules
+
+| Layer | Package | May import |
+|---|---|---|
+| Domain | `domain/` (models, ports, errors) | stdlib only |
+| Application | `application/` | domain, structlog |
+| Adapters | `adapters/` | domain, Soda, DuckDB, PyYAML, PyIceberg (lazily) |
+| Composition | `container.py`, `cli.py`, `settings.py` | everything. This is the only place that instantiates concrete classes |
+
+How SOLID applies here:
+- **S**ingle responsibility. The policy decides, the use case orchestrates, sinks persist, notifiers
+  notify, the verifier only translates between Soda and the domain, and the repository only renders
+  contracts.
+- **O**pen/closed. A new sink, notifier or engine is a new adapter plus one line in `container.py`. The
+  use cases don't change.
+- **L**iskov. Every fake in `tests/conftest.py` stands in for its real adapter, and `isinstance`
+  checks against the `runtime_checkable` ports confirm the shapes match.
+- **I**nterface segregation. Each port has one method; no adapter implements methods it doesn't use.
+- **D**ependency inversion. The application depends on `Protocol`s, and Soda types never leave
+  `adapters/soda_verifier.py`.
+
+## One gate, step by step
+
+```mermaid
+sequenceDiagram
+  participant AF as Airflow dq_silver
+  participant CLI as soda-dq verify silver
+  participant UC as VerifyLayerUseCase
+  participant REP as FileContractRepository
+  participant V as SodaContractVerifier
+  participant P as DuckDBProvider
+  participant S as Soda Core 4.26
+  participant G as GatePolicy
+  AF->>CLI: docker exec ldl-soda ...
+  CLI->>UC: execute("retail", SILVER, vars)
+  UC->>REP: list_contracts
+  REP-->>UC: rendered specs ({{ dataset_root }} -> lakehouse_duckdb)
+  UC->>V: verify(specs, vars)
+  V->>P: open()
+  P->>P: lakehouse_client.duckdb_connect() + USE lakehouse
+  P-->>V: DuckDBDataSourceImpl.from_existing_cursor(con)
+  loop each contract
+    V->>S: verify_contract_locally(data_sources, contract, variables)
+    S-->>V: ContractVerificationSessionResult
+    V->>V: map to domain ContractResult
+  end
+  V-->>UC: results
+  UC->>G: decide(results)
+  G-->>UC: BLOCKED + reasons
+  UC->>UC: sinks.write · notifiers.notify
+  UC-->>CLI: GateReport
+  CLI-->>AF: exit 1 → task failed → gold never runs
+```
+
+## Engines
+
+| `DQ_ENGINE` | Data source | Dataset name | When to use |
+|---|---|---|---|
+| `duckdb` (default) | `lakehouse_client.duckdb_connect()` → Lakekeeper, Soda `from_existing_cursor` | `lakehouse_duckdb/<schema>/<table>` | Light or full profile. No JVM |
+| `duckdb-local` | In-memory DuckDB built from CSVs by the same SQL as `sql/retail/*.sql` | same | CI, demos, writing contracts |
+| `trino` | `datasources/trino.yml` (soda-trino) | `lakehouse_trino/lakehouse/<schema>/<table>` | Full profile with `TRINO=1` |
+
+Soda's DuckDB dialect has a single namespace level (the schema), so the provider runs `USE lakehouse`. After
+that, `silver.orders` resolves inside the attached Iceberg catalog, and Soda's `information_schema` lookups
+(used by the schema check) match on schema name. See ADR 0002.

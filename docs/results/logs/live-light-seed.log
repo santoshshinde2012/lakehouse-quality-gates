@@ -1,0 +1,3 @@
+  OK   time travel to the day-1 snapshot reads 10 rows in 3 engines
+  OK   Polars reads the same gold
+Retail (light) OK in 7.2 s.

@@ -1,0 +1,41 @@
+flowchart TB
+  subgraph COMP["Composition root"]
+    CLI["cli.py (Typer)"]:::dq
+    SET["settings.py (pydantic-settings)"]:::dq
+    CON["container.py"]:::dq
+  end
+  subgraph APP["Application"]
+    RM["RunMedallionUseCase"]:::gate
+    VL["VerifyLayerUseCase"]:::gate
+    GP["GatePolicy"]:::gate
+  end
+  subgraph DOM["Domain (stdlib only)"]
+    M["models: ContractSpec · CheckResult · GateReport"]:::store
+    P["ports: ContractRepository · ContractVerifier<br/>ResultSink · Notifier · Clock"]:::store
+  end
+  subgraph ADP["Adapters"]
+    FR["FileContractRepository"]:::dq
+    SV["SodaContractVerifier"]:::dq
+    DP["DuckDBProvider"]:::dq
+    TP["TrinoProvider"]:::dq
+    SK["Sinks: JSON · JUnit · Markdown · Iceberg"]:::dq
+    NT["Notifiers: Console · Slack"]:::dq
+  end
+  SODA["Soda Core 4.26"]:::ext
+  CLI --> CON
+  SET --> CON
+  CON --> RM --> VL --> GP
+  VL --> P
+  GP --> M
+  FR -. implements .-> P
+  SV -. implements .-> P
+  SK -. implements .-> P
+  NT -. implements .-> P
+  SV --> DP
+  SV --> TP
+  SV --> SODA
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

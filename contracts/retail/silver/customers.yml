@@ -1,0 +1,49 @@
+# Silver gate for lakehouse.silver.customers (sql/retail/silver_orders.sql): deduped, trimmed, lower-cased.
+dataset: "{{ dataset_root }}/silver/customers"
+
+attributes:
+  layer: silver
+  pipeline: retail
+
+checks:
+  - schema:
+      name: Silver customers schema is unchanged
+  - row_count:
+      name: Silver customers is not empty
+
+columns:
+  - name: customer_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Customer id present
+      - duplicate:
+          name: Customer id unique after dedup
+  - name: name
+    data_type: varchar
+    checks:
+      - missing:
+          name: Name present
+  - name: email
+    data_type: varchar
+    checks:
+      - missing:
+          name: Email present
+      - invalid:
+          name: Email is well-formed
+          valid_format:
+            name: Email format
+            regex: ^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$
+      - duplicate:
+          name: Email unique
+  - name: city
+    data_type: varchar
+  - name: signup_date
+    data_type: date
+    checks:
+      - missing:
+          name: Signup date present
+  - name: _source_file
+    data_type: varchar
+  - name: _ingested_at
+    data_type: timestamp with time zone

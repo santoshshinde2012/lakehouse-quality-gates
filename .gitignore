@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+dist/
+build/
+*.egg-info/
+.env
+reports/*
+!reports/.gitkeep
+htmlcov/
+.DS_Store
+node_modules/
+# local backup of the original README, kept on disk but not versioned
+readme.original.md.bak
+*.bak
+# keep the verification artefacts in docs/results
+!docs/results/**

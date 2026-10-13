@@ -1,0 +1,69 @@
+# Silver gate for lakehouse.silver.orders (sql/retail/silver_orders.sql): one row per order_id, typed,
+# known statuses only. Everything that must be true before gold is computed FAILS here.
+dataset: "{{ dataset_root }}/silver/orders"
+
+variables:
+  MAX_ORDER_AMOUNT:
+    default: 10000
+
+attributes:
+  layer: silver
+  pipeline: retail
+
+checks:
+  - schema:
+      name: Silver orders schema is unchanged
+  - row_count:
+      name: Silver orders is not empty
+  - failed_rows:
+      name: No order timestamped in the future
+      expression: order_ts > CURRENT_TIMESTAMP
+
+columns:
+  - name: order_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Order id present
+      - duplicate:
+          name: Order id unique after dedup
+  - name: customer_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Customer id present
+      - invalid:
+          name: Customer exists in silver.customers
+          valid_reference_data:
+            dataset: "{{ dataset_root }}/silver/customers"
+            column: customer_id
+  - name: order_ts
+    data_type: timestamp with time zone
+    checks:
+      - missing:
+          name: Order timestamp present
+  - name: status
+    data_type: varchar
+    checks:
+      - invalid:
+          name: Status is canonical
+          valid_values: [paid, shipped, cancelled, refunded]
+  - name: amount
+    data_type: double
+    checks:
+      - missing:
+          name: Amount present
+      - invalid:
+          name: Amount is not negative
+          valid_min: 0
+      - invalid:
+          name: Amount below the outlier ceiling
+          qualifier: ceiling
+          valid_max: ${var.MAX_ORDER_AMOUNT}
+          threshold:
+            must_be: 0
+            level: warn
+  - name: _source_file
+    data_type: varchar
+  - name: _ingested_at
+    data_type: timestamp with time zone

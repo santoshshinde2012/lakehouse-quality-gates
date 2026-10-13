@@ -1,0 +1,26 @@
+flowchart TB
+  subgraph HOST["Developer Mac (Docker Desktop)"]
+    subgraph NET["docker network ldl-net"]
+      LK["ldl-lakekeeper :8181"]:::ext
+      OS[("ldl-objectstore (RustFS) :9000")]:::store
+      PG[("ldl-postgres")]:::store
+      SP["ldl-spark"]:::ext
+      TR["ldl-trino :8088 (full profile)"]:::ext
+      AF["Airflow api-server :8090 (AIRFLOW_API_PORT)<br/>scheduler · dag-processor · docker-proxy"]:::ext
+      SO["ldl-soda<br/>image soda-lakehouse-dq:0.1.0"]:::dq
+    end
+    VENV["SODA/.venv<br/>soda-dq on host"]:::dq
+    TG["typeglass-libsql :8080 (unrelated, untouched)"]:::fail
+  end
+  AF -- "docker exec via proxy" --> SP
+  AF -- "docker exec via proxy" --> SO
+  SO -- "Iceberg REST, httplib" --> LK
+  VENV -- "localhost:8181" --> LK
+  LK --> PG
+  LK --> OS
+  TR --> LK
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

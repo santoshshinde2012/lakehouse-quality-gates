@@ -1,0 +1,22 @@
+flowchart LR
+  SRC[("Sample CSV / bad batch")]:::store
+  B["bronze.orders<br/>bronze.customers"]:::store
+  GB{"Bronze gate<br/>14 checks"}:::gate
+  S["silver.orders<br/>silver.customers"]:::store
+  GS{"Silver gate<br/>21 checks"}:::gate
+  G["gold.daily_order_metrics"]:::store
+  GG{"Gold gate<br/>11 checks"}:::gate
+  OK(["Published for BI"]):::gate
+  X(["Task fails · Slack alert<br/>downstream not run"]):::fail
+  SRC -- ingest --> B --> GB
+  GB -- pass --> S --> GS
+  GS -- pass --> G --> GG
+  GG -- pass --> OK
+  GB -- fail --> X
+  GS -- fail --> X
+  GG -- fail --> X
+  classDef ext fill:#eef2f7,stroke:#64748b,color:#0f172a
+  classDef dq fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef store fill:#fef9c3,stroke:#a16207,color:#422006
+  classDef gate fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef fail fill:#fee2e2,stroke:#b91c1c,color:#7f1d1d

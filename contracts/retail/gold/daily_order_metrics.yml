@@ -1,0 +1,70 @@
+# Gold gate for lakehouse.gold.daily_order_metrics (sql/retail/gold_daily_metrics.sql).
+# Business invariants consumers rely on: one row per day, non-negative revenue, counts that add up,
+# and gold reconciles with silver.
+dataset: "{{ dataset_root }}/gold/daily_order_metrics"
+
+variables:
+  MAX_AVG_ORDER_VALUE:
+    default: 1000
+
+attributes:
+  layer: gold
+  pipeline: retail
+
+checks:
+  - schema:
+      name: Gold metrics schema is unchanged
+  - row_count:
+      name: Gold has at least one day
+  - failed_rows:
+      name: Cancelled + refunded never exceed orders
+      expression: cancelled_orders + refunded_orders > orders
+  - failed_rows:
+      name: No metrics for future days
+      qualifier: future
+      expression: order_date > CURRENT_DATE
+  - metric:
+      name: Gold order count reconciles with silver
+      query: |
+        SELECT ABS((SELECT SUM(orders) FROM gold.daily_order_metrics)
+                 - (SELECT COUNT(*) FROM silver.orders))
+      threshold:
+        must_be: 0
+
+columns:
+  - name: order_date
+    data_type: date
+    checks:
+      - missing:
+          name: Order date present
+      - duplicate:
+          name: One row per day
+  - name: orders
+    data_type: bigint
+    checks:
+      - invalid:
+          name: At least one order per day
+          valid_min: 1
+  - name: revenue
+    data_type: double
+    checks:
+      - invalid:
+          name: Revenue is not negative
+          valid_min: 0
+  - name: avg_order_value
+    data_type: double
+    checks:
+      - invalid:
+          name: Average order value is not negative
+          valid_min: 0
+      - invalid:
+          name: Average order value is plausible
+          qualifier: ceiling
+          valid_max: ${var.MAX_AVG_ORDER_VALUE}
+          threshold:
+            must_be: 0
+            level: warn
+  - name: cancelled_orders
+    data_type: bigint
+  - name: refunded_orders
+    data_type: bigint

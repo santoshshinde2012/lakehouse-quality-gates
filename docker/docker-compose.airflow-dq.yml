@@ -1,0 +1,44 @@
+# Overlay for local-data-lakehouse's Airflow stack: adds the Soda-gated DAG and lets the scheduler
+# `docker exec` into ldl-soda. Use it AFTER the repo's own files (it only adds/overrides):
+#
+#   cd "$DQ_LDL_REPO_PATH"
+#   docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
+#     -f "$SODA_HOME/docker/docker-compose.airflow-dq.yml" --profile full up -d --wait
+#
+# (make airflow-dq-up does exactly this). SODA_HOME must be an absolute path to this project.
+#
+# The repo mounts its DAGs read-only at /opt/airflow/dags, so files cannot be bind-mounted inside it
+# ("make mountpoint …: read-only file system"). Instead our DAGs get their own folder, registered as a
+# second Airflow 3 DAG bundle; PYTHONPATH lets them import the repo's lakehouse_operators.
+x-dq-env: &dq-env
+  AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST: >-
+    [{"name": "dags-folder", "classpath": "airflow.dag_processing.bundles.local.LocalDagBundle", "kwargs": {}},
+     {"name": "soda-dq", "classpath": "airflow.dag_processing.bundles.local.LocalDagBundle",
+      "kwargs": {"path": "/opt/airflow/dq_dags", "refresh_interval": 30}}]
+  PYTHONPATH: /opt/airflow/dags:/opt/airflow/dq_dags
+  LDL_SODA_CONTAINER: ldl-soda
+
+x-dq-dags: &dq-dags
+  - ${SODA_HOME:?set SODA_HOME}/airflow/dags:/opt/airflow/dq_dags:ro
+
+services:
+  docker-proxy:
+    # Same allowlist as docker-compose.airflow.yml with ldl-soda added (compose replaces `command`).
+    command:
+      - -loglevel=info
+      - -listenip=0.0.0.0
+      - -allowfrom=airflow-scheduler
+      - -allowhealthcheck
+      - -shutdowngracetime=5
+      - -allowHEAD=^/_ping$
+      - -allowGET=^(/v[0-9.]+)?/(_ping|version|containers/(ldl-spark|ldl-graph|ldl-soda)/json|exec/[0-9a-f]+/json)$
+      - -allowPOST=^(/v[0-9.]+)?/(containers/(ldl-spark|ldl-graph|ldl-soda)/exec|exec/[0-9a-f]+/(start|resize))$
+  airflow-scheduler:
+    volumes: *dq-dags
+    environment: *dq-env
+  airflow-dag-processor:
+    volumes: *dq-dags
+    environment: *dq-env
+  airflow-apiserver:
+    volumes: *dq-dags
+    environment: *dq-env

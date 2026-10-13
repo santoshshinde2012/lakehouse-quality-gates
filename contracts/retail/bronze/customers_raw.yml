@@ -1,0 +1,37 @@
+# Bronze gate for lakehouse.bronze.customers_raw.
+dataset: "{{ dataset_root }}/bronze/customers_raw"
+
+attributes:
+  layer: bronze
+  pipeline: retail
+
+checks:
+  - schema:
+      name: Bronze customers schema is unchanged
+  - row_count:
+      name: Customer batch is not empty
+
+columns:
+  - name: customer_id
+    data_type: varchar
+    checks:
+      - missing:
+          name: Every customer has an id
+  - name: name
+    data_type: varchar
+  - name: email
+    data_type: varchar
+    checks:
+      - missing:
+          name: Email is present
+          threshold:
+            must_be: 0
+            level: warn
+  - name: city
+    data_type: varchar
+  - name: signup_date
+    data_type: date
+  - name: _source_file
+    data_type: varchar
+  - name: _ingested_at
+    data_type: timestamp with time zone

@@ -1,0 +1,29 @@
+sequenceDiagram
+  autonumber
+  actor U as Airflow task / engineer
+  participant C as soda-dq CLI
+  participant V as VerifyLayerUseCase
+  participant R as FileContractRepository
+  participant S as SodaContractVerifier
+  participant D as DuckDBProvider
+  participant L as Lakekeeper (Iceberg)
+  participant P as GatePolicy
+  participant K as Sinks / Notifiers
+  U->>C: soda-dq verify silver
+  C->>V: execute(retail, silver, vars)
+  V->>R: list_contracts(retail, silver)
+  R-->>V: ContractSpec[] (dataset_root rendered)
+  V->>S: verify(contracts, vars)
+  S->>D: open()
+  D->>L: ATTACH + USE first schema
+  S->>D: prepare(dataset) (DESCRIBE warm-up)
+  S->>S: verify_contract_locally()
+  S-->>V: ContractResult[] (+ schema details)
+  V->>P: decide(results)
+  P-->>V: GateDecision
+  V->>K: write(report) / notify(report)
+  alt blocked
+    C-->>U: exit 1 (task fails)
+  else passed or warned
+    C-->>U: exit 0
+  end
