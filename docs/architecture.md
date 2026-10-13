@@ -245,7 +245,7 @@ flowchart TB
       SP["ldl-spark"]:::ext
       TR["ldl-trino :8088 (full profile)"]:::ext
       AF["Airflow api-server :8090 (AIRFLOW_API_PORT)<br/>scheduler · dag-processor · docker-proxy"]:::ext
-      SO["ldl-soda<br/>image lakehouse-quality-gates:0.2.0"]:::dq
+      SO["ldl-soda<br/>image lakehouse-quality-gates:0.2.1"]:::dq
     end
     VENV["SODA/.venv<br/>soda-dq on host"]:::dq
     TG["typeglass-libsql :8080 (unrelated, untouched)"]:::fail

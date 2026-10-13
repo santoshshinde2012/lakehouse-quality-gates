@@ -3,6 +3,12 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [0.2.1] - 2026-10-13
+
+### Fixed
+
+- `soda-dq seed`: a relative SAMPLE_DIR was resolved after changing into the scratch directory, so `soda-dq seed fixtures/bad_batch` failed on the host. The path is now resolved first, and a regression test covers it.
+
 ## [0.2.0] - 2026-10-13
 
 ### Changed

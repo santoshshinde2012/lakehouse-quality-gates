@@ -138,7 +138,7 @@ LAYERS = [
         [
             ("soda-dq CLI", ["Typer · verify · run · seed", "validate · list"]),
             ("Airflow DAG", ["lakehouse_retail_medallion_dq", "dq_bronze · dq_silver · dq_gold"]),
-            ("Docker runner ldl-soda", ["lakehouse-quality-gates:0.2.0", "docker exec from Airflow"]),
+            ("Docker runner ldl-soda", ["lakehouse-quality-gates:0.2.1", "docker exec from Airflow"]),
         ],
     ),
     (
@@ -398,7 +398,7 @@ DEPLOY = [
         "ldl-net",
         [
             ("ldl-spark", ["Spark 4.1.3 · Iceberg 1.12", "bronze · silver · gold jobs"]),
-            ("ldl-soda", ["lakehouse-quality-gates:0.2.0", "non-root · read-only · cap_drop ALL"]),
+            ("ldl-soda", ["lakehouse-quality-gates:0.2.1", "non-root · read-only · cap_drop ALL"]),
             ("ldl-trino", ["Trino 483 · :8080 → :8088", "optional (TRINO=1)"]),
         ],
     ),
