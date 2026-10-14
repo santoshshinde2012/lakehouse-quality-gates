@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import pytest
 from typer.testing import CliRunner
 
 from soda_lakehouse_dq import cli
+from soda_lakehouse_dq.adapters.wap.audit_json import load_audit, write_audit
 from soda_lakehouse_dq.domain.errors import DataSourceError
 from soda_lakehouse_dq.domain.models import GateStatus, Layer
-from soda_lakehouse_dq.domain.wap import BranchState, TableState, WapLayerResult, WapOutcome
+from soda_lakehouse_dq.domain.wap import BranchAudit, BranchState, TableState, WapLayerResult, WapOutcome
 from tests.conftest import make_report
 
 runner = CliRunner()
@@ -57,10 +58,16 @@ class FakeVerifyBranch:
     def execute(self, pipeline, layer, branch, run_id):
         return make_report(self.status)
 
+    def audit(self, pipeline, layer, branch, run_id):
+        report = replace(make_report(self.status), pipeline=pipeline, layer=layer, run_id=run_id)
+        table = f"{layer.value}.t"
+        return BranchAudit(branch, report, {table: 3}, {table: 2})
+
 
 @dataclass
 class FakeSpark:
     error: Exception | None = None
+    publications: list[tuple] = field(default_factory=list)
 
     def status(self, layer, branch=None):
         if self.error:
@@ -69,6 +76,12 @@ class FakeSpark:
 
     def drop(self, layer, branch):
         return _state("drop", layer)
+
+    def publish(self, layer, branch, pins, *, main_before=None):
+        if self.error:
+            raise self.error
+        self.publications.append((layer, branch, dict(pins), dict(main_before or {})))
+        return _state("publish", layer)
 
 
 @dataclass
@@ -128,3 +141,86 @@ def test_wap_status_and_drop(wap):
     assert "dropped audit_x" in runner.invoke(cli.app, ["wap", "drop", "gold", "--branch", "audit_x"]).output
     wap.spark.error = DataSourceError("spark down")
     assert runner.invoke(cli.app, ["wap", "status", "gold"]).exit_code == 2
+
+
+def test_verify_writes_manifest_and_publish_uses_persisted_pins(wap, tmp_path):
+    path = tmp_path / "audit.json"
+    result = runner.invoke(
+        cli.app,
+        [
+            "wap",
+            "verify",
+            "bronze",
+            "--branch",
+            "audit_x",
+            "--evidence",
+            str(path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert load_audit(path).pins == {"bronze.t": 3}
+    result = runner.invoke(cli.app, ["wap", "publish", "bronze", "--audit", str(path)])
+    assert result.exit_code == 0, result.output
+    assert wap.spark.publications == [(Layer.BRONZE, "audit_x", {"bronze.t": 3}, {"bronze.t": 2})]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "status"),
+    [
+        (["bronze"], GateStatus.BLOCKED),
+        (["silver"], GateStatus.PASSED),
+        (["bronze", "--branch", "audit_other"], GateStatus.PASSED),
+        (["bronze", "--pipeline", "another"], GateStatus.PASSED),
+    ],
+)
+def test_publish_rejects_blocked_or_mismatched_audit(wap, tmp_path, arguments, status):
+    path = tmp_path / "audit.json"
+    report = replace(make_report(status), layer=Layer.BRONZE)
+    write_audit(path, BranchAudit("audit_x", report, {"bronze.t": 3}))
+    result = runner.invoke(cli.app, ["wap", "publish", *arguments, "--audit", str(path)])
+    assert result.exit_code == 2
+    assert not wap.spark.publications
+
+
+def test_publish_rejects_missing_or_malformed_audit(wap, tmp_path):
+    path = tmp_path / "missing.json"
+    arguments = ["wap", "publish", "bronze", "--audit", str(path)]
+    assert runner.invoke(cli.app, arguments).exit_code == 2
+    path.write_text('{"version": 1}')
+    assert runner.invoke(cli.app, arguments).exit_code == 2
+    assert not wap.spark.publications
+
+
+@pytest.mark.parametrize("drop_blocked", [False, True])
+def test_blocked_branch_message_matches_configured_cleanup(monkeypatch, drop_blocked):
+    from types import SimpleNamespace
+
+    from tests.conftest import FakeClock
+    from tests.unit.test_wap import FakeGate, _wap
+    from tests.unit.test_wap import FakeSpark as MemorySpark
+
+    spark = MemorySpark()
+    monkeypatch.setenv("DQ_WAP_DROP_BLOCKED", str(drop_blocked).lower())
+
+    def build(settings):
+        use_case = _wap(
+            FakeClock(),
+            spark,
+            FakeGate({Layer.BRONZE}),
+            drop_blocked=settings.wap_drop_blocked,
+        )
+        return SimpleNamespace(run_wap=use_case)
+
+    monkeypatch.setattr(cli, "build_wap", build)
+    result = runner.invoke(cli.app, ["wap", "run", "--layer", "bronze", "--branch", "audit_x"])
+    assert result.exit_code == 1, result.output
+    assert "main stays 1 (5 rows)" in result.output
+    if drop_blocked:
+        assert "branch audit_x dropped after the blocked audit" in result.output
+        assert "branch audit_x kept" not in result.output
+        assert not spark.branches
+        assert spark.calls[-1] == ("drop", "bronze", None)
+    else:
+        assert "branch audit_x kept at 101 (5 rows)" in result.output
+        assert "branch audit_x dropped" not in result.output
+        assert spark.branches == {("bronze.orders", "audit_x"): 101}

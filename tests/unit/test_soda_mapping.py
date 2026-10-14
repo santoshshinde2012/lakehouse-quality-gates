@@ -5,6 +5,8 @@ from enum import Enum
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from soda_lakehouse_dq.adapters.datasources.base import SodaDataSources
 from soda_lakehouse_dq.adapters.soda_verifier import SodaContractVerifier, map_session_result, schema_details
 from soda_lakehouse_dq.domain.models import Outcome
@@ -64,6 +66,11 @@ def test_empty_session_is_an_error():
     assert map_session_result(make_spec(), session).has_errors
 
 
+def test_verification_with_no_checks_is_an_error():
+    result = map_session_result(make_spec(), _session([]))
+    assert result.errors == ("Soda returned no check results",)
+
+
 class FakeProvider:
     engine = "duckdb"
     name = "ds"
@@ -115,3 +122,33 @@ def test_verifier_opens_source_once_and_passes_arguments():
         "contract_file_path": "/tmp/a.yml",
         "variables": {"K": "1"},
     }
+
+
+@pytest.mark.parametrize("exception_name", ["ContractParserException", "YamlParserException"])
+def test_verifier_reports_parser_errors_and_verifies_remaining_contracts(exception_name):
+    from soda_core.common.exceptions import ContractParserException, YamlParserException
+
+    exception_class = {
+        "ContractParserException": ContractParserException,
+        "YamlParserException": YamlParserException,
+    }[exception_name]
+
+    def verify_fn(**kwargs):
+        if kwargs["contract_file_path"] == "/tmp/a.yml":
+            raise exception_class("invalid contract YAML")
+        return _session([_check("row_count", SodaOutcome.PASSED)])
+
+    provider = FakeProvider()
+    results = SodaContractVerifier(provider, verify_fn).verify([make_spec("a"), make_spec("b")], {})
+    assert provider.opened == 1
+    assert results[0].errors == ("invalid contract YAML",)
+    assert results[0].checks == ()
+    assert results[1].checks[0].outcome is Outcome.PASSED
+
+
+def test_verifier_does_not_hide_unexpected_errors():
+    def verify_fn(**_kwargs):
+        raise RuntimeError("unexpected coding error")
+
+    with pytest.raises(RuntimeError, match="unexpected coding error"):
+        SodaContractVerifier(FakeProvider(), verify_fn).verify([make_spec()], {})

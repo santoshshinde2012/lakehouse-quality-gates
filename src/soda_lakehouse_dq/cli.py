@@ -11,12 +11,14 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from pydantic import ValidationError
 
 from soda_lakehouse_dq.adapters.datasources.duckdb_provider import (
     apply_session_settings,
     lakehouse_connection_factory,
 )
 from soda_lakehouse_dq.adapters.local_medallion import load_medallion
+from soda_lakehouse_dq.adapters.wap.audit_json import load_audit, write_audit
 from soda_lakehouse_dq.container import build_container, build_wap
 from soda_lakehouse_dq.domain.errors import DataQualityError
 from soda_lakehouse_dq.domain.models import GateReport, Layer, VariableValue, coerce_variable
@@ -46,7 +48,14 @@ def _settings(engine: Engine | None, sample_dir: Path | None = None) -> Settings
         overrides["engine"] = engine
     if sample_dir is not None:
         overrides["sample_dir"] = sample_dir
-    settings = Settings.model_validate(overrides)
+    try:
+        settings = Settings.model_validate(overrides)
+    except ValidationError as exc:
+        details = "; ".join(
+            f"{'.'.join(str(part) for part in error['loc'])}: {error['msg']}"
+            for error in exc.errors(include_input=False, include_url=False)
+        )
+        raise typer.BadParameter(f"invalid settings: {details}") from exc
     configure_logging(settings.log_level, settings.log_json)
     return settings
 
@@ -149,30 +158,42 @@ def seed(
 @app.command("list")
 def list_contracts(pipeline: PipelineOpt = "retail", engine: EngineOpt = None) -> None:
     """List contracts per layer with their rendered dataset names."""
-    container = build_container(_settings(engine))
-    for layer in Layer.ordered():
-        for spec in container.repository.list_contracts(pipeline, layer):
-            typer.echo(f"{layer.value:7} {spec.name:40} {spec.dataset}")
+    try:
+        container = build_container(_settings(engine))
+        for layer in Layer.ordered():
+            for spec in container.repository.list_contracts(pipeline, layer):
+                typer.echo(f"{layer.value:7} {spec.name:40} {spec.dataset}")
+    except DataQualityError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
 
 
 @app.command()
 def validate(pipeline: PipelineOpt = "retail", engine: EngineOpt = None) -> None:
     """Parse every contract with Soda (no data access) and report syntax errors."""
     os.environ.setdefault("SODA_CORE_TELEMETRY_ENABLED", "false")
+    from soda_core.common.exceptions import YamlParserException
     from soda_core.contracts import test_contract
 
-    container = build_container(_settings(engine))
-    bad = 0
-    for layer in Layer.ordered():
-        for spec in container.repository.list_contracts(pipeline, layer):
-            errors = test_contract(contract_file_path=str(spec.rendered_path)).get_errors()
-            bad += bool(errors)
-            typer.secho(
-                f"{'FAIL' if errors else 'ok  '} {spec.name}",
-                fg=typer.colors.RED if errors else typer.colors.GREEN,
-            )
-            for error in errors:
-                typer.echo(f"     {error}")
+    try:
+        container = build_container(_settings(engine))
+        bad = 0
+        for layer in Layer.ordered():
+            for spec in container.repository.list_contracts(pipeline, layer):
+                try:
+                    errors = test_contract(contract_file_path=str(spec.rendered_path)).get_errors()
+                except YamlParserException as exc:
+                    errors = [str(exc)]
+                bad += bool(errors)
+                typer.secho(
+                    f"{'FAIL' if errors else 'ok  '} {spec.name}",
+                    fg=typer.colors.RED if errors else typer.colors.GREEN,
+                )
+                for error in errors:
+                    typer.echo(f"     {error}")
+    except DataQualityError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
     raise typer.Exit(1 if bad else 0)
 
 
@@ -204,6 +225,7 @@ def wap_evidence(results: list[WapLayerResult]) -> list[dict[str, object]]:
             "reasons": list(r.report.reasons[:10]),
             "written": _state_json(r.written),
             "published": _state_json(r.published),
+            "audited_pins": dict(r.audited_pins),
         }
         for r in results
     ]
@@ -229,7 +251,8 @@ def wap_run(  # noqa: PLR0917 (typer options)
         raise typer.BadParameter(f"--batch must be one of {sorted(WAP_BATCHES)}")
     layers = Layer.ordered() if all_layers else tuple(sorted(set(layer or []), key=Layer.ordered().index))
     try:
-        wap = build_wap(_settings(Engine.DUCKDB))
+        settings = _settings(Engine.DUCKDB)
+        wap = build_wap(settings)
         results = wap.run_wap.execute(pipeline, layers, source=source or WAP_BATCHES[batch], branch=branch)
     except DataQualityError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
@@ -243,9 +266,13 @@ def wap_run(  # noqa: PLR0917 (typer options)
                     f"  published {name}: main {s.main_before} -> {s.main_snapshot} ({s.main_rows} rows)"
                 )
             else:
+                branch_status = (
+                    f"branch {r.branch} dropped after the blocked audit"
+                    if settings.wap_drop_blocked
+                    else f"branch {r.branch} kept at {s.branch_snapshot} ({s.branch_rows} rows)"
+                )
                 typer.echo(
-                    f"  blocked   {name}: main stays {s.main_snapshot} ({s.main_rows} rows); "
-                    f"branch {r.branch} kept at {s.branch_snapshot} ({s.branch_rows} rows)"
+                    f"  blocked   {name}: main stays {s.main_snapshot} ({s.main_rows} rows); {branch_status}"
                 )
     if evidence is not None:
         evidence.parent.mkdir(parents=True, exist_ok=True)
@@ -258,16 +285,50 @@ def wap_verify(
     layer: Annotated[Layer, typer.Argument(help="bronze | silver | gold")],
     branch: Annotated[str, typer.Option(help="Audit branch to verify")],
     pipeline: PipelineOpt = "retail",
+    evidence: Annotated[Path | None, typer.Option(help="Write exact audited snapshot manifest here")] = None,
 ) -> None:
     """Gate one layer against an audit branch (used by the Airflow WAP DAG). Exit 1 = blocked."""
     try:
         wap = build_wap(_settings(Engine.DUCKDB))
-        report = wap.verify_branch.execute(pipeline, layer, branch, run_id=branch)
+        audit = wap.verify_branch.audit(pipeline, layer, branch, run_id=branch)
+        if evidence is not None:
+            write_audit(evidence, audit)
+        report = audit.report
     except DataQualityError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
     _echo(report)
     raise typer.Exit(1 if report.blocked else 0)
+
+
+@wap_app.command("publish")
+def wap_publish(
+    layer: Annotated[Layer, typer.Argument(help="bronze | silver | gold")],
+    audit_file: Annotated[
+        Path, typer.Option("--audit", "--audit-file", help="Passing snapshot audit manifest")
+    ],
+    branch: Annotated[str | None, typer.Option(help="Require this audit branch")] = None,
+    pipeline: PipelineOpt = "retail",
+) -> None:
+    """Publish exact audited snapshots, or resume a partial publication using its saved manifest."""
+    try:
+        audit = load_audit(audit_file)
+        if audit.report.blocked:
+            raise DataQualityError("a blocked audit cannot be published")
+        if audit.report.layer is not layer or audit.report.pipeline != pipeline:
+            raise DataQualityError("audit manifest layer/pipeline does not match this publication")
+        if branch is not None and branch != audit.branch:
+            raise DataQualityError("audit manifest branch does not match this publication")
+        state = build_wap(_settings(Engine.DUCKDB)).spark.publish(
+            layer,
+            audit.branch,
+            audit.pins,
+            main_before=audit.main_before,
+        )
+    except DataQualityError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+    typer.echo(json.dumps(_state_json(state), indent=2))
 
 
 @wap_app.command("status")

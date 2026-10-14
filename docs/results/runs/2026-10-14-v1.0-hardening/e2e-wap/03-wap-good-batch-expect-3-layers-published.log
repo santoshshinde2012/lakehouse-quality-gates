@@ -1,0 +1,30 @@
+==> good batch through write-audit-publish (expect: 3 layers published)
+DQ_ENGINE=duckdb uv run --frozen soda-dq wap run --all --batch good --evidence /Users/santosh/Documents/workspace/SODA/reports/e2e-wap/good.json
+2026-10-14T10:40:24.616977Z [info     ] dq.wap.verify                  branch=audit_20261014t103944z_3c58574b layer=bronze pins={'bronze.customers_raw': 7658030709313253858, 'bronze.orders_raw': 1820129153914630017}
+2026-10-14T10:40:24.626459Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-14T10:40:25.687070Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-14T10:40:25.764030Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-14T10:40:25.830708Z [info     ] dq.gate.passed                 failed=0 layer=bronze passed=14 pipeline=retail run_id=20261014T103944Z-3c58574b status=passed warned=0
+2026-10-14T10:40:25.830775Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=passed
+2026-10-14T10:40:51.734600Z [info     ] dq.wap.published               branch=audit_20261014t103944z_3c58574b layer=bronze
+2026-10-14T10:41:20.161846Z [info     ] dq.wap.verify                  branch=audit_20261014t103944z_3c58574b layer=silver pins={'silver.customers': 8523128250646022515, 'silver.orders': 4037289287603515290}
+2026-10-14T10:41:20.172963Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-14T10:41:20.787593Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-14T10:41:20.847162Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-14T10:41:20.933856Z [info     ] dq.gate.passed                 failed=0 layer=silver passed=22 pipeline=retail run_id=20261014T103944Z-3c58574b status=passed warned=0
+2026-10-14T10:41:20.933918Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=passed
+2026-10-14T10:41:44.677018Z [info     ] dq.wap.published               branch=audit_20261014t103944z_3c58574b layer=silver
+2026-10-14T10:42:08.893330Z [info     ] dq.wap.verify                  branch=audit_20261014t103944z_3c58574b layer=gold pins={'gold.daily_order_metrics': 2858205119589398762}
+2026-10-14T10:42:08.897783Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-14T10:42:09.703124Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-14T10:42:09.787134Z [info     ] dq.gate.passed                 failed=0 layer=gold passed=17 pipeline=retail run_id=20261014T103944Z-3c58574b status=passed warned=0
+2026-10-14T10:42:09.787191Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=passed
+2026-10-14T10:42:31.535202Z [info     ] dq.wap.published               branch=audit_20261014t103944z_3c58574b layer=gold
+retail/bronze: passed (14 checks, run 20261014T103944Z-3c58574b)
+  published bronze.customers_raw: main 8387687093817486274 -> 7658030709313253858 (10 rows)
+  published bronze.orders_raw: main 4391535797308404312 -> 1820129153914630017 (22 rows)
+retail/silver: passed (22 checks, run 20261014T103944Z-3c58574b)
+  published silver.customers: main 1707375992485952680 -> 8523128250646022515 (10 rows)
+  published silver.orders: main 5416652615927684927 -> 4037289287603515290 (19 rows)
+retail/gold: passed (17 checks, run 20261014T103944Z-3c58574b)
+  published gold.daily_order_metrics: main 8162641541640792856 -> 2858205119589398762 (2 rows)

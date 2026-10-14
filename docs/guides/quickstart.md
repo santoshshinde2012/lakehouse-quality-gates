@@ -52,7 +52,7 @@ test tier, make target and benchmark in depth.
    make demo-good
    ```
 
-   Expected: `retail/bronze`, `retail/silver` and `retail/gold` each report `passed` (46 checks in total).
+   Expected: `retail/bronze`, `retail/silver` and `retail/gold` each report `passed` (53 checks in total).
 
 7. **Run the bad batch.**
 

@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 from soda_lakehouse_dq.domain.models import ContractResult, ContractSpec, GateReport, Layer, VariableValue
-from soda_lakehouse_dq.domain.wap import BranchState
+from soda_lakehouse_dq.domain.wap import BranchAudit, BranchState
 
 
 @runtime_checkable
@@ -65,9 +65,16 @@ class AuditWriter(Protocol):
 
 @runtime_checkable
 class BranchPublisher(Protocol):
-    """Moves ``main`` to an audited branch, or removes a branch."""
+    """Moves ``main`` to exact audited snapshots, or explicitly removes an audit branch."""
 
-    def publish(self, layer: Layer, branch: str) -> BranchState: ...
+    def publish(
+        self,
+        layer: Layer,
+        branch: str,
+        pins: Mapping[str, int],
+        *,
+        main_before: Mapping[str, int | None] | None = None,
+    ) -> BranchState: ...
 
     def drop(self, layer: Layer, branch: str) -> BranchState: ...
 
@@ -84,3 +91,9 @@ class BranchGate(Protocol):
     """Runs a layer's gate against pinned snapshots (``schema.table`` -> snapshot id) instead of main."""
 
     def verify(self, pipeline: str, layer: Layer, pins: Mapping[str, int], run_id: str) -> GateReport: ...
+
+
+class BranchAuditSink(Protocol):
+    """Durably records the snapshots and decision before any publication."""
+
+    def write(self, audit: BranchAudit) -> None: ...

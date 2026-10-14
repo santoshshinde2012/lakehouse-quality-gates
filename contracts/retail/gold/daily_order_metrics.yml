@@ -42,12 +42,16 @@ columns:
   - name: orders
     data_type: bigint
     checks:
+      - missing:
+          name: Order count present
       - invalid:
           name: At least one order per day
           valid_min: 1
   - name: revenue
     data_type: double
     checks:
+      - missing:
+          name: Revenue present
       - invalid:
           name: Revenue is not negative
           valid_min: 0
@@ -66,5 +70,17 @@ columns:
             level: warn
   - name: cancelled_orders
     data_type: bigint
+    checks:
+      - missing:
+          name: Cancelled order count present
+      - invalid:
+          name: Cancelled order count is not negative
+          valid_min: 0
   - name: refunded_orders
     data_type: bigint
+    checks:
+      - missing:
+          name: Refunded order count present
+      - invalid:
+          name: Refunded order count is not negative
+          valid_min: 0

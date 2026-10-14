@@ -36,7 +36,7 @@ How SOLID and the project's other engineering rules map onto concrete code. Path
 | Config | pydantic-settings with the `DQ_` prefix, validated at startup (port range, enums). The Slack URL is a `SecretStr`, and an empty value means disabled. |
 | Security | No secrets in the repo (`.env` is git-ignored, `.env.example` holds placeholders, and pre-commit runs `detect-private-key`). Slack accepts only `https://` URLs. The Docker image is multi-stage, digest-pinned, runs as the non-root user `dq`, and works on a read-only root filesystem. Soda telemetry is off by default. |
 | Dependencies | Soda and DuckDB are pinned exactly, and other libraries are bounded and locked in `uv.lock` (CI runs `uv sync --frozen`). |
-| Testing | Unit tests use fakes for every port. Integration tests run real Soda over DuckDB and the CLI end to end. Coverage is 99%. |
+| Testing | Unit tests use fakes for every port. Integration tests run real Soda over DuckDB and the CLI end to end. Coverage is 97%. |
 
 ---
 

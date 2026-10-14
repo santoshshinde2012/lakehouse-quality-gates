@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from soda_lakehouse_dq.domain.errors import DataSourceError
@@ -93,8 +93,17 @@ class SparkSubmitWap:
     def write(self, layer: Layer, branch: str, source: str | None = None) -> BranchState:
         return self._run("write", layer, branch, source)
 
-    def publish(self, layer: Layer, branch: str) -> BranchState:
-        return self._run("publish", layer, branch)
+    def publish(
+        self,
+        layer: Layer,
+        branch: str,
+        pins: Mapping[str, int],
+        *,
+        main_before: Mapping[str, int | None] | None = None,
+    ) -> BranchState:
+        args = self.command("publish", layer, branch)
+        args += ["--pins", json.dumps(dict(pins)), "--main-before", json.dumps(dict(main_before or {}))]
+        return parse_wap_json(self._runner(args))
 
     def drop(self, layer: Layer, branch: str) -> BranchState:
         return self._run("drop", layer, branch)

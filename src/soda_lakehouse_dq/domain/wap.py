@@ -24,8 +24,10 @@ def branch_name(run_id: str, prefix: str = "audit") -> str:
 
 
 def validate_branch(name: str) -> str:
-    if not _BRANCH.match(name) or name == "main":
-        raise DataQualityError(f"invalid audit branch {name!r}: use 1-64 of [a-z0-9_], not 'main'")
+    if not _BRANCH.match(name) or name == "main" or name.startswith("publish_"):
+        raise DataQualityError(
+            f"invalid audit branch {name!r}: use 1-64 of [a-z0-9_], excluding 'main' and reserved 'publish_'"
+        )
     return name
 
 
@@ -61,8 +63,18 @@ class BranchState:
         return {t: s.branch_snapshot for t, s in self.tables.items() if s.branch_snapshot is not None}
 
 
+@dataclass(frozen=True, slots=True)
+class BranchAudit:
+    """The gate decision and the exact immutable snapshots it inspected."""
+
+    branch: str
+    report: GateReport
+    pins: Mapping[str, int]
+    main_before: Mapping[str, int | None] = field(default_factory=dict)
+
+
 class WapOutcome(StrEnum):
-    PUBLISHED = "published"  # gate passed, main fast-forwarded to the audit branch
+    PUBLISHED = "published"  # gate passed, main fast-forwarded to the exact audited snapshot
     BLOCKED = "blocked"  # gate blocked, main untouched, branch kept for forensics
 
 
@@ -74,3 +86,4 @@ class WapLayerResult:
     report: GateReport
     written: BranchState
     published: BranchState | None = None
+    audited_pins: Mapping[str, int] = field(default_factory=dict)

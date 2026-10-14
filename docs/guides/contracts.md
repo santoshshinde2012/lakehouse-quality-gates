@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > **At a glance.** One Soda Core v4 YAML file per dataset under `contracts/<pipeline>/<layer>/`. Five contracts
-> hold 46 checks: 14 in the bronze gate, 21 in silver, 11 in gold.
+> hold 53 checks: 14 in the bronze gate, 22 in silver, 17 in gold.
 
 Location: `contracts/<pipeline>/<layer>/<table>.yml`. These are Soda Core v4 contract-language files
 ([reference](https://docs.soda.io/reference/contract-language-reference)). The only addition is a
@@ -43,6 +43,9 @@ columns:
   also works.
 - Every column is listed with a `data_type`, and the `schema` check is strict (no extra columns, same
   order). Schema drift therefore always fails, by design.
+- Required values need a `missing` check as well as any `invalid` bounds: Soda's invalid checks exclude NULL.
+  A contract with no checks blocks verification. Gold's average order value may be NULL on days with no paid
+  or shipped orders; its revenue and counters must be present.
 - Warn-only checks use `threshold: {must_be: 0, level: warn}`.
 - When the same check type appears twice on one column, the second carries a `qualifier`, because Soda
   needs a unique identity for each check.
@@ -58,10 +61,10 @@ columns:
 | `bronze/orders_raw` (10) | schema · row_count ≥ 1 · freshness `_ingested_at` < `BRONZE_MAX_AGE_HOURS` (24) · duplicate (`order_id`, `_source_file`) · missing `order_id`, `customer_id`, `order_ts`, `amount` · invalid status `LOWER(TRIM(status))` ∈ {paid, shipped, cancelled, refunded, pending} (warn) · invalid amount < 0 (warn) |
 | `bronze/customers_raw` (4) | schema · row_count · missing `customer_id` · missing email (warn) |
 | `silver/customers` (9) | schema · row_count · missing and duplicate `customer_id` · missing name · missing, invalid regex and duplicate email · missing `signup_date` |
-| `silver/orders` (12) | schema · row_count · failed_rows `order_ts > CURRENT_TIMESTAMP` · missing and duplicate `order_id` · missing `customer_id` + `valid_reference_data` → `silver/customers` · missing `order_ts` · status ∈ canonical set · missing amount, `valid_min: 0`, `valid_max: MAX_ORDER_AMOUNT` (warn) |
-| `gold/daily_order_metrics` (11) | schema · row_count · failed_rows `cancelled + refunded > orders` · failed_rows `order_date > CURRENT_DATE` · metric: \|SUM(gold.orders) − COUNT(silver.orders)\| = 0 · missing and duplicate `order_date` · `orders ≥ 1` · revenue ≥ 0 · AOV ≥ 0 · AOV ≤ `MAX_AVG_ORDER_VALUE` (warn) |
+| `silver/orders` (13) | schema · row_count · failed_rows `order_ts > CURRENT_TIMESTAMP` · missing and duplicate `order_id` · missing `customer_id` + `valid_reference_data` → `silver/customers` · missing `order_ts` · missing status, status ∈ canonical set · missing amount, `valid_min: 0`, `valid_max: MAX_ORDER_AMOUNT` (warn) |
+| `gold/daily_order_metrics` (17) | schema · row_count · failed_rows `cancelled + refunded > orders` · failed_rows `order_date > CURRENT_DATE` · metric: \|SUM(gold.orders) − COUNT(silver.orders)\| = 0 · missing and duplicate `order_date` · missing `orders`, `orders ≥ 1` · missing revenue, revenue ≥ 0 · missing and non-negative cancellation/refund counters · AOV ≥ 0 · AOV ≤ `MAX_AVG_ORDER_VALUE` (warn) |
 
-Totals per gate: bronze 14, silver 21, gold 11 (46).
+Totals per gate: bronze 14, silver 22, gold 17 (53).
 
 Why bronze **warns** where silver **fails**: [use case](../overview/use-case.md#solution).
 

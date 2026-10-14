@@ -4,7 +4,7 @@ Three task kinds per layer, all ``docker exec`` through the lakehouse's socket p
 
 * ``wap_write_<layer>``: Spark builds the layer on the run's audit branch (``/opt/soda-wap/wap_job.py write``)
 * ``dq_<layer>``: ``soda-dq wap verify <layer> --branch ...`` in ``ldl-soda``; exit 1 (blocked) fails the task
-* ``publish_<layer>``: Spark fast-forwards ``main`` to the branch and drops it; never runs after a failed gate
+* ``publish_<layer>``: Spark promotes exact audited snapshots; source branches stay for triage
 
 Values that reach the shell are fixed words or validated names; the branch is the run's ``run_after`` time.
 """
@@ -22,9 +22,14 @@ WAP_JOB = "/opt/soda-wap/wap_job.py"
 LAYERS = ("bronze", "silver", "gold")
 # One audit branch per DAG run, named after the run time: digits and t only reach the shell.
 # (Airflow 3 manual runs have no logical date, so ts_nodash is undefined there.)
-BRANCH = "audit_{{ dag_run.run_after.strftime('%Y%m%dt%H%M%S') }}"
+BRANCH = "audit_{{ dag_run.run_after.strftime('%Y%m%dt%H%M%S%f') }}"
 # conf {"bad_batch": true} writes fixtures/bad_batch to the bronze branch instead of the lakehouse sample.
 SOURCE = "{{ '/opt/soda-wap-fixtures/bad_batch' if dag_run.conf.get('bad_batch') else '/opt/data/sample' }}"
+
+
+def audit_path(layer: str, *, spark: bool) -> str:
+    directory = "/opt/soda-wap-reports" if spark else "/opt/soda-dq/reports"
+    return f"{directory}/wap/{BRANCH}/{_check(layer)}.audit.json"
 
 
 def _check(layer: str) -> str:
@@ -40,7 +45,9 @@ def spark_wap_command(action: str, layer: str, container: str = SPARK_CONTAINER)
     args += [action, "--layer", _check(layer)]
     cmd = " ".join(shlex.quote(a) for a in args) + f" --branch {BRANCH}"
     if action == "write" and layer == "bronze":
-        cmd += f" --source {SOURCE}"
+        cmd += f' --source "{SOURCE}"'
+    if action == "publish":
+        cmd += f' --audit-file "{audit_path(layer, spark=True)}"'
     return cmd
 
 
@@ -48,7 +55,11 @@ def wap_gate_command(layer: str, pipeline: str = "retail", container: str = SODA
     if not pipeline.replace("_", "").isalnum():
         raise ValueError(f"unsafe pipeline name {pipeline!r}")
     args = ["docker", "exec", container, "soda-dq", "wap", "verify", _check(layer), "--pipeline", pipeline]
-    return " ".join(shlex.quote(a) for a in args) + f" --branch {BRANCH}"
+    return (
+        " ".join(shlex.quote(a) for a in args)
+        + f" --branch {BRANCH}"
+        + f' --evidence "{audit_path(layer, spark=False)}"'
+    )
 
 
 def wap_write_task(layer: str) -> BashOperator:
@@ -72,6 +83,6 @@ def wap_publish_task(layer: str) -> BashOperator:
     return BashOperator(
         task_id=f"publish_{layer}",
         bash_command=spark_wap_command("publish", layer),
-        doc_md=f"Fast-forward `{layer}` main to the audited branch, then drop the branch.",
+        doc_md=f"Fast-forward `{layer}` main to the audited snapshots; keep the audit branch for triage.",
         retries=0,
     )

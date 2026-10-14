@@ -45,7 +45,7 @@ each piece yourself, after the [quickstart](quickstart.md) setup and with `DQ_LD
 ```bash
 # lakehouse repo: light profile and the retail tables
 make up-light && .venv/bin/python scripts/light_demo.py retail
-# this repo: live DuckDB gates (expect 14 / 21 / 11 passed)
+# this repo: live DuckDB gates (expect 14 / 22 / 17 passed)
 uv run soda-dq run --engine duckdb
 uv run soda-dq seed fixtures/bad_batch --yes && uv run soda-dq run --engine duckdb   # blocks at bronze
 uv run soda-dq seed fixtures/good_batch --yes                                        # restore

@@ -52,19 +52,25 @@ class SodaContractVerifier:
         self, contracts: Sequence[ContractSpec], variables: Mapping[str, VariableValue]
     ) -> Sequence[ContractResult]:
         verify_fn = self._verify_fn or _default_verify_fn()
+        from soda_core.common.exceptions import YamlParserException
+
         results: list[ContractResult] = []
         with self._provider.open() as sources:
             for contract in contracts:
                 log.info("dq.contract.verify", contract=contract.name, dataset=contract.dataset)
                 for dataset in contract.datasets:
                     sources.prepare(dataset)
-                session = verify_fn(
-                    data_sources=list(sources.impls),
-                    data_source_file_paths=[str(p) for p in sources.yaml_files],
-                    contract_file_path=str(contract.rendered_path),
-                    variables=dict(variables),
-                )
-                results.append(map_session_result(contract, session))
+                try:
+                    session = verify_fn(
+                        data_sources=list(sources.impls),
+                        data_source_file_paths=[str(p) for p in sources.yaml_files],
+                        contract_file_path=str(contract.rendered_path),
+                        variables=dict(variables),
+                    )
+                except YamlParserException as exc:
+                    results.append(ContractResult(contract=contract, checks=(), errors=(str(exc),)))
+                else:
+                    results.append(map_session_result(contract, session))
         return results
 
 
@@ -108,6 +114,8 @@ def map_session_result(contract: ContractSpec, session: Any) -> ContractResult:
             )
     if not session.contract_verification_results and not errors:
         errors.append("Soda returned no verification result")
+    elif not checks and not errors:
+        errors.append("Soda returned no check results")
     return ContractResult(
         contract=contract,
         checks=tuple(checks),

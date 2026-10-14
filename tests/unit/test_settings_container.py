@@ -92,15 +92,44 @@ def test_trino_provider_missing_file(tmp_path):
         pass
 
 
-def test_trino_provider_exports_env(tmp_path, monkeypatch):
-    monkeypatch.delenv("DQ_TRINO_HOST", raising=False)
-    yml = tmp_path / "trino.yml"
-    yml.write_text("type: trino\n")
-    with TrinoProvider(yml, "t", {"DQ_TRINO_HOST": "trino"}).open() as sources:
-        assert sources.yaml_files == [yml]
+def test_trino_providers_use_independent_settings_without_changing_env(tmp_path, monkeypatch):
     import os
 
-    assert os.environ["DQ_TRINO_HOST"] == "trino"
+    import yaml
+
+    monkeypatch.setenv("DQ_TRINO_HOST", "ambient")
+    monkeypatch.setenv("DQ_TRINO_PORT", "9999")
+    yml = tmp_path / "trino.yml"
+    original = (
+        "type: trino\nname: original\nconnection:\n"
+        "  host: ${env.DQ_TRINO_HOST}\n  port: ${env.DQ_TRINO_PORT}\n"
+    )
+    yml.write_text(original)
+    first = TrinoProvider(yml, "first", {"DQ_TRINO_HOST": "first-host", "DQ_TRINO_PORT": "8088"})
+    second = TrinoProvider(yml, "second", {"DQ_TRINO_HOST": "second-host", "DQ_TRINO_PORT": "8089"})
+    with first.open() as first_sources, second.open() as second_sources:
+        [first_path] = first_sources.yaml_files
+        [second_path] = second_sources.yaml_files
+        assert first_path != second_path
+        first_doc = yaml.safe_load(first_path.read_text())
+        second_doc = yaml.safe_load(second_path.read_text())
+        assert first_doc["name"] == "first"
+        assert first_doc["connection"] == {"host": "first-host", "port": 8088}
+        assert second_doc["name"] == "second"
+        assert second_doc["connection"] == {"host": "second-host", "port": 8089}
+    assert not first_path.exists()
+    assert not second_path.exists()
+    assert yml.read_text() == original
+    assert os.environ["DQ_TRINO_HOST"] == "ambient"
+    assert os.environ["DQ_TRINO_PORT"] == "9999"
+
+
+@pytest.mark.parametrize("content", ["type: trino\n", "connection: [bad]\n", "[invalid yaml"])
+def test_trino_provider_rejects_invalid_configuration(tmp_path, content):
+    yml = tmp_path / "trino.yml"
+    yml.write_text(content)
+    with pytest.raises(DataSourceError), TrinoProvider(yml, "t").open():
+        pass
 
 
 def test_shipped_trino_yaml_parses():

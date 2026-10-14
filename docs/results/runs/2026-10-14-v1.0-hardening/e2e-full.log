@@ -1,0 +1,47 @@
+scripts/e2e.sh full
+==> uv sync
+==> full lakehouse already running: reusing it
+==> lakehouse up (full profile, Trino, WAP overlay)
+==> lakehouse Spark pipeline (make e2e)
+==> gates on Spark output, duckdb (expect pass)
+==> gates on Spark output, trino (expect pass)
+==> seed bad batch
+==> gates on bad batch, trino (expect 3 blocks)
+==> restore good batch
+==> runner container up (make dq-up)
+==> gates in ldl-soda container (expect pass)
+==> Airflow up on :8090
+==> Airflow good run (expect success)
+==> Airflow bad run (expect dq_bronze to fail)
+==> Airflow good run again (restores data)
+==> pytest -m 'live or full'
+==> stopping ldl-airflow-apiserver
+==> removing ldl-airflow-apiserver (volumes kept)
+==> stopping ldl-airflow-dag-processor
+==> removing ldl-airflow-dag-processor (volumes kept)
+==> stopping ldl-airflow-scheduler
+==> removing ldl-airflow-scheduler (volumes kept)
+==> removing ldl-airflow-init (volumes kept)
+==> stopping ldl-airflow-postgres
+==> removing ldl-airflow-postgres (volumes kept)
+==> stopping ldl-docker-proxy
+==> removing ldl-docker-proxy (volumes kept)
+
+e2e-full summary (logs in reports/e2e-full/)
+      | step                                           | result
+PASS  | uv sync                                        | exit 0 (expected 0), 0s
+PASS  | lakehouse up (full profile, Trino, WAP overlay) | exit 0 (expected 0), 6s
+PASS  | lakehouse Spark pipeline (make e2e)            | exit 0 (expected 0), 110s
+PASS  | gates on Spark output, duckdb (expect pass)    | exit 0 (expected 0), 1s
+PASS  | gates on Spark output, trino (expect pass)     | exit 0 (expected 0), 3s
+PASS  | seed bad batch                                 | exit 0 (expected 0), 1s
+PASS  | gates on bad batch, trino (expect 3 blocks)    | exit 0 (expected 0), 4s
+PASS  | restore good batch                             | exit 0 (expected 0), 1s
+PASS  | runner container up (make dq-up)               | exit 0 (expected 0), 69s
+PASS  | gates in ldl-soda container (expect pass)      | exit 0 (expected 0), 2s
+PASS  | Airflow up on :8090                            | exit 0 (expected 0), 101s
+PASS  | Airflow good run (expect success)              | exit 0 (expected 0), 140s
+PASS  | Airflow bad run (expect dq_bronze to fail)     | exit 2 (expected 2), 65s
+PASS  | Airflow good run again (restores data)         | exit 0 (expected 0), 166s
+PASS  | pytest -m 'live or full'                       | exit 0 (expected 0), 360s
+RESULT: PASS

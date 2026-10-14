@@ -76,7 +76,7 @@ on every contract, then the demo (good batch on CSV fixtures, then the bad batch
 Pass criteria:
 
 - `All checks passed!` from ruff and `Success: no issues found` from mypy.
-- pytest: `132 passed, 1 skipped, 8 deselected` (the 8 are the live and full tests) and coverage of at least 95%.
+- pytest: `216 passed, 8 deselected` (the 8 are the live and full tests) and coverage of at least 95%.
 - `validate`: every contract reported valid.
 - Demo good: three `PASSED` gates, exit 0. Demo bad: `OK: bronze|silver|gold blocked as expected`.
 - Last line: `test-all: PASS (...)`.
@@ -96,10 +96,11 @@ make e2e-live
 3. restores the good batch and runs the gates again (expects exit 0);
 4. runs `pytest -m live` (good passes, bad blocks every layer, dataset names resolve).
 
-Each step logs to `reports/e2e-live/NN-step.log`. The script ends with a table and `RESULT: PASS` or `RESULT: FAIL`
-and exits 1 on any failure. A trap stops only what the script started, with `make down` (never `-v`), so volumes and a
-stack you started yourself are left alone. `KEEP_UP=1 make e2e-live` leaves everything running. Running it twice in a
-row gives the same result.
+Each invocation creates `reports/e2e-live/run-XXXXXXXX/` and logs its steps there. The script prints that directory
+and ends with a table and `RESULT: PASS` or `RESULT: FAIL`
+and exits 1 on any failure. Cleanup preserves containers that were already running, stops containers it started,
+and removes only containers it created. Existing stopped containers and volumes remain. `KEEP_UP=1 make e2e-live`
+leaves everything running. Running it twice in a row gives the same result.
 
 ## T3: full stack with Trino, the runner container and Airflow
 
@@ -117,7 +118,7 @@ AIRFLOW_API_PORT=8090 make e2e-full    # drop the port when 8080 is free
    and a second good run that restores the data;
 6. `pytest -m "live or full"` (adds the Trino, container hardening and Airflow health tests).
 
-Teardown stops Airflow, the runner and the lakehouse if the script started them (`down`, volumes kept). Note that
+Teardown uses the same container-by-container cleanup as the live tier. Note that
 `make airflow-dq-down` stops the whole lakehouse compose project, because Airflow shares it.
 
 To run only the pytest tiers against a stack you already started: `make test-live` or `make test-full`.

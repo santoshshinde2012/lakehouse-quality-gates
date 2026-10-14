@@ -45,6 +45,8 @@ columns:
   - name: status
     data_type: varchar
     checks:
+      - missing:
+          name: Status present
       - invalid:
           name: Status is canonical
           valid_values: [paid, shipped, cancelled, refunded]

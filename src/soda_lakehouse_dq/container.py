@@ -23,6 +23,7 @@ from soda_lakehouse_dq.adapters.sinks.json_sink import JsonFileSink
 from soda_lakehouse_dq.adapters.sinks.junit_sink import JUnitXmlSink
 from soda_lakehouse_dq.adapters.sinks.markdown_sink import MarkdownSink
 from soda_lakehouse_dq.adapters.soda_verifier import SodaContractVerifier
+from soda_lakehouse_dq.adapters.wap.audit_json import JsonBranchAuditSink
 from soda_lakehouse_dq.adapters.wap.pinned_gate import PinnedSnapshotGate
 from soda_lakehouse_dq.adapters.wap.pyiceberg_refs import PyIcebergSnapshotReader
 from soda_lakehouse_dq.adapters.wap.spark_wap import SparkSubmitWap, subprocess_runner
@@ -156,7 +157,10 @@ def build_wap(settings: Settings | None = None) -> WapServices:
     )
     gate = PinnedSnapshotGate(lambda pins: _verify_layer(settings, repository, pins))
     verify_branch = VerifyBranchUseCase(
-        repository, PyIcebergSnapshotReader(_iceberg_catalog_factory(settings)), gate
+        repository,
+        PyIcebergSnapshotReader(_iceberg_catalog_factory(settings)),
+        gate,
+        JsonBranchAuditSink(settings.reports_dir),
     )
     run_wap = RunWapMedallionUseCase(
         spark, spark, verify_branch, SystemClock(), drop_blocked=settings.wap_drop_blocked

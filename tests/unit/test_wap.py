@@ -11,6 +11,7 @@ import duckdb
 import pytest
 
 from soda_lakehouse_dq.adapters.datasources.duckdb_provider import DuckDBProvider
+from soda_lakehouse_dq.adapters.wap.audit_json import JsonBranchAuditSink, load_audit
 from soda_lakehouse_dq.adapters.wap.pinned_gate import PinnedSnapshotGate
 from soda_lakehouse_dq.adapters.wap.pyiceberg_refs import PyIcebergSnapshotReader
 from soda_lakehouse_dq.adapters.wap.spark_wap import SparkSubmitWap, parse_wap_json, subprocess_runner
@@ -40,11 +41,11 @@ class FakeSpark:
         self.branches[(table, branch)] = self.main[table] + 100
         return self._state("write", layer, branch)
 
-    def publish(self, layer: Layer, branch: str) -> BranchState:
+    def publish(self, layer: Layer, branch: str, pins, *, main_before=None) -> BranchState:
         self.calls.append(("publish", layer.value, None))
         table = TABLES[layer]
         before = self.main[table]
-        self.main[table] = self.branches.pop((table, branch))
+        self.main[table] = pins[table]
         moved = TableState(table, self.main[table], 5, main_before=before)
         return BranchState("publish", layer, branch, 1.0, {table: moved})
 
@@ -94,7 +95,7 @@ def test_fakes_satisfy_ports():
 def test_branch_names_are_safe():
     assert branch_name("20261014T105200Z-ab12CD") == "audit_20261014t105200z_ab12cd"
     assert len(branch_name("x" * 200)) == 64
-    for bad in ("main", "Audit", "a-b", "a;drop", ""):
+    for bad in ("main", "publish_deadbeef", "publish_", "Audit", "a-b", "a;drop", ""):
         with pytest.raises(DataQualityError):
             validate_branch(bad)
 
@@ -110,7 +111,7 @@ def test_good_batch_publishes_every_layer(clock):
     results = _wap(clock, spark, gate).execute("retail", source="/good")
     assert [r.outcome for r in results] == [WapOutcome.PUBLISHED] * 3
     assert spark.main == dict.fromkeys(TABLES.values(), 101)
-    assert not spark.branches
+    assert spark.branches == {(table, "audit_run_1"): 101 for table in TABLES.values()}
     assert spark.calls[0] == ("write", "bronze", "/good")
     assert spark.calls[2] == ("write", "silver", None)  # only bronze reads the batch
     assert gate.calls[0] == (Layer.BRONZE, {"bronze.orders": 101}, "run-1")
@@ -127,7 +128,10 @@ def test_blocked_gate_leaves_main_and_keeps_branch(clock):
     ]
     assert spark.main["silver.orders"] == 1  # untouched
     assert spark.main["gold.orders"] == 1  # never written
-    assert spark.branches == {("silver.orders", "audit_x"): 101}  # kept for forensics
+    assert spark.branches == {
+        ("bronze.orders", "audit_x"): 101,
+        ("silver.orders", "audit_x"): 101,
+    }  # kept for forensics
     assert ("publish", "silver", None) not in spark.calls
     assert results[-1].published is None
 
@@ -182,7 +186,7 @@ def test_spark_adapter_commands():
     seen: list[list[str]] = []
     spark = SparkSubmitWap(runner=lambda args: seen.append(list(args)) or OUT)
     spark.write(Layer.BRONZE, "audit_x", "/opt/data/sample")
-    spark.publish(Layer.SILVER, "audit_x")
+    spark.publish(Layer.SILVER, "audit_x", {"silver.orders": 123}, main_before={"silver.orders": 1})
     spark.drop(Layer.GOLD, "audit_x")
     spark.status(Layer.GOLD)
     spark.direct(Layer.BRONZE, "/d")
@@ -191,7 +195,8 @@ def test_spark_adapter_commands():
         "/opt/soda-wap/wap_job.py", "write", "--layer", "bronze", "--branch", "audit_x",
         "--source", "/opt/data/sample",
     ]  # fmt: skip
-    assert seen[1][-5:] == ["publish", "--layer", "silver", "--branch", "audit_x"]
+    assert seen[1][-9:-4] == ["publish", "--layer", "silver", "--branch", "audit_x"]
+    assert seen[1][-4:] == ["--pins", '{"silver.orders": 123}', "--main-before", '{"silver.orders": 1}']
     assert seen[2][-5] == "drop"
     assert seen[3][-3:] == ["status", "--layer", "gold"]
     assert seen[4][-5:] == ["direct", "--layer", "bronze", "--source", "/d"]
@@ -271,3 +276,69 @@ def test_duckdb_pins_read_branch_snapshots_through_views():
     assert con.execute("SELECT id FROM silver.orders").fetchone() == (1,)
     assert con.execute("SELECT id FROM bronze.orders_raw").fetchone() == (3,)
     assert con.execute("SELECT current_database()").fetchone() == ("dq_audit",)
+
+
+def test_missing_primary_branch_fails_even_when_another_primary_exists():
+    repo = FakeRepository({Layer.SILVER: [make_spec("orders"), make_spec("customers")]})
+    spark = FakeSpark(branches={("silver.orders", "audit_x"): 101})
+    gate = FakeGate()
+    with pytest.raises(DataQualityError, match=r"missing on primary tables: silver\.customers"):
+        VerifyBranchUseCase(repo, spark, gate).execute("retail", Layer.SILVER, "audit_x", "r")
+    assert not gate.calls
+
+
+def test_reference_branch_can_fall_back_to_main():
+    from dataclasses import replace
+
+    contract = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
+    repo = FakeRepository({Layer.SILVER: [contract]})
+    spark = FakeSpark(branches={("silver.orders", "audit_x"): 101})
+    gate = FakeGate()
+    VerifyBranchUseCase(repo, spark, gate).execute("retail", Layer.SILVER, "audit_x", "r")
+    assert gate.calls[0][1] == {"silver.orders": 101}
+
+
+def test_missing_primary_cannot_be_hidden_by_a_reference_branch():
+    from dataclasses import replace
+
+    contract = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
+    repo = FakeRepository({Layer.SILVER: [contract]})
+    spark = FakeSpark(branches={("bronze.orders_raw", "audit_x"): 101})
+    with pytest.raises(DataQualityError, match=r"silver\.orders"):
+        VerifyBranchUseCase(repo, spark, FakeGate()).execute("retail", Layer.SILVER, "audit_x", "r")
+
+
+def test_publish_is_bound_to_audited_snapshots_when_branch_advances(clock, tmp_path):
+    spark = FakeSpark()
+    sink = JsonBranchAuditSink(tmp_path)
+
+    class MovingGate(FakeGate):
+        def verify(self, pipeline, layer, pins, run_id):
+            report = super().verify(pipeline, layer, pins, run_id)
+            spark.branches[("silver.orders", "audit_x")] = 999
+            return report
+
+    verify = VerifyBranchUseCase(_repo(), spark, MovingGate(), sink)
+    result = RunWapMedallionUseCase(spark, spark, verify, clock).execute(
+        "retail", [Layer.SILVER], branch="audit_x"
+    )[0]
+    assert result.audited_pins == {"silver.orders": 101}
+    assert spark.main["silver.orders"] == 101
+    assert spark.branches[("silver.orders", "audit_x")] == 999
+    audit = load_audit(tmp_path / "wap/audit_x/silver.audit.json")
+    assert (tmp_path / "wap/audit_x/silver.audit.json").stat().st_mode & 0o777 == 0o644
+    assert audit.pins == result.audited_pins
+    assert audit.main_before == {"silver.orders": 1}
+
+
+def test_failed_audit_persistence_prevents_publication(clock):
+    class FailingSink:
+        def write(self, audit):
+            raise DataSourceError("audit disk unavailable")
+
+    spark = FakeSpark()
+    verify = VerifyBranchUseCase(_repo(), spark, FakeGate(), FailingSink())
+    with pytest.raises(DataSourceError, match="audit disk unavailable"):
+        RunWapMedallionUseCase(spark, spark, verify, clock).execute("retail", [Layer.BRONZE])
+    assert spark.main["bronze.orders"] == 1
+    assert all(action != "publish" for action, _, _ in spark.calls)

@@ -34,6 +34,15 @@ def test_empty_results_block_unless_allowed():
     assert GatePolicy(allow_empty=True).decide([]).status is GateStatus.PASSED
 
 
+@pytest.mark.parametrize("allow_empty", [False, True])
+def test_a_contract_with_no_checks_blocks_even_alongside_a_passing_contract(allow_empty):
+    decision = GatePolicy(allow_empty=allow_empty).decide(
+        [make_result(name="empty"), make_result(Outcome.PASSED)]
+    )
+    assert decision.status is GateStatus.BLOCKED
+    assert decision.reasons == ("retail.silver.empty: no checks were verified",)
+
+
 def test_reasons_list_failures_before_warnings_and_name_columns():
     decision = GatePolicy().decide([make_result(Outcome.WARNED, Outcome.FAILED)])
     assert decision.reasons == (
