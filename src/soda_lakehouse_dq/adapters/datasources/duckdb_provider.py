@@ -120,7 +120,11 @@ class DuckDBProvider:
         if len(parts) < 3 or parts[0] != self.name:  # noqa: PLR2004 (datasource/schema/table)
             return
         schema, table = parts[-2], parts[-1]
-        con.execute(f"DESCRIBE {_quote_ident(self._alias)}.{_quote_ident(schema)}.{_quote_ident(table)}")
+        target = f"{_quote_ident(self._alias)}.{_quote_ident(schema)}.{_quote_ident(table)}"
+        try:
+            con.execute(f"DESCRIBE {target}")
+        except Exception as exc:
+            raise DataSourceError(f"cannot load dataset {dataset!r}: {exc}") from exc
 
     def _default_schema(self, con: Any) -> str:
         """``catalog.schema`` to USE. An attached Iceberg REST catalog has no ``main`` schema, so a bare

@@ -40,18 +40,22 @@ def _run(tmp_path: Path, batch: str, branch: str) -> tuple[int, list[dict]]:
 
 def test_good_batch_publishes_and_bad_batch_never_reaches_main(wap_stack: None, tmp_path: Path) -> None:
     code, good = _run(tmp_path, "good", "audit_livetest_good")
-    assert code == 0
-    assert [e["outcome"] for e in good] == ["published"] * 3
     main_after_good: dict[str, tuple[int, int]] = {}
-    for layer in good:
-        for table, pub in layer["published"]["tables"].items():
-            written = layer["written"]["tables"][table]
-            assert (
-                pub["main_snapshot"] == written["branch_snapshot"]
-            )  # main now points at the audited snapshot
-            assert pub["main_snapshot"] != pub["main_before"]
-            assert pub["main_rows"] == written["branch_rows"]
-            main_after_good[table] = (pub["main_snapshot"], pub["main_rows"])
+    try:
+        assert code == 0
+        assert [e["outcome"] for e in good] == ["published"] * 3
+        for layer in good:
+            for table, pub in layer["published"]["tables"].items():
+                written = layer["written"]["tables"][table]
+                assert (
+                    pub["main_snapshot"] == written["branch_snapshot"]
+                )  # main now points at the audited snapshot
+                assert pub["main_snapshot"] != pub["main_before"]
+                assert pub["main_rows"] == written["branch_rows"]
+                main_after_good[table] = (pub["main_snapshot"], pub["main_rows"])
+    finally:
+        for layer_name in ("bronze", "silver", "gold"):
+            soda_dq("wap", "drop", layer_name, "--branch", "audit_livetest_good")
 
     code, bad = _run(tmp_path, "bad", "audit_livetest_bad")
     try:

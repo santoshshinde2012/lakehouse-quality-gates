@@ -23,6 +23,7 @@ class GatePolicy:
     - NOT_EVALUATED blocks unless ``allow_not_evaluated``;
     - WARNED only blocks when ``fail_on_warn``;
     - an empty result set blocks unless ``allow_empty`` (a gate with no contracts proves nothing).
+    - a contract with no check results always blocks.
     """
 
     fail_on_warn: bool = False
@@ -36,6 +37,8 @@ class GatePolicy:
             blocking.append("no contracts were verified")
         for result in results:
             name = result.contract.name
+            if not result.checks and not result.errors:
+                blocking.append(f"{name}: no checks were verified")
             blocking.extend(f"{name}: error: {e}" for e in result.errors)
             blocking.extend(
                 f"{name}: failed: {_label(c.name, c.column)}"

@@ -8,9 +8,12 @@ repository renders before Soda sees the file (DuckDB: ``lakehouse_duckdb``, Trin
 
 from __future__ import annotations
 
+import hashlib
+import os
 import re
 from collections.abc import Sequence
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 import yaml
@@ -46,9 +49,10 @@ class FileContractRepository:
     def _render(self, pipeline: str, layer: Layer, source: Path) -> ContractSpec:
         rendered = self.render_text(source.read_text(encoding="utf-8"), source)
         document = _parse(rendered, source)
-        target = self._render_dir / pipeline / layer.value / source.name
+        content_hash = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+        target = self._render_dir / pipeline / layer.value / content_hash / f"{source.stem}.yml"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(rendered, encoding="utf-8")
+        _write_atomic(target, rendered)
         return ContractSpec(
             name=f"{pipeline}.{layer.value}.{source.stem}",
             pipeline=pipeline,
@@ -58,6 +62,26 @@ class FileContractRepository:
             dataset=str(document["dataset"]),
             references=tuple(dict.fromkeys(_references(document))),
         )
+
+
+def _write_atomic(target: Path, text: str) -> None:
+    """Readers see complete YAML even when several processes render the same content."""
+    temporary_path: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(text)
+        os.replace(temporary_path, target)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def _references(node: object) -> list[str]:

@@ -1,0 +1,50 @@
+[
+  {
+    "layer": "bronze",
+    "branch": "audit_20261014t104232z_c46fafe8",
+    "outcome": "blocked",
+    "gate": "blocked",
+    "run_id": "20261014T104232Z-c46fafe8",
+    "reasons": [
+      "retail.bronze.orders_raw: failed: No order duplicated inside one source file",
+      "retail.bronze.orders_raw: failed: customer_id: Every order has a customer",
+      "retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)",
+      "retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)"
+    ],
+    "written": {
+      "action": "write",
+      "seconds": 9.676,
+      "tables": {
+        "bronze.customers_raw": {
+          "main_before": null,
+          "main_snapshot": 7658030709313253858,
+          "main_rows": 10,
+          "branch_snapshot": 1634959221292212595,
+          "branch_rows": 12,
+          "refs": {
+            "audit_20261014t103944z_3c58574b": 7658030709313253858,
+            "audit_20261014t104232z_c46fafe8": 1634959221292212595,
+            "main": 7658030709313253858
+          }
+        },
+        "bronze.orders_raw": {
+          "main_before": null,
+          "main_snapshot": 1820129153914630017,
+          "main_rows": 22,
+          "branch_snapshot": 8901044756243402318,
+          "branch_rows": 29,
+          "refs": {
+            "audit_20261014t103944z_3c58574b": 1820129153914630017,
+            "audit_20261014t104232z_c46fafe8": 8901044756243402318,
+            "main": 1820129153914630017
+          }
+        }
+      }
+    },
+    "published": null,
+    "audited_pins": {
+      "bronze.customers_raw": 1634959221292212595,
+      "bronze.orders_raw": 8901044756243402318
+    }
+  }
+]

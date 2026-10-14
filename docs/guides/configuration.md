@@ -1,7 +1,7 @@
 # Configuration and CLI reference
 
 > [!NOTE]
-> **At a glance.** Five CLI commands, three exit codes (`0` pass, `1` blocked, `2` configuration error) and
+> **At a glance.** CLI commands, three exit codes (`0` pass, `1` blocked, `2` configuration error) and
 > `DQ_*` environment variables for everything else.
 
 ## Commands
@@ -16,6 +16,11 @@
 
 `ENGINE` is `duckdb`, `duckdb-local` or `trino`. `--sample-dir` points `duckdb-local` at another CSV batch.
 Run `make help` to list every Makefile target.
+
+The `soda-dq wap` commands are `run`, `verify`, `publish`, `status` and `drop`.
+`wap verify <layer> --branch <branch> [--evidence FILE]` records exact snapshot IDs;
+`wap publish <layer> --audit FILE` publishes or resumes publication from a passing manifest.
+See [write-audit-publish](../architecture/write-audit-publish.md) for branch retention and recovery.
 
 ## Exit codes
 

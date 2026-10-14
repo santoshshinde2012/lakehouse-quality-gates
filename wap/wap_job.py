@@ -16,9 +16,11 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import re
+import sys
 from datetime import datetime, timezone
 from typing import Any
 
@@ -153,16 +155,104 @@ def write(spark: SparkSession, layer: str, branch: str, source: str) -> dict[str
     return {t: state(spark, t, branch) for t in TABLES[layer]}
 
 
-def publish(spark: SparkSession, layer: str, branch: str) -> dict[str, Any]:
-    out: dict[str, Any] = {}
-    for table in TABLES[layer]:
-        before = snapshot(spark, table, "main")
-        spark.sql(
-            f"CALL {CATALOG}.system.fast_forward(table => '{table}', branch => 'main', to => '{safe(branch)}')"
-        )
-        out[table] = {"main_before": before, **state(spark, table, branch)}
-        spark.sql(f"ALTER TABLE {CATALOG}.{table} DROP BRANCH IF EXISTS {safe(branch)}")
-    return out
+def validated_pins(layer: str, pins: Any) -> dict[str, int]:
+    if not isinstance(pins, dict) or not pins:
+        raise ValueError("publication requires audited snapshot pins")
+    for table, pin in pins.items():
+        if not isinstance(table, str) or not re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", table):
+            raise ValueError(f"invalid pinned table {table!r}")
+        if type(pin) is not int or pin <= 0:
+            raise ValueError(f"invalid snapshot pin for {table}")
+    missing = set(TABLES[layer]) - pins.keys()
+    if missing:
+        raise ValueError(f"missing audited snapshots: {', '.join(sorted(missing))}")
+    return pins
+
+
+def read_audit(path: str, layer: str, branch: str) -> tuple[dict[str, int], dict[str, int | None]]:
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    if not isinstance(data, dict) or data.get("version") != 1:
+        raise ValueError("expected a version 1 WAP audit manifest")
+    if data.get("layer") != layer or data.get("branch") != branch:
+        raise ValueError("audit manifest layer/branch does not match this publication")
+    if data.get("gate") not in {"passed", "passed_with_warnings"}:
+        raise ValueError("a passing audit manifest is required for publication")
+    if not data.get("pipeline") or not data.get("run_id"):
+        raise ValueError("audit manifest pipeline and run_id are required")
+    pins = validated_pins(layer, data.get("pins"))
+    before = validated_before(pins, data.get("main_before", {}))
+    return pins, before
+
+
+def validated_before(pins: dict[str, int], before: Any) -> dict[str, int | None]:
+    if not isinstance(before, dict) or any(
+        table not in pins or (pin is not None and (type(pin) is not int or pin <= 0))
+        for table, pin in before.items()
+    ):
+        raise ValueError("invalid main_before snapshots")
+    return before
+
+
+def publish(
+    spark: SparkSession,
+    layer: str,
+    branch: str,
+    pins: dict[str, int],
+    main_before: dict[str, int | None] | None = None,
+) -> dict[str, Any]:
+    """Publish immutable audited snapshots; retries work after partial promotion or explicit branch cleanup.
+
+    Private refs are created at explicit versions and never used by writers. Advancing the source audit
+    branch after verification therefore cannot change the snapshots promoted to main.
+    """
+    safe(branch)
+    if branch == "main":
+        raise ValueError("main is not an audit branch")
+    pins = validated_pins(layer, pins)
+    before = validated_before(pins, main_before or {})
+    observed = {table: snapshot(spark, table, "main") for table in TABLES[layer]}
+    identity = json.dumps([branch, layer, {table: pins[table] for table in TABLES[layer]}], sort_keys=True)
+    publication_ref = f"publish_{hashlib.sha256(identity.encode()).hexdigest()[:32]}"
+    created: list[str] = []
+    completed = False
+    try:
+        # Resolve every expected snapshot before moving any table's main pointer.
+        for table in TABLES[layer]:
+            if observed[table] != pins[table]:
+                created.append(table)
+                spark.sql(
+                    f"ALTER TABLE {CATALOG}.{table} CREATE BRANCH IF NOT EXISTS {publication_ref} "
+                    f"AS OF VERSION {pins[table]} RETAIN 1 DAYS"
+                )
+                if snapshot(spark, table, publication_ref) != pins[table]:
+                    raise RuntimeError("publication ref no longer points at the audited snapshot")
+        for table in created:
+            spark.sql(
+                f"CALL {CATALOG}.system.fast_forward(table => '{table}', branch => 'main', "
+                f"to => '{publication_ref}')"
+            )
+        if any(snapshot(spark, table, "main") != pins[table] for table in TABLES[layer]):
+            raise RuntimeError("main changed while publishing the audited snapshots")
+        # Source branches remain available for triage and explicit `drop`. Iceberg SQL DROP has no
+        # expected-snapshot condition, so an automatic drop could erase a concurrent writer's data.
+        completed = True
+    finally:
+        cleanup_errors: list[Exception] = []
+        for table in TABLES[layer]:
+            try:
+                spark.sql(f"ALTER TABLE {CATALOG}.{table} DROP BRANCH IF EXISTS {publication_ref}")
+            except Exception as exc:
+                cleanup_errors.append(exc)
+                print(f"could not clean publication ref on {table}: {exc}", file=sys.stderr)
+        if completed and cleanup_errors:
+            raise RuntimeError(
+                "publication finished but private-ref cleanup failed; publication may be retried"
+            )
+    return {
+        table: {"main_before": before.get(table, observed[table]), **state(spark, table, branch)}
+        for table in TABLES[layer]
+    }
 
 
 def drop(spark: SparkSession, layer: str, branch: str) -> dict[str, Any]:
@@ -179,10 +269,29 @@ def main() -> None:
     parser.add_argument("--layer", required=True, choices=sorted(TABLES))
     parser.add_argument("--branch", default=None)
     parser.add_argument("--source", default=SAMPLE_DIR)
+    audit = parser.add_mutually_exclusive_group()
+    audit.add_argument("--audit-file", help="Passing audit manifest written by soda-dq wap verify")
+    audit.add_argument("--pins", help="Internal adapter: exact audited schema.table -> snapshot JSON")
+    parser.add_argument("--main-before", default="{}", help="Internal adapter: pre-publication snapshot JSON")
     args = parser.parse_args()
     branch = safe(args.branch) if args.branch else None
     if args.action not in {"status", "direct"} and not branch:
         raise SystemExit("--branch is required")
+    if args.action in {"write", "publish", "drop"} and (
+        branch == "main" or (branch is not None and branch.startswith("publish_"))
+    ):
+        parser.error("main and the reserved publish_ prefix cannot be used as audit branches")
+    pins: dict[str, int] = {}
+    before: dict[str, int | None] = {}
+    if args.action == "publish":
+        try:
+            if args.audit_file:
+                pins, before = read_audit(args.audit_file, args.layer, str(branch))
+            else:
+                pins = validated_pins(args.layer, json.loads(args.pins or "null"))
+                before = validated_before(pins, json.loads(args.main_before))
+        except (OSError, ValueError, TypeError) as exc:
+            parser.error(str(exc))
     spark = SparkSession.builder.appName(f"wap_{args.action}_{args.layer}").getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
     started = datetime.now(timezone.utc)
@@ -191,7 +300,7 @@ def main() -> None:
     elif args.action == "direct":
         tables = write(spark, args.layer, "main", args.source)
     elif args.action == "publish":
-        tables = publish(spark, args.layer, str(branch))
+        tables = publish(spark, args.layer, str(branch), pins, before)
     elif args.action == "drop":
         tables = drop(spark, args.layer, str(branch))
     else:

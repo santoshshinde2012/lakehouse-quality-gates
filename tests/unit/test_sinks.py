@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 
 import pytest
 
@@ -75,3 +76,32 @@ def test_iceberg_rows_and_append():
 
     IcebergSink(Catalog).write(REPORT)
     assert appended == [4]
+
+
+def test_iceberg_dataset_only_checks_have_a_supported_stable_schema():
+    pa = pytest.importorskip("pyarrow")
+    iceberg = pytest.importorskip("pyiceberg.catalog")
+    result = make_result(Outcome.PASSED)
+    result = replace(result, checks=(replace(result.checks[0], column=None),))
+    report = make_report(GateStatus.PASSED, result)
+    captured = []
+
+    class Table:
+        def append(self, data):
+            captured.append(data)
+
+    class Catalog:
+        def create_namespace_if_not_exists(self, ns):
+            pass
+
+        def create_table_if_not_exists(self, name, schema):
+            iceberg.Catalog._convert_schema_if_needed(schema, format_version=2)
+            return Table()
+
+    sink = IcebergSink(Catalog)
+    sink.write(report)
+    sink.write(REPORT)
+    assert len(captured) == 2
+    assert captured[0].schema == captured[1].schema
+    assert captured[0].schema.field("column_name").type == pa.string()
+    assert captured[0].column("column_name").to_pylist() == [None]

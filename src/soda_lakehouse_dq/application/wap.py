@@ -15,13 +15,14 @@ from soda_lakehouse_dq.domain.errors import DataQualityError
 from soda_lakehouse_dq.domain.models import GateReport, Layer
 from soda_lakehouse_dq.domain.ports import (
     AuditWriter,
+    BranchAuditSink,
     BranchGate,
     BranchPublisher,
     Clock,
     ContractRepository,
     SnapshotReader,
 )
-from soda_lakehouse_dq.domain.wap import WapLayerResult, WapOutcome, branch_name, validate_branch
+from soda_lakehouse_dq.domain.wap import BranchAudit, WapLayerResult, WapOutcome, branch_name, validate_branch
 
 log = structlog.get_logger(__name__)
 
@@ -38,31 +39,44 @@ class VerifyBranchUseCase:
     """Gate one layer against what is on ``branch``: every dataset the layer's contracts read is pinned to the
     branch's snapshot when the branch exists on that table; other tables (references) are read from main."""
 
-    def __init__(self, repository: ContractRepository, snapshots: SnapshotReader, gate: BranchGate) -> None:
+    def __init__(
+        self,
+        repository: ContractRepository,
+        snapshots: SnapshotReader,
+        gate: BranchGate,
+        audit_sink: BranchAuditSink | None = None,
+    ) -> None:
         self._repository = repository
         self._snapshots = snapshots
         self._gate = gate
+        self._audit_sink = audit_sink
 
     def pins(self, pipeline: str, layer: Layer, branch: str) -> dict[str, int]:
-        tables = sorted(
-            {
-                dataset_table(d)
-                for spec in self._repository.list_contracts(pipeline, layer)
-                for d in spec.datasets
-            }
-        )
+        contracts = self._repository.list_contracts(pipeline, layer)
+        primary = {dataset_table(spec.dataset) for spec in contracts}
+        tables = sorted({dataset_table(d) for spec in contracts for d in spec.datasets})
         pins = {t: snap for t in tables if (snap := self._snapshots.snapshot(t, branch)) is not None}
-        if not pins:
+        missing = primary - pins.keys()
+        if missing:
             raise DataQualityError(
-                f"branch {branch!r} not found on any {layer.value} table: nothing to audit"
+                f"branch {branch!r} missing on primary tables: {', '.join(sorted(missing))}; nothing to audit"
             )
+        if not pins:
+            raise DataQualityError(f"branch {branch!r}: nothing to audit")
         return pins
 
     def execute(self, pipeline: str, layer: Layer, branch: str, run_id: str) -> GateReport:
+        return self.audit(pipeline, layer, branch, run_id).report
+
+    def audit(self, pipeline: str, layer: Layer, branch: str, run_id: str) -> BranchAudit:
         branch = validate_branch(branch)
         pins = self.pins(pipeline, layer, branch)
+        before = {table: self._snapshots.snapshot(table, "main") for table in pins}
         log.info("dq.wap.verify", layer=layer.value, branch=branch, pins=pins)
-        return self._gate.verify(pipeline, layer, pins, run_id)
+        audit = BranchAudit(branch, self._gate.verify(pipeline, layer, pins, run_id), pins, before)
+        if self._audit_sink is not None:
+            self._audit_sink.write(audit)
+        return audit
 
 
 class RunWapMedallionUseCase:
@@ -96,14 +110,34 @@ class RunWapMedallionUseCase:
         results: list[WapLayerResult] = []
         for layer in layers:
             written = self._writer.write(layer, branch, source if layer is Layer.BRONZE else None)
-            report = self._verify.execute(pipeline, layer, branch, run_id)
+            audit = self._verify.audit(pipeline, layer, branch, run_id)
+            report = audit.report
             if report.blocked:
                 log.error("dq.wap.blocked", layer=layer.value, branch=branch, kept=not self._drop_blocked)
                 if self._drop_blocked:
                     self._publisher.drop(layer, branch)
-                results.append(WapLayerResult(layer, branch, WapOutcome.BLOCKED, report, written))
+                results.append(
+                    WapLayerResult(
+                        layer,
+                        branch,
+                        WapOutcome.BLOCKED,
+                        report,
+                        written,
+                        audited_pins=audit.pins,
+                    )
+                )
                 break
-            published = self._publisher.publish(layer, branch)
+            published = self._publisher.publish(layer, branch, audit.pins, main_before=audit.main_before)
             log.info("dq.wap.published", layer=layer.value, branch=branch)
-            results.append(WapLayerResult(layer, branch, WapOutcome.PUBLISHED, report, written, published))
+            results.append(
+                WapLayerResult(
+                    layer,
+                    branch,
+                    WapOutcome.PUBLISHED,
+                    report,
+                    written,
+                    published,
+                    audit.pins,
+                )
+            )
         return results

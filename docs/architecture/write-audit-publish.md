@@ -95,8 +95,18 @@ sequenceDiagram
 5. **Rollback.** A blocked batch needs none: `main` was never moved. If a published batch turns out bad later, use
    `CALL lakehouse.system.rollback_to_snapshot('<table>', <main_before>)` with the id from the evidence JSON.
 6. **Multi-table.** Each table is fast-forwarded separately; there is no atomic multi-table publish on this
-   catalog. A failure between two fast-forwards leaves the layer half published, so rerun the publish step.
-7. **Concurrency.** Fast-forward needs `main` to be an ancestor of the branch, so the DAG allows one active run.
+   catalog. The gate saves a snapshot manifest before publication. Retries skip tables already at their
+   audited snapshot. Resume a failed publication with
+   `soda-dq wap publish <layer> --audit reports/wap/<branch>/<layer>.audit.json`; an Airflow publish task can be
+   cleared and rerun using the same saved manifest. Replays also work after private-ref cleanup failures.
+   Source audit branches remain after passing gates and, by default, blocked gates. Delete a branch after inspection with
+   `soda-dq wap drop <layer> --branch <branch>`; publication never deletes a concurrent writer's source data.
+7. **Concurrency.** Publication creates private branches at the exact audited snapshot IDs and fast-forwards
+   `main` to those frozen refs. Moving the source branch after verification cannot publish unaudited data.
+   Missing primary table branches fail the audit; only reference tables may fall back to `main`.
+   Fast-forward still needs `main` to be an ancestor of the audited snapshot, so the DAG allows one active run.
+   Audit manifests are written atomically under `reports/wap/<branch>/`; Airflow shares that folder with Spark.
+   Audit branch names cannot be `main` or start with `publish_`, which is reserved for private publication refs.
 
 ## Evidence
 

@@ -1,0 +1,24 @@
+scripts/e2e.sh live
+==> uv sync
+==> lakehouse already running: reusing it
+==> lakehouse up (light profile)
+==> seed good batch (DuckDB)
+==> gates on good batch, duckdb (expect pass)
+==> seed bad batch
+==> gates on bad batch, duckdb (expect 3 blocks)
+==> restore good batch
+==> gates after restore (expect pass)
+==> pytest -m live
+
+e2e-live summary (logs in reports/e2e-live/)
+      | step                                           | result
+PASS  | uv sync                                        | exit 0 (expected 0), 0s
+PASS  | lakehouse up (light profile)                   | exit 0 (expected 0), 2s
+PASS  | seed good batch (DuckDB)                       | exit 0 (expected 0), 1s
+PASS  | gates on good batch, duckdb (expect pass)      | exit 0 (expected 0), 2s
+PASS  | seed bad batch                                 | exit 0 (expected 0), 1s
+PASS  | gates on bad batch, duckdb (expect 3 blocks)   | exit 0 (expected 0), 2s
+PASS  | restore good batch                             | exit 0 (expected 0), 1s
+PASS  | gates after restore (expect pass)              | exit 0 (expected 0), 1s
+PASS  | pytest -m live                                 | exit 0 (expected 0), 9s
+RESULT: PASS

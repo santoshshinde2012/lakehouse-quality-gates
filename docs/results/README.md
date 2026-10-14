@@ -8,6 +8,8 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 
 | Run | Date | Commit | What it shows | Reproduce |
 |---|---|---|---|---|
+| [PR validation](runs/2026-10-14-v1.0-pr-checks/README.md) | 2026-10-14 | `2200222` + `codex/harden-quality-gates-wap` working tree | 216 tests, 97% coverage, 53 contract checks after the CLI reporting fix; lint, strict types, contract syntax and fixture demos; live tiers were not rerun | `make test-all` |
+| [Hardening checks](runs/2026-10-14-v1.0-hardening/test-all.log) | 2026-10-14 | `2200222` + working tree | 214 tests, 97% coverage, 53 contract checks; [live 9/9](runs/2026-10-14-v1.0-hardening/e2e-live.log), [full 15/15](runs/2026-10-14-v1.0-hardening/e2e-full.log), [WAP 11/11](runs/2026-10-14-v1.0-hardening/e2e-wap.log); failure and concurrency regressions | `make test-all e2e-live e2e-full e2e-wap` |
 | [Write-audit-publish](runs/2026-10-14-wap/README.md) | 2026-10-14 | v1.0.0 (pre-release tree) | Good batch published to `main` (snapshot ids before and after), bad batch blocked with `main` unchanged and the branch kept; CLI, Airflow and the live test | `make e2e-wap` |
 | [v1.0 fresh-clone run](runs/2026-10-14-v1.0-fresh-clone/README.md) | 2026-10-14 | `30d7962` (v1.0.0) | test-all, e2e-live 9/9, e2e-full 15/15, e2e-wap 11/11, docs, diagrams and pre-commit from a fresh clone |
 | [WAP overhead](benchmarks/2026-10-14-wap/wap_overhead.csv) | 2026-10-14 | v1.0.0 (pre-release tree) | Direct write against audit branch + gate + fast-forward at 100k and 1M orders, charted in [results](../benchmarks/results.md#write-audit-publish-overhead) | `make bench-wap` |
@@ -25,6 +27,7 @@ All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Doc
 
 | Folder | Contents |
 |---|---|
+| `runs/2026-10-14-v1.0-pr-checks/` | `README.md` (validation scope and base), unchanged `test-all.log` from the final PR checks |
 | `runs/2026-10-14-v0.4.1-checks/` | `test-all.log` |
 | `runs/2026-10-13-fresh-clone/` | `test-all.log` (tests and coverage), `e2e-live/` and `e2e-full/` (one log per step), benchmark CSV/JSON and the generated `summary.md` |
 | `runs/2026-10-14-wap/` | Evidence JSON of the CLI runs, Airflow task states, `main` refs before and after the bad run |
@@ -37,5 +40,6 @@ All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Doc
 ## Reproduce
 
 Commands, expected output and pass criteria for every target: [running and testing](../guides/running-and-testing.md).
-Write a new run to its own folder (`BENCH_OUT=docs/results/runs/<date>-<name>` for benchmarks, and copy the
-`reports/e2e-*` logs), then add a row at the top of the table above.
+Write a new run to its own folder (`BENCH_OUT=docs/results/runs/<date>-<name>` for benchmarks). For each end-to-end
+mode, copy the contents of the run directory printed in its summary to `<date>-<name>/e2e-<mode>/`, preserving
+only that invocation's step logs. Add a row at the top of the table above.

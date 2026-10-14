@@ -72,3 +72,53 @@ def test_run_error(use_case):
 
 def test_unknown_layer_rejected(use_case):
     assert runner.invoke(cli.app, ["verify", "platinum"]).exit_code == 2
+
+
+@pytest.mark.parametrize("args", [["verify", "gold"], ["run"], ["list"], ["validate"]])
+def test_invalid_settings_are_usage_errors(monkeypatch, args):
+    monkeypatch.setenv("DQ_LOG_LEVEL", "not-a-log-level")
+    result = runner.invoke(cli.app, args)
+    assert result.exit_code == 2
+    assert "invalid settings" in result.output
+    assert "Traceback" not in result.output
+
+
+@pytest.mark.parametrize("command", ["list", "validate"])
+def test_missing_contracts_are_configuration_errors(monkeypatch, tmp_path, command):
+    monkeypatch.setenv("DQ_CONTRACTS_DIR", str(tmp_path / "missing"))
+    result = runner.invoke(cli.app, [command, "-e", "duckdb-local"])
+    assert result.exit_code == 2
+    assert "no contracts under" in result.output
+
+
+@pytest.mark.parametrize(
+    ("invalid_body", "diagnostic"),
+    [
+        ("columns: []\nchecks: []\n", "must not be an empty list"),
+        ("columns: []\ncolumns: []\nchecks:\n  - row_count:\n", "YAML syntax error"),
+    ],
+)
+def test_validate_reports_parser_failure_and_continues_all_contracts(
+    monkeypatch, tmp_path, invalid_body, diagnostic
+):
+    contracts = tmp_path / "contracts"
+    for layer in ("bronze", "silver", "gold"):
+        folder = contracts / "retail" / layer
+        folder.mkdir(parents=True)
+        (folder / "z_valid.yml").write_text(
+            f'dataset: "{{{{ dataset_root }}}}/{layer}/orders"\ncolumns: []\nchecks:\n  - row_count:\n'
+        )
+    (contracts / "retail" / "bronze" / "a_malformed.yml").write_text(
+        'dataset: "{{ dataset_root }}/bronze/orders"\n' + invalid_body
+    )
+    monkeypatch.setenv("DQ_CONTRACTS_DIR", str(contracts))
+    monkeypatch.setenv("DQ_REPORTS_DIR", str(tmp_path / "reports"))
+    monkeypatch.setenv("DQ_SLACK_WEBHOOK_URL", "")
+    monkeypatch.setenv("DQ_ICEBERG_SINK", "false")
+    result = runner.invoke(cli.app, ["validate", "-e", "duckdb-local"])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "FAIL retail.bronze.a_malformed" in result.output
+    assert diagnostic in result.output
+    for layer in ("bronze", "silver", "gold"):
+        assert f"ok   retail.{layer}.z_valid" in result.output

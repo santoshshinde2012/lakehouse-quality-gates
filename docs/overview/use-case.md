@@ -35,7 +35,7 @@ data has been cleaned.
 
 ## Demo walkthrough (`make demo`)
 
-1. **Good batch.** `fixtures/good_batch` holds the repo's own sample CSVs. All 46 checks pass in all three
+1. **Good batch.** `fixtures/good_batch` holds the repo's own sample CSVs. All 53 checks pass in all three
    layers.
 2. **Bad batch.** `fixtures/bad_batch` adds `orders_day3.csv` and two customers with injected defects (see
    its README). Running each layer separately shows defence in depth:

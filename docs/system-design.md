@@ -129,7 +129,7 @@ snapshots carry the problem.
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | [Security](architecture/security.md) |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
-| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 132 tests at 96% coverage |
+| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 216 tests at 97% coverage |
 
 ## 4. Background and tool selection
 
@@ -208,7 +208,7 @@ flowchart TB
     end
     subgraph DQ["Quality gates"]
       direction TB
-      SODA["Soda contracts<br/><small>46 checks</small>"]:::ours
+      SODA["Soda contracts<br/><small>53 checks</small>"]:::ours
       GATE("Gate decision<br/><small>pass or block</small>"):::ours
       BLK(["Run blocked<br/><small>downstream skipped</small>"]):::blocked
       SODA --> GATE
@@ -274,7 +274,7 @@ Which contracts guard each layer and what happens when a gate blocks.
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 %% Title: Medallion flow with quality gates
 %% Purpose: One gate after each layer; a failed gate stops promotion
-%% Last updated: 2026-10-13
+%% Last updated: 2026-10-14
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph BRZ["Bronze"]
@@ -288,7 +288,7 @@ flowchart LR
   subgraph SLV["Silver"]
     direction TB
     S[("silver tables")]:::store
-    GS("Silver gate<br/><small>21 checks</small>"):::ours
+    GS("Silver gate<br/><small>22 checks</small>"):::ours
     X2(["Blocked"]):::blocked
     S --> GS
     GS -. fail .-> X2
@@ -296,7 +296,7 @@ flowchart LR
   subgraph GLD["Gold"]
     direction TB
     G[("gold tables")]:::store
-    GG("Gold gate<br/><small>11 checks</small>"):::ours
+    GG("Gold gate<br/><small>17 checks</small>"):::ours
     X3(["Blocked"]):::blocked
     G --> GG
     GG -. fail .-> X3
@@ -323,7 +323,7 @@ flowchart LR
 
 - Each gate runs every contract of one layer; the next Spark job starts only if the gate passes.
 - Bronze keeps raw values, so value problems **warn** there and are **enforced** in silver; structural problems fail at bronze.
-- 46 checks in total: 14 in bronze, 21 in silver and 11 in gold.
+- 53 checks in total: 14 in bronze, 22 in silver and 17 in gold.
 
 The rules that decide a gate:
 
@@ -447,13 +447,13 @@ fast-forward branches (L7). Proof, with snapshot ids before and after a good and
 | Tier | Marker | Scope | Where | Runs in |
 |---|---|---|---|---|
 | T0 | `unit` | Static checks (ruff, `mypy --strict`, `soda-dq validate`, Mermaid and snippet sync) and unit tests: policy, models, repository rendering, sinks, notifiers, settings, CLI, DAG wiring, Soda result mapping, with fakes for every port | `make lint typecheck validate test-unit`, `tests/unit/` | pre-commit, CI |
-| T1 | `integration` | Real Soda Core against in-memory DuckDB built from fixtures; good batch passes 46/46, bad batch blocks every layer; CLI end to end | `make test-integration demo`, `tests/integration/` | CI |
+| T1 | `integration` | Real Soda Core against in-memory DuckDB built from fixtures; good batch passes 53/53, bad batch blocks every layer; CLI end to end | `make test-integration demo`, `tests/integration/` | CI |
 | T2 | `live` | Host DuckDB gates on the running light lakehouse: good batch passes, bad batch blocks every layer | `make e2e-live`, `tests/live/test_live_gates.py` | Manual, Docker |
 | T3 | `full` | Spark pipeline, Trino gates, the `ldl-soda` container, Airflow good and bad runs; scale and accuracy benchmarks | `make e2e-full`, `make bench*`, `tests/live/test_full_stack.py` | Manual, Docker |
 
 `make test-all` runs T0 and T1. Commands, expected output and pass criteria for every tier:
-[running and testing](guides/running-and-testing.md). Coverage: 132 tests in T0 and T1 plus 8 live and full tests,
-96% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
+[running and testing](guides/running-and-testing.md). Coverage: 216 tests in T0 and T1 plus 8 live and full tests,
+97% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
 
 ## 15. References
 

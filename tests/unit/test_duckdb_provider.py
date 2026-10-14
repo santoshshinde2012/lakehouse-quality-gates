@@ -79,6 +79,17 @@ def test_missing_catalog_raises_and_closes():
         con.execute("SELECT 1")
 
 
+def test_missing_table_raises_data_source_error_and_closes_connection():
+    con = _catalog()
+    with (
+        pytest.raises(DataSourceError, match="cannot load dataset 'ds/silver/missing'"),
+        DuckDBProvider(lambda: con, "ds", "lakehouse").open() as sources,
+    ):
+        sources.prepare("ds/silver/missing")
+    with pytest.raises(duckdb.ConnectionException):
+        con.execute("SELECT 1")
+
+
 def test_configure_sets_temp_directory_for_read_only_containers():
     rec = Recorder(_catalog())
     DuckDBProvider(lambda: rec, "ds", "lakehouse", temp_directory="/tmp/duckdb").configure(rec)

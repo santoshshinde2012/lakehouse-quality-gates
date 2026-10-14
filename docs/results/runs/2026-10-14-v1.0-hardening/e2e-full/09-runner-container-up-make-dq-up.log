@@ -1,0 +1,190 @@
+docker compose -f docker/docker-compose.dq.yml up -d --build --wait
+ Image lakehouse-quality-gates:1.0.0 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 571B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.19kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#3 DONE 0.0s
+
+#4 [internal] load metadata for ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#4 DONE 0.0s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 122B done
+#5 DONE 0.0s
+
+#6 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#6 DONE 0.0s
+
+#7 [build 1/7] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 43.97kB done
+#8 DONE 0.0s
+
+#9 [build 2/7] COPY --from=uv /uv /usr/local/bin/uv
+#9 CACHED
+
+#10 [build 3/7] WORKDIR /app
+#10 CACHED
+
+#11 [build 4/7] COPY pyproject.toml uv.lock README.md ./
+#11 DONE 0.0s
+
+#12 [build 5/7] RUN uv sync --frozen --no-dev --no-install-project --extra trino --extra lakehouse
+#12 0.372 Using CPython 3.12.15 interpreter at: /usr/local/bin/python3
+#12 0.373 Creating virtual environment at: /opt/venv
+#12 0.609 Downloading pygments (1.2MiB)
+#12 0.609 Downloading lz4 (1.2MiB)
+#12 0.610 Downloading pydantic-core (2.0MiB)
+#12 0.610 Downloading aiohttp (1.8MiB)
+#12 0.611 Downloading pyarrow (44.7MiB)
+#12 0.613 Downloading duckdb (18.6MiB)
+#12 0.613 Downloading pyroaring (2.1MiB)
+#12 0.614 Downloading zstandard (4.8MiB)
+#12 0.614 Downloading botocore (15.2MiB)
+#12 3.640  Downloaded pygments
+#12 3.725  Downloaded lz4
+#12 4.707  Downloaded aiohttp
+#12 4.802  Downloaded pydantic-core
+#12 4.970  Downloaded pyroaring
+#12 8.825  Downloaded zstandard
+#12 13.09  Downloaded botocore
+#12 13.96  Downloaded duckdb
+#12 18.87  Downloaded pyarrow
+#12 18.87 Prepared 72 packages in 18.48s
+#12 20.21 Installed 72 packages in 1.34s
+#12 21.61 Bytecode compiled 2288 files in 1.39s
+#12 21.61  + aiobotocore==3.9.2
+#12 21.61  + aiohappyeyeballs==2.7.1
+#12 21.61  + aiohttp==3.14.5
+#12 21.61  + aioitertools==0.13.0
+#12 21.61  + aiosignal==1.4.0
+#12 21.61  + annotated-doc==0.0.5
+#12 21.61  + annotated-types==0.8.0
+#12 21.61  + attrs==26.1.0
+#12 21.61  + botocore==1.43.106
+#12 21.61  + cachetools==7.2.1
+#12 21.61  + certifi==2026.7.22
+#12 21.61  + charset-normalizer==3.5.2
+#12 21.61  + click==8.5.0
+#12 21.61  + duckdb==1.5.6
+#12 21.61  + frozenlist==1.8.0
+#12 21.61  + fsspec==2026.9.0
+#12 21.61  + googleapis-common-protos==1.75.5
+#12 21.61  + idna==3.20
+#12 21.61  + jmespath==1.1.0
+#12 21.61  + lz4==4.4.5
+#12 21.61  + markdown-it-py==4.2.0
+#12 21.61  + mdurl==0.1.2
+#12 21.61  + mmh3==5.3.1
+#12 21.61  + multidict==6.9.1
+#12 21.61  + opentelemetry-api==1.45.1
+#12 21.61  + opentelemetry-exporter-http-transport==0.66b1
+#12 21.61  + opentelemetry-exporter-otlp-common==0.66b1
+#12 21.61  + opentelemetry-exporter-otlp-proto-common==1.45.1
+#12 21.61  + opentelemetry-exporter-otlp-proto-http==1.45.1
+#12 21.61  + opentelemetry-proto==1.45.1
+#12 21.61  + opentelemetry-sdk==1.45.1
+#12 21.61  + opentelemetry-semantic-conventions==0.66b1
+#12 21.61  + orjson==3.13.0
+#12 21.61  + propcache==0.5.4
+#12 21.61  + protobuf==7.36.2
+#12 21.61  + pyarrow==25.0.1
+#12 21.61  + pydantic==2.14.1
+#12 21.61  + pydantic-core==2.50.1
+#12 21.61  + pydantic-settings==2.15.0
+#12 21.61  + pygments==2.21.0
+#12 21.61  + pyiceberg==0.12.0
+#12 21.61  + pyparsing==3.3.3
+#12 21.61  + pyroaring==1.2.0
+#12 21.61  + python-dateutil==2.9.0.post0
+#12 21.61  + python-dotenv==1.2.4
+#12 21.61  + pytz==2026.5
+#12 21.61  + pyyaml==6.0.3
+#12 21.61  + requests==2.33.1
+#12 21.61  + rich==15.0.0
+#12 21.61  + ruamel-yaml==0.18.17
+#12 21.61  + ruamel-yaml-clib==0.2.15
+#12 21.61  + s3fs==2026.9.0
+#12 21.61  + shellingham==1.5.4
+#12 21.61  + six==1.17.0
+#12 21.61  + soda-core==4.26.0
+#12 21.61  + soda-duckdb==4.26.0
+#12 21.61  + soda-trino==4.26.0
+#12 21.61  + sqlglot==30.22.0
+#12 21.61  + strictyaml==1.7.3
+#12 21.61  + structlog==26.1.0
+#12 21.61  + tabulate==0.10.0
+#12 21.61  + tenacity==9.2.1
+#12 21.61  + trino==0.340.0
+#12 21.61  + typer==0.27.3
+#12 21.61  + typing-extensions==4.16.0
+#12 21.61  + typing-inspection==0.4.4
+#12 21.61  + tzlocal==5.4.4
+#12 21.61  + urllib3==2.8.0
+#12 21.61  + wcwidth==0.9.2
+#12 21.61  + wrapt==2.5.0
+#12 21.61  + yarl==1.25.1
+#12 21.61  + zstandard==0.25.0
+#12 DONE 22.2s
+
+#13 [build 6/7] COPY src ./src
+#13 DONE 0.0s
+
+#14 [build 7/7] RUN uv sync --frozen --no-dev --no-editable --extra trino --extra lakehouse
+#14 0.253    Building lakehouse-quality-gates @ file:///app
+#14 1.061       Built lakehouse-quality-gates @ file:///app
+#14 1.065 Prepared 1 package in 812ms
+#14 1.069 Installed 1 package in 4ms
+#14 1.285 Bytecode compiled 2326 files in 215ms
+#14 1.285  + lakehouse-quality-gates==1.0.0 (from file:///app)
+#14 DONE 1.3s
+
+#15 [stage-2 2/9] RUN groupadd --system --gid 10001 dq && useradd --system --uid 10001 --gid dq --home /home/dq --create-home dq
+#15 CACHED
+
+#16 [stage-2 3/9] COPY --from=build /opt/venv /opt/venv
+#16 DONE 2.3s
+
+#17 [stage-2 4/9] WORKDIR /opt/soda-dq
+#17 DONE 0.0s
+
+#18 [stage-2 5/9] COPY contracts ./contracts
+#18 DONE 0.0s
+
+#19 [stage-2 6/9] COPY datasources ./datasources
+#19 DONE 0.0s
+
+#20 [stage-2 7/9] COPY fixtures ./fixtures
+#20 DONE 0.0s
+
+#21 [stage-2 8/9] RUN mkdir -p /opt/soda-dq/reports && chown dq:dq /opt/soda-dq/reports
+#21 DONE 0.2s
+
+#22 [stage-2 9/9] RUN python -c "import duckdb; c = duckdb.connect(); [c.sql(f'INSTALL {e}') for e in ('httpfs', 'avro', 'iceberg')]"
+#22 4.875 100% ▕██████████████████████████████████████▏ (00:00:02.39 elapsed)     
+#22 DONE 5.0s
+
+#23 exporting to image
+#23 exporting layers
+#23 exporting layers 1.4s done
+#23 writing image sha256:f4ea90b56ea61bee87e5b929bea1d767401a9a99f245691b66f4aab386d5ab31 done
+#23 naming to docker.io/library/lakehouse-quality-gates:1.0.0 done
+#23 DONE 1.4s
+
+#24 resolving provenance for metadata file
+#24 DONE 0.0s
+ Image lakehouse-quality-gates:1.0.0 Built 
+ Container ldl-soda Recreate 
+ Container ldl-soda Recreated 
+ Container ldl-soda Starting 
+ Container ldl-soda Started 
+ Container ldl-soda Waiting 
+ Container ldl-soda Healthy 

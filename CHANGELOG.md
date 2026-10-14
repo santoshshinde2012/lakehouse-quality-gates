@@ -3,6 +3,24 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Empty contracts block the gate; silver requires an order status, and gold requires revenue and valid,
+  non-negative counters. The current retail contracts contain 53 checks (14 bronze, 22 silver, 17 gold).
+- Rendered contracts use immutable content-based paths and atomic writes so concurrent engines cannot
+  overwrite each other's inputs.
+- Write-audit-publish requires every primary table's branch, saves the audited snapshot IDs, publishes
+  those exact snapshots, and supports resuming a partially published layer from its audit manifest.
+- Relative lakehouse checkout paths resolve correctly through Make. Bad-batch demos require the blocked
+  exit code, and end-to-end cleanup preserves containers that were already running. Each invocation writes
+  to a separate log directory, preserving prior evidence and preventing stale step counts.
+- Trino providers keep configuration local to each verification; missing DuckDB tables and invalid CLI
+  settings return configuration errors. Iceberg report schemas remain stable for dataset-only checks.
+- Regression tests cover empty contracts, missing values, WAP recovery, rendering isolation, cleanup,
+  and failures that previously appeared to pass verification.
+
 ## [1.0.0] - 2026-10-14
 
 First complete release: every layer can now be published through write-audit-publish, so a bad batch never reaches

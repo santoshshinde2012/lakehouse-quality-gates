@@ -6,8 +6,8 @@
 #   scripts/e2e.sh wap    T4: write-audit-publish: CLI good + bad batch, Airflow WAP DAG good + bad, pytest WAP tests
 #
 # Needs DQ_LDL_REPO_PATH (environment or .env) pointing at a local-data-lakehouse checkout. Idempotent: it
-# reuses a stack that is already running and only stops what it started, always with `down` and never `-v`,
-# so no volume is deleted. KEEP_UP=1 leaves everything running. Exits 1 if any step fails.
+# reuses running containers, stops containers it started, and removes only containers it created. Existing
+# stopped containers and all volumes are kept. KEEP_UP=1 leaves everything running. Exits 1 if any step fails.
 set -uo pipefail
 
 MODE="${1:-}"
@@ -30,17 +30,30 @@ for tool in uv docker; do command -v "$tool" >/dev/null || { echo "$tool is requ
 docker info >/dev/null 2>&1 || { echo "Docker is not running" >&2; exit 2; }
 
 DQ=(uv run --frozen soda-dq)
-LOG_DIR="$ROOT/reports/e2e-$MODE"
-mkdir -p "$LOG_DIR"
+LOG_ROOT="$ROOT/reports/e2e-$MODE"
+mkdir -p "$LOG_ROOT"
+LOG_DIR="$(mktemp -d "$LOG_ROOT/run-XXXXXXXX")" || exit 2
 RESULTS=()
 FAILED=0
-STARTED_LAKEHOUSE=0
-STARTED_RUNNER=0
-STARTED_AIRFLOW=0
+
+# Discover project names without resolving secrets or requiring a populated lakehouse .env.
+compose_project() { docker compose -f "$1" config --no-interpolate | sed -n 's/^name: //p'; }
+LAKEHOUSE_PROJECT="$(cd "$LDL" && compose_project docker-compose.yml)" || exit 2
+RUNNER_PROJECT="$(compose_project docker/docker-compose.dq.yml)" || exit 2
+[[ -n "$LAKEHOUSE_PROJECT" && -n "$RUNNER_PROJECT" ]] || { echo "Cannot identify Compose projects" >&2; exit 2; }
+# Names survive Compose recreation; container IDs do not. Snapshot before any startup, including partial stacks.
+EXISTING_CONTAINERS="$(docker ps -a --format '{{.Names}}')" || exit 2
+RUNNING_CONTAINERS="$(docker ps --format '{{.Names}}')" || exit 2
+
+listed() {
+  local names="$1" wanted="$2" name
+  while IFS= read -r name; do [[ "$name" == "$wanted" ]] && return 0; done <<< "$names"
+  return 1
+}
 
 running() { [[ -n "$(docker ps -q --filter "name=^$1$" --filter status=running)" ]]; }
 
-# step NAME EXPECTED_EXIT COMMAND...: run, log to reports/e2e-<mode>/, record PASS or FAIL.
+# step NAME EXPECTED_EXIT COMMAND...: log in this run's directory, record PASS or FAIL.
 step() {
   local name="$1" expected="$2"
   shift 2
@@ -62,12 +75,27 @@ step() {
 }
 
 cleanup() {
+  local code=$? project containers active name
+  [[ $code == 0 ]] || FAILED=1
   if [[ "${KEEP_UP:-0}" == 1 ]]; then
     echo "==> KEEP_UP=1: leaving the stack running"
   else
-    [[ $STARTED_AIRFLOW == 1 ]] && { echo "==> stopping Airflow"; make -s airflow-dq-down >/dev/null 2>&1 || true; }
-    [[ $STARTED_RUNNER == 1 ]] && { echo "==> stopping ldl-soda"; make -s dq-down >/dev/null 2>&1 || true; }
-    [[ $STARTED_LAKEHOUSE == 1 ]] && { echo "==> stopping the lakehouse (volumes kept)"; (cd "$LDL" && make -s down >/dev/null 2>&1) || true; }
+    for project in "$RUNNER_PROJECT" "$LAKEHOUSE_PROJECT"; do
+      containers="$(docker ps -a --filter "label=com.docker.compose.project=$project" --format '{{.Names}}')" || { FAILED=1; continue; }
+      active="$(docker ps --filter "label=com.docker.compose.project=$project" --format '{{.Names}}')" || { FAILED=1; continue; }
+      while IFS= read -r name; do
+        [[ -n "$name" ]] || continue
+        listed "$RUNNING_CONTAINERS" "$name" && continue
+        if listed "$active" "$name"; then
+          echo "==> stopping $name"
+          docker stop "$name" >/dev/null 2>&1 || { FAILED=1; continue; }
+        fi
+        if ! listed "$EXISTING_CONTAINERS" "$name"; then
+          echo "==> removing $name (volumes kept)"
+          docker rm "$name" >/dev/null 2>&1 || FAILED=1
+        fi
+      done <<< "$containers"
+    done
   fi
   echo
   echo "e2e-$MODE summary (logs in ${LOG_DIR#"$ROOT"/}/)"
@@ -78,6 +106,9 @@ cleanup() {
     printf '%-5s | %-46s | %s, %s\n' "$status" "$name" "$detail" "$secs"
   done
   if [[ $FAILED == 0 ]]; then echo "RESULT: PASS"; else echo "RESULT: FAIL"; fi
+  [[ $code != 0 || $FAILED == 0 ]] || code=1
+  trap - EXIT
+  exit "$code"
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
@@ -98,7 +129,7 @@ if [[ ! -x "$LDL/.venv/bin/python" ]]; then
 fi
 
 if [[ "$MODE" == live ]]; then
-  if running ldl-lakekeeper; then echo "==> lakehouse already running: reusing it"; else STARTED_LAKEHOUSE=1; fi
+  if running ldl-lakekeeper; then echo "==> lakehouse already running: reusing it"; fi
   step "lakehouse up (light profile)" 0 make -C "$LDL" up-light
   step "seed good batch (DuckDB)" 0 seed fixtures/good_batch
   step "gates on good batch, duckdb (expect pass)" 0 "${DQ[@]}" run -e duckdb
@@ -108,9 +139,7 @@ if [[ "$MODE" == live ]]; then
   step "gates after restore (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "pytest -m live" 0 uv run --frozen pytest -m live -p no:cacheprovider
 elif [[ "$MODE" == wap ]]; then
-  if running ldl-spark; then echo "==> full lakehouse already running: reusing it"; else STARTED_LAKEHOUSE=1; fi
-  running ldl-soda || STARTED_RUNNER=1
-  running ldl-airflow-apiserver || running ldl-airflow-api-server || STARTED_AIRFLOW=1
+  if running ldl-spark; then echo "==> full lakehouse already running: reusing it"; fi
   step "lakehouse up (full profile, WAP overlay)" 0 make wap-up
   step "WAP good batch (expect 3 layers published)" 0 make wap-demo-good WAP_EVIDENCE="$LOG_DIR"
   step "WAP bad batch (expect bronze blocked, main untouched)" 0 make wap-demo-bad WAP_EVIDENCE="$LOG_DIR"
@@ -122,9 +151,7 @@ elif [[ "$MODE" == wap ]]; then
   step "gates on main after the Airflow bad run (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "pytest WAP tests (-m full -k wap)" 0 uv run --frozen pytest -m full -k wap -p no:cacheprovider
 else
-  if running ldl-trino; then echo "==> full lakehouse already running: reusing it"; else STARTED_LAKEHOUSE=1; fi
-  running ldl-soda || STARTED_RUNNER=1
-  running ldl-airflow-apiserver || running ldl-airflow-api-server || STARTED_AIRFLOW=1
+  if running ldl-trino; then echo "==> full lakehouse already running: reusing it"; fi
   step "lakehouse up (full profile, Trino, WAP overlay)" 0 make wap-up
   step "lakehouse Spark pipeline (make e2e)" 0 make -C "$LDL" e2e
   step "gates on Spark output, duckdb (expect pass)" 0 "${DQ[@]}" run -e duckdb

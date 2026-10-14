@@ -69,14 +69,15 @@ def main(argv: list[str] | None = None) -> int:
                     t1 = time.perf_counter()
                     written = wap.spark.write(layer, branch, src)
                     t2 = time.perf_counter()
-                    report = wap.verify_branch.execute("retail", layer, branch, run_id=branch)
+                    audit = wap.verify_branch.audit("retail", layer, branch, run_id=branch)
+                    report = audit.report
                     t3 = time.perf_counter()
                     if report.blocked:
                         wap.spark.drop(layer, branch)
                         raise SystemExit(
                             f"gate blocked generated data at {rows}/{layer.value}: {report.reasons}"
                         )
-                    published = wap.spark.publish(layer, branch)
+                    published = wap.spark.publish(layer, branch, audit.pins, main_before=audit.main_before)
                     t4 = time.perf_counter()
                     table_rows = sum(s.main_rows or 0 for s in published.tables.values())
                     row = {"rows": rows, "repeat": repeat, "layer": layer.value, "table_rows": table_rows,
@@ -87,6 +88,9 @@ def main(argv: list[str] | None = None) -> int:
                     writer.writerow(row)
                     fh.flush()
                     print(row, flush=True)
+                    # Benchmark branch names repeat across invocations. Remove only this harness's
+                    # successful branch after timing, before a later direct baseline changes main.
+                    wap.spark.drop(layer, branch)
     print(f"wrote {path}")
     return 0
 

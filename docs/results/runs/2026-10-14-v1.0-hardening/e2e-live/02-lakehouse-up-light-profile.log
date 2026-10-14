@@ -1,0 +1,26 @@
+docker compose -f docker-compose.yml  --profile light up -d --wait
+ Container ldl-lakekeeper Running 
+ Container ldl-objectstore Running 
+ Container ldl-lakehouse-init Running 
+ Container ldl-postgres Running 
+ Container ldl-postgres Waiting 
+ Container ldl-postgres Healthy 
+ Container ldl-lakekeeper-migrate Starting 
+ Container ldl-lakekeeper-migrate Started 
+ Container ldl-lakekeeper-migrate Waiting 
+ Container ldl-lakekeeper-migrate Exited 
+ Container ldl-objectstore Waiting 
+ Container ldl-lakekeeper Waiting 
+ Container ldl-objectstore Healthy 
+ Container ldl-lakekeeper Healthy 
+ Container ldl-lakekeeper-migrate Waiting 
+ Container ldl-lakekeeper Waiting 
+ Container ldl-objectstore Waiting 
+ Container ldl-lakehouse-init Waiting 
+ Container ldl-postgres Waiting 
+ Container ldl-lakekeeper Healthy 
+ Container ldl-postgres Healthy 
+ Container ldl-objectstore Healthy 
+ Container ldl-lakehouse-init Healthy 
+ Container ldl-lakekeeper-migrate Exited 
+==> light up: catalog http://localhost:8181/catalog  S3 http://objectstore.localhost:9000  console http://localhost:9001

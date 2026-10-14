@@ -143,12 +143,15 @@ def test_wap_commands(wap_dag):
     write = ops.spark_wap_command("write", "bronze")
     assert write.startswith("docker exec ldl-spark /opt/spark/bin/spark-submit --master 'local[*]'")
     assert f"write --layer bronze --branch {ops.BRANCH}" in write
-    assert "strftime('%Y%m%dt%H%M%S')" in ops.BRANCH
+    assert "strftime('%Y%m%dt%H%M%S%f')" in ops.BRANCH
     assert "dag_run.conf.get('bad_batch')" in write
     assert "--source" not in ops.spark_wap_command("write", "silver")
-    assert ops.spark_wap_command("publish", "gold").endswith(f"publish --layer gold --branch {ops.BRANCH}")
+    assert ops.spark_wap_command("publish", "gold").endswith(
+        f'publish --layer gold --branch {ops.BRANCH} --audit-file "{ops.audit_path("gold", spark=True)}"'
+    )
     assert ops.wap_gate_command("silver") == (
         f"docker exec ldl-soda soda-dq wap verify silver --pipeline retail --branch {ops.BRANCH}"
+        f' --evidence "{ops.audit_path("silver", spark=False)}"'
     )
     assert ops.wap_gate_task("gold").kwargs["retries"] == 0
     for bad in (lambda: ops.spark_wap_command("rm", "gold"), lambda: ops.spark_wap_command("write", "x"),

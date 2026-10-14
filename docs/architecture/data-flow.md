@@ -13,7 +13,7 @@ One gate after each layer; only a passing gate lets the next layer run.
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
 %% Title: Medallion flow with quality gates
 %% Purpose: One gate after each layer; a failed gate stops promotion
-%% Last updated: 2026-10-13
+%% Last updated: 2026-10-14
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 flowchart LR
   subgraph BRZ["Bronze"]
@@ -27,7 +27,7 @@ flowchart LR
   subgraph SLV["Silver"]
     direction TB
     S[("silver tables")]:::store
-    GS("Silver gate<br/><small>21 checks</small>"):::ours
+    GS("Silver gate<br/><small>22 checks</small>"):::ours
     X2(["Blocked"]):::blocked
     S --> GS
     GS -. fail .-> X2
@@ -35,7 +35,7 @@ flowchart LR
   subgraph GLD["Gold"]
     direction TB
     G[("gold tables")]:::store
-    GG("Gold gate<br/><small>11 checks</small>"):::ours
+    GG("Gold gate<br/><small>17 checks</small>"):::ours
     X3(["Blocked"]):::blocked
     G --> GG
     GG -. fail .-> X3
@@ -62,7 +62,7 @@ flowchart LR
 
 - Green arrows are **pass**: the next layer is built.
 - Red dotted arrows are **fail**: the run is **blocked** at that layer.
-- The gates run 14 (bronze), 21 (silver) and 11 (gold) checks: 46 in total.
+- The gates run 14 (bronze), 22 (silver) and 17 (gold) checks: 53 in total.
 - A **warn** does not block unless `DQ_FAIL_ON_WARN=true`.
 
 ## Data model
@@ -153,7 +153,7 @@ erDiagram
 
 ## What each gate checks
 
-One contract per dataset under `contracts/retail/<layer>/`: 14 checks in the bronze gate, 21 in silver and 11 in
+One contract per dataset under `contracts/retail/<layer>/`: 14 checks in the bronze gate, 22 in silver and 17 in
 gold. Bronze keeps raw values, so value problems **warn** there and are **enforced** in silver; structural problems
 (schema drift, an empty batch, missing keys, duplicates within a file) fail at bronze. Every check, with its type
 and level, is listed in the [contracts guide](../guides/contracts.md#checks-per-contract).

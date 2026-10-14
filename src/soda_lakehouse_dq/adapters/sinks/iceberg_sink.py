@@ -45,7 +45,27 @@ class IcebergSink:
             return
         import pyarrow as pa
 
-        data = pa.Table.from_pylist(rows)
+        # Dataset-only checks have no column name. Inference would give an all-NULL field
+        # Arrow's null type, which Iceberg v2 cannot create and which varies between runs.
+        schema = pa.schema(
+            [("run_id", pa.string()), ("created_at", pa.timestamp("us", tz="UTC"))]
+            + [
+                (name, pa.string())
+                for name in (
+                    "pipeline",
+                    "layer",
+                    "engine",
+                    "gate_status",
+                    "contract",
+                    "dataset",
+                    "check_name",
+                    "check_type",
+                    "column_name",
+                    "outcome",
+                )
+            ]
+        )
+        data = pa.Table.from_pylist(rows, schema=schema)
         catalog = self._catalog_factory()
         namespace = self._table.split(".")[0]
         catalog.create_namespace_if_not_exists(namespace)

@@ -8,7 +8,7 @@
 [![Release](https://img.shields.io/badge/release-v1.0.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v1.0.0)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
-[![Coverage 99%](https://img.shields.io/badge/coverage-99%25-16a34a)](docs/results/README.md)
+[![Coverage 97%](https://img.shields.io/badge/coverage-97%25-16a34a)](docs/results/README.md)
 [![Soda Core 4.26](https://img.shields.io/badge/Soda%20Core-4.26-00B388)](https://docs.soda.io/)
 
 </div>
@@ -16,7 +16,7 @@
 ## What it does
 
 Each layer of the [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse) medallion gets a
-declarative [Soda Core v4](https://docs.soda.io/) contract (46 checks in total). A gate verifies the contract right after
+declarative [Soda Core v4](https://docs.soda.io/) contract (53 checks in total). A gate verifies the contract right after
 the layer is built, on DuckDB or Trino over Apache Iceberg. If it fails, the Airflow task fails and nothing downstream
 is built from bad data. With **write-audit-publish**, each layer is first written to an Iceberg audit branch and only
 fast-forwarded to `main` when its gate passes, so readers of `main` never see a bad batch.
@@ -53,7 +53,7 @@ flowchart TB
     end
     subgraph DQ["Quality gates"]
       direction TB
-      SODA["Soda contracts<br/><small>46 checks</small>"]:::ours
+      SODA["Soda contracts<br/><small>53 checks</small>"]:::ours
       GATE("Gate decision<br/><small>pass or block</small>"):::ours
       BLK(["Run blocked<br/><small>downstream skipped</small>"]):::blocked
       SODA --> GATE
@@ -139,7 +139,7 @@ Data flows left to right; indigo is this project and the red dotted path is a bl
    make demo-good
    ```
 
-   Expected: `retail/bronze`, `retail/silver` and `retail/gold` each report `passed` (46 checks in total).
+   Expected: `retail/bronze`, `retail/silver` and `retail/gold` each report `passed` (53 checks in total).
 
 7. **Run the bad batch.**
 
@@ -241,10 +241,13 @@ Every target, expected output and pass criterion: [running and testing](docs/gui
 
 ## Results at a glance
 
+The recorded benchmark timings used the earlier contracts with 46 checks. The current contracts have 53 checks;
+the performance benchmarks have not been rerun for this change.
+
 | Measure | Result | Source |
 |---|---|---|
-| Tests and coverage | 132 passed, 96% line coverage | [v1.0 fresh-clone run](docs/results/runs/2026-10-14-v1.0-fresh-clone/README.md) |
-| End-to-end | `e2e-live` 9/9, `e2e-full` 15/15 and `e2e-wap` 11/11 steps passed | [v1.0 fresh-clone run](docs/results/runs/2026-10-14-v1.0-fresh-clone/README.md) |
+| Tests and coverage | 216 passed, 97% line coverage | [PR validation](docs/results/runs/2026-10-14-v1.0-pr-checks/test-all.log) |
+| End-to-end | `e2e-live` 9/9, `e2e-full` 15/15 and `e2e-wap` 11/11 steps passed | [hardening runs](docs/results/README.md#runs-newest-first) |
 | Gate time, host DuckDB, warm p50 per layer | 0.42–0.68 s up to 1M orders | [benchmarks](docs/benchmarks/results.md) |
 | All three gates at 5M orders, warm p50 | 3.09 s host DuckDB · 29.79 s Trino (4 GiB heap) | [benchmarks](docs/benchmarks/results.md) |
 | Gate time as a share of its Spark job | 2.3–4.9 % per layer | [analysis](docs/benchmarks/analysis.md) |

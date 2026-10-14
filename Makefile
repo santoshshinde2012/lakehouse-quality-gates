@@ -6,6 +6,8 @@ SODA_HOME := $(abspath .)
 -include .env
 export
 DQ_LDL_REPO_PATH ?= $(abspath ../local-data-lakehouse)
+# Compose resolves bind mounts relative to docker/, so export an absolute checkout path.
+override DQ_LDL_REPO_PATH := $(abspath $(DQ_LDL_REPO_PATH))
 # Host port for the Airflow UI/API. The lakehouse default is 8080; override when it is taken,
 # e.g. `make airflow-dq-up AIRFLOW_API_PORT=8090` (also settable in .env).
 AIRFLOW_API_PORT ?= 8080
@@ -163,8 +165,9 @@ demo-good:
 demo-bad:
 	@echo "==> bad batch, every layer (expect: each gate blocks; non-zero exits are the point)"
 	@for layer in bronze silver gold; do \
-	  DQ_ENGINE=duckdb-local $(RUN) soda-dq verify $$layer --sample-dir fixtures/bad_batch && \
-	    { echo "UNEXPECTED: $$layer passed"; exit 1; } || echo "OK: $$layer blocked as expected"; \
+	  DQ_ENGINE=duckdb-local $(RUN) soda-dq verify $$layer --sample-dir fixtures/bad_batch; code=$$?; \
+	  if [ $$code = 1 ]; then echo "OK: $$layer blocked as expected"; \
+	  else echo "UNEXPECTED: $$layer exited $$code (expected 1)"; exit 1; fi; \
 	done
 	@echo "Reports: reports/*.md | *.json | *.xml"
 

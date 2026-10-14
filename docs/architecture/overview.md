@@ -87,7 +87,7 @@ flowchart TB
     end
     subgraph DQ["Quality gates"]
       direction TB
-      SODA["Soda contracts<br/><small>46 checks</small>"]:::ours
+      SODA["Soda contracts<br/><small>53 checks</small>"]:::ours
       GATE("Gate decision<br/><small>pass or block</small>"):::ours
       BLK(["Run blocked<br/><small>downstream skipped</small>"]):::blocked
       SODA --> GATE
