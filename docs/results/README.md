@@ -9,6 +9,7 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 | Run | Date | Commit | What it shows | Reproduce |
 |---|---|---|---|---|
 | [Write-audit-publish](runs/2026-10-14-wap/README.md) | 2026-10-14 | v1.0.0 (pre-release tree) | Good batch published to `main` (snapshot ids before and after), bad batch blocked with `main` unchanged and the branch kept; CLI, Airflow and the live test | `make e2e-wap` |
+| [v1.0 fresh-clone run](runs/2026-10-14-v1.0-fresh-clone/README.md) | 2026-10-14 | `30d7962` (v1.0.0) | test-all, e2e-live 9/9, e2e-full 15/15, e2e-wap 11/11, docs, diagrams and pre-commit from a fresh clone |
 | [WAP overhead](benchmarks/2026-10-14-wap/wap_overhead.csv) | 2026-10-14 | v1.0.0 (pre-release tree) | Direct write against audit branch + gate + fast-forward at 100k and 1M orders, charted in [results](../benchmarks/results.md#write-audit-publish-overhead) | `make bench-wap` |
 | [v0.5.0 benchmarks](benchmarks/2026-10-14-v0.4.1/specs.json) | 2026-10-14 | `e39dc18` (v0.4.1) | Own end-to-end benchmarks charted in [results](../benchmarks/results.md): latency 10k–5M on DuckDB, Trino (4 GiB heap) and the container, memory, seed-to-gold pipeline, Spark overhead, Airflow good/bad runs, accuracy, five-tool comparison | `make bench-all` |
 | [v0.4.1 checks](runs/2026-10-14-v0.4.1-checks/README.md) | 2026-10-14 | v0.4.1 | `make test-all` after the documentation tidy: 110 tests, 99% coverage, demo | `make test-all` |

@@ -1,0 +1,13 @@
+python3 scripts/check_links.py
+checked 63 Markdown files: 0 broken links
+npx -y markdownlint-cli2@0.23.3
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 37 files
+Summary: 0 issues in 0 files
+python3 scripts/diagrams.py --check
+python3 scripts/doc_snippets.py --check
+python3 scripts/check_numbers.py
+checked 9 number rules: 0 mismatches
+python3 scripts/bench_charts.py --check
+benchmark charts up to date

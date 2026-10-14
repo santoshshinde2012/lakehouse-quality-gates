@@ -129,7 +129,7 @@ snapshots carry the problem.
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | [Security](architecture/security.md) |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
-| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 110 tests at 99% coverage |
+| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 132 tests at 96% coverage |
 
 ## 4. Background and tool selection
 
@@ -452,8 +452,8 @@ fast-forward branches (L7). Proof, with snapshot ids before and after a good and
 | T3 | `full` | Spark pipeline, Trino gates, the `ldl-soda` container, Airflow good and bad runs; scale and accuracy benchmarks | `make e2e-full`, `make bench*`, `tests/live/test_full_stack.py` | Manual, Docker |
 
 `make test-all` runs T0 and T1. Commands, expected output and pass criteria for every tier:
-[running and testing](guides/running-and-testing.md). Coverage: 110 tests in T0 and T1 plus 7 live and full tests,
-99% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
+[running and testing](guides/running-and-testing.md). Coverage: 132 tests in T0 and T1 plus 8 live and full tests,
+96% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
 
 ## 15. References
 

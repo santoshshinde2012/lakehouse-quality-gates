@@ -3,6 +3,40 @@
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning: [SemVer](https://semver.org/).
 
+## [1.0.0] - 2026-10-14
+
+First complete release: every layer can now be published through write-audit-publish, so a bad batch never reaches
+`main` (limitation L1 resolved).
+
+### Added
+
+- **Write-audit-publish** ([ADR 0006](docs/adr/0006-write-audit-publish.md)). Each layer is written to an Iceberg
+  branch `audit_<run>`, gated there with the unchanged contracts, and fast-forwarded to `main` only when the gate
+  passes. A blocked gate leaves `main` untouched and keeps the branch with the bad rows.
+  - `wap/wap_job.py`: our own Spark job (write, publish, drop, status, and a `direct` baseline for benchmarks),
+    mounted into `ldl-spark` by `docker/docker-compose.wap.yml`; it reuses the lakehouse SQL files read-only.
+  - Ports `AuditWriter`, `BranchPublisher`, `SnapshotReader`, `BranchGate`; adapters `SparkSubmitWap`,
+    `PyIcebergSnapshotReader`, `PinnedSnapshotGate`; `DuckDBProvider(pins=...)` reads branch snapshots through
+    `dq_audit` views with `AT (VERSION => id)`; use cases `VerifyBranchUseCase` and `RunWapMedallionUseCase`.
+  - CLI `soda-dq wap run --layer/--all [--batch good|bad] [--evidence FILE]`, `wap verify`, `wap status`,
+    `wap drop`; settings `DQ_WAP_*`.
+  - Airflow DAG `lakehouse_retail_medallion_wap` (`wap_write_<layer> >> dq_<layer> >> publish_<layer>`); the
+    existing DAGs are unchanged.
+  - Make targets `wap-up`, `wap-demo-good`, `wap-demo-bad`, `airflow-wap-trigger`, `airflow-wap-trigger-bad`,
+    `e2e-wap` (`scripts/e2e.sh wap`) and `bench-wap`.
+  - Tests: unit tests with fakes for every new port, DAG and CLI tests, and the live test `tests/live/test_wap.py`
+    that checks snapshot ids and row counts.
+- Evidence in `docs/results/runs/2026-10-14-wap/` and a WAP overhead benchmark at 100k and 1M orders, charted in
+  `docs/benchmarks/results.md`.
+- A fresh-clone regression of every tier, including `e2e-wap`, in `docs/results/runs/2026-10-14-v1.0-fresh-clone/`.
+
+### Changed
+
+- The write-audit-publish page, system design (section 13, L1, L6, L7) and ADR 0004 now describe the
+  implementation; README and running-and-testing gain the WAP steps; `check_numbers.py` reads the newest e2e run
+  and checks the `e2e-wap` step count.
+- The lakehouse compose overlay used by `make airflow-dq-up` includes the WAP overlay.
+
 ## [0.5.0] - 2026-10-14
 
 ### Added

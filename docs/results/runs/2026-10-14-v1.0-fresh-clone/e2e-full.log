@@ -1,0 +1,38 @@
+scripts/e2e.sh full
+==> uv sync
+==> lakehouse up (full profile, Trino, WAP overlay)
+==> lakehouse Spark pipeline (make e2e)
+==> gates on Spark output, duckdb (expect pass)
+==> gates on Spark output, trino (expect pass)
+==> seed bad batch
+==> gates on bad batch, trino (expect 3 blocks)
+==> restore good batch
+==> runner container up (make dq-up)
+==> gates in ldl-soda container (expect pass)
+==> Airflow up on :8090
+==> Airflow good run (expect success)
+==> Airflow bad run (expect dq_bronze to fail)
+==> Airflow good run again (restores data)
+==> pytest -m 'live or full'
+==> stopping Airflow
+==> stopping ldl-soda
+==> stopping the lakehouse (volumes kept)
+
+e2e-full summary (logs in reports/e2e-full/)
+      | step                                           | result
+PASS  | uv sync                                        | exit 0 (expected 0), 0s
+PASS  | lakehouse up (full profile, Trino, WAP overlay) | exit 0 (expected 0), 26s
+PASS  | lakehouse Spark pipeline (make e2e)            | exit 0 (expected 0), 97s
+PASS  | gates on Spark output, duckdb (expect pass)    | exit 0 (expected 0), 1s
+PASS  | gates on Spark output, trino (expect pass)     | exit 0 (expected 0), 5s
+PASS  | seed bad batch                                 | exit 0 (expected 0), 1s
+PASS  | gates on bad batch, trino (expect 3 blocks)    | exit 0 (expected 0), 3s
+PASS  | restore good batch                             | exit 0 (expected 0), 1s
+PASS  | runner container up (make dq-up)               | exit 0 (expected 0), 60s
+PASS  | gates in ldl-soda container (expect pass)      | exit 0 (expected 0), 2s
+PASS  | Airflow up on :8090                            | exit 0 (expected 0), 32s
+PASS  | Airflow good run (expect success)              | exit 0 (expected 0), 128s
+PASS  | Airflow bad run (expect dq_bronze to fail)     | exit 2 (expected 2), 72s
+PASS  | Airflow good run again (restores data)         | exit 0 (expected 0), 143s
+PASS  | pytest -m 'live or full'                       | exit 0 (expected 0), 215s
+RESULT: PASS

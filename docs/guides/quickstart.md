@@ -136,7 +136,7 @@ To drive the pieces yourself (`make dq-up`, `make airflow-dq-up`, `make airflow-
    make e2e-wap                       # or: AIRFLOW_API_PORT=8090 make e2e-wap
    ```
 
-   Expected: `RESULT: PASS` after 12 steps (about 15 minutes), including an Airflow run where `dq_bronze` fails and
+   Expected: `RESULT: PASS` after 11 steps (about 12 minutes), including an Airflow run where `dq_bronze` fails and
    `publish_bronze` never runs.
 <!-- /region -->
 

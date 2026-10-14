@@ -1,0 +1,263 @@
+docker compose -f docker/docker-compose.dq.yml up -d --build --wait
+ Image lakehouse-quality-gates:0.5.0 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 583B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.19kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#4 DONE 0.0s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 122B done
+#5 DONE 0.0s
+
+#6 [uv 1/1] FROM ghcr.io/astral-sh/uv:0.12.23@sha256:61d393e44e249f2e4b526b6c7ddcecce245946826e608e11c93ad4f5bba55b21
+#6 DONE 0.0s
+
+#7 [build 1/7] FROM docker.io/library/python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 4.09kB done
+#8 DONE 0.0s
+
+#9 [stage-2 4/9] WORKDIR /opt/soda-dq
+#9 CACHED
+
+#10 [stage-2 8/9] RUN mkdir -p /opt/soda-dq/reports && chown dq:dq /opt/soda-dq/reports
+#10 CACHED
+
+#11 [stage-2 7/9] COPY fixtures ./fixtures
+#11 CACHED
+
+#12 [build 6/7] COPY src ./src
+#12 CACHED
+
+#13 [build 3/7] WORKDIR /app
+#13 CACHED
+
+#14 [build 7/7] RUN uv sync --frozen --no-dev --no-editable --extra trino --extra lakehouse
+#14 CACHED
+
+#15 [stage-2 3/9] COPY --from=build /opt/venv /opt/venv
+#15 CACHED
+
+#16 [stage-2 6/9] COPY datasources ./datasources
+#16 CACHED
+
+#17 [build 4/7] COPY pyproject.toml uv.lock README.md ./
+#17 CACHED
+
+#18 [build 2/7] COPY --from=uv /uv /usr/local/bin/uv
+#18 CACHED
+
+#19 [build 5/7] RUN uv sync --frozen --no-dev --no-install-project --extra trino --extra lakehouse
+#19 CACHED
+
+#20 [stage-2 2/9] RUN groupadd --system --gid 10001 dq && useradd --system --uid 10001 --gid dq --home /home/dq --create-home dq
+#20 CACHED
+
+#21 [stage-2 5/9] COPY contracts ./contracts
+#21 CACHED
+
+#22 [stage-2 9/9] RUN python -c "import duckdb; c = duckdb.connect(); [c.sql(f'INSTALL {e}') for e in ('httpfs', 'avro', 'iceberg')]"
+#22 CACHED
+
+#23 exporting to image
+#23 exporting layers done
+#23 writing image sha256:53ecd9cb8f17f8183f79c43faf079998a7e39f0e807b0e8b79022d4907490d6e done
+#23 naming to docker.io/library/lakehouse-quality-gates:0.5.0 done
+#23 DONE 0.0s
+
+#24 resolving provenance for metadata file
+#24 DONE 0.0s
+ Image lakehouse-quality-gates:0.5.0 Built 
+ Container ldl-soda Running 
+ Container ldl-soda Waiting 
+ Container ldl-soda Healthy 
+cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_env.sh && SODA_HOME="/Users/santosh/Documents/workspace/SODA-fresh" docker compose -f docker-compose.yml -f docker-compose.airflow.yml -f /Users/santosh/Documents/workspace/SODA-fresh/docker/docker-compose.airflow-dq.yml -f /Users/santosh/Documents/workspace/SODA-fresh/docker/docker-compose.wap.yml --profile full up -d --wait --build
+==> Airflow UI user: admin (password: _AIRFLOW_WWW_USER_PASSWORD in .env)
+ Image ldl-airflow:3.3.2 Building 
+ Image ldl-spark:4.1.3-iceberg1.12.0 Building 
+ Image ldl-airflow:3.3.2 Building 
+ Image ldl-airflow:3.3.2 Building 
+ Image ldl-airflow:3.3.2 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.83kB done
+#1 DONE 0.0s
+
+#2 [airflow-scheduler internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.25kB done
+#2 DONE 0.0s
+
+#3 [spark internal] load build definition from Dockerfile
+#3 transferring dockerfile: 2.30kB done
+#3 DONE 0.0s
+
+#4 [spark internal] load metadata for docker.io/apache/spark:4.1.3-scala2.13-java21-python3-ubuntu@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
+#4 DONE 0.0s
+
+#5 [spark internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [spark 1/3] FROM docker.io/apache/spark:4.1.3-scala2.13-java21-python3-ubuntu@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211
+#6 resolve docker.io/apache/spark:4.1.3-scala2.13-java21-python3-ubuntu@sha256:bf9d035a7c32a8ca46aa58d6348182ffd7d2dff6409206ecfbb3915ff1fef211 done
+#6 DONE 0.0s
+
+#7 [spark 2/3] RUN set -eux;   base=https://repo1.maven.org/maven2/org/apache/iceberg;   rt="iceberg-spark-runtime-4.1_2.13";   curl -fsSL -o "/opt/spark/jars/${rt}-1.12.0.jar" "${base}/${rt}/1.12.0/${rt}-1.12.0.jar";   curl -fsSL -o "/opt/spark/jars/iceberg-aws-bundle-1.12.0.jar"     "${base}/iceberg-aws-bundle/1.12.0/iceberg-aws-bundle-1.12.0.jar";   if [ -n "3123c3798af642dd537230923548e013ef41cc28b6626e5225808cf5670a0f82" ]; then echo "3123c3798af642dd537230923548e013ef41cc28b6626e5225808cf5670a0f82  /opt/spark/jars/${rt}-1.12.0.jar" | sha256sum -c -; fi;   if [ -n "dd7e49ffa4ac9b215bed846581991259e3aec9bb2fa08d6cec029c46cd66d957" ]; then echo "dd7e49ffa4ac9b215bed846581991259e3aec9bb2fa08d6cec029c46cd66d957  /opt/spark/jars/iceberg-aws-bundle-1.12.0.jar" | sha256sum -c -; fi;   chmod 0644 /opt/spark/jars/iceberg-*.jar;   mkdir -p /opt/data/export /opt/data/graph && chown -R spark:spark /opt/data
+#7 CACHED
+
+#8 [spark 3/3] WORKDIR /opt/jobs
+#8 CACHED
+
+#9 [spark] exporting to image
+#9 exporting layers done
+#9 writing image sha256:9d10137295f1f1a831c0ee13dc4ce31c6649ed1c071c940743f983444d6d2bb1 done
+#9 naming to docker.io/library/ldl-spark:4.1.3-iceberg1.12.0 done
+#9 DONE 0.0s
+
+#10 [spark] resolving provenance for metadata file
+#10 DONE 0.0s
+
+#11 [airflow-init internal] load metadata for docker.io/apache/airflow:3.3.2-python3.12@sha256:9df9c8be4096b9cc626bd7cb1f2b8c712eef66c59c615f8c7e6200871ca10bd1
+#11 ...
+
+#12 [auth] apache/airflow:pull token for registry-1.docker.io
+#12 DONE 0.0s
+
+#11 [airflow-init internal] load metadata for docker.io/apache/airflow:3.3.2-python3.12@sha256:9df9c8be4096b9cc626bd7cb1f2b8c712eef66c59c615f8c7e6200871ca10bd1
+#11 DONE 1.4s
+
+#13 [airflow-dag-processor internal] load .dockerignore
+#13 transferring context: 2B done
+#13 DONE 0.0s
+
+#14 [airflow-apiserver 1/2] FROM docker.io/apache/airflow:3.3.2-python3.12@sha256:9df9c8be4096b9cc626bd7cb1f2b8c712eef66c59c615f8c7e6200871ca10bd1
+#14 DONE 0.0s
+
+#15 [airflow-apiserver 2/2] RUN set -eux;   case "arm64" in     amd64) darch=x86_64; sum="995d1ef289677f74fd58d8d2c35727b6a4ee389c69db8638a3e42d0487aa5b0f" ;;     arm64) darch=aarch64; sum="76a624e4a8e5da654d1150e808175125efb5a6f1b6aa1cbd9caee18f51047a50" ;;     *) echo "unsupported arch arm64"; exit 1 ;;   esac;   curl -fsSL -o /tmp/docker.tgz "https://download.docker.com/linux/static/stable/${darch}/docker-29.8.2.tgz";   echo "${sum}  /tmp/docker.tgz" | sha256sum -c -;   tar -xzf /tmp/docker.tgz -C /tmp docker/docker;   install -m 0755 /tmp/docker/docker /usr/local/bin/docker;   rm -rf /tmp/docker /tmp/docker.tgz;   docker --version
+#15 CACHED
+
+#16 [airflow-init] exporting to image
+#16 exporting layers done
+#16 writing image sha256:f84f356542adf953361d3fef5522af4fa9ba32e8903cfd6e241a5ad9b6502b59 done
+#16 naming to docker.io/library/ldl-airflow:3.3.2 done
+#16 DONE 0.0s
+
+#17 [airflow-scheduler] exporting to image
+#17 exporting layers done
+#17 writing image sha256:3b29c8e1d139bbcad361aefbc015715716801d990bdd66eb74eb2651dd1d9051 done
+#17 naming to docker.io/library/ldl-airflow:3.3.2 0.0s done
+#17 DONE 0.0s
+
+#18 [airflow-apiserver] exporting to image
+#18 exporting layers done
+#18 writing image sha256:c967c4d517acfac3fa8340ca709a12daeab0ebec1d4389dbe92d2ef5e69d6397 done
+#18 naming to docker.io/library/ldl-airflow:3.3.2 0.0s done
+#18 DONE 0.0s
+
+#19 [airflow-dag-processor] exporting to image
+#19 exporting layers done
+#19 writing image sha256:d68db82da257896b6828de1635f786f1d57aaf985a4d1df32b83de7322921365 done
+#19 naming to docker.io/library/ldl-airflow:3.3.2 done
+#19 DONE 0.0s
+
+#20 [airflow-init] resolving provenance for metadata file
+#20 DONE 0.0s
+
+#21 [airflow-dag-processor] resolving provenance for metadata file
+#21 DONE 0.0s
+
+#22 [airflow-scheduler] resolving provenance for metadata file
+#22 DONE 0.0s
+
+#23 [airflow-apiserver] resolving provenance for metadata file
+#23 DONE 0.0s
+ Image ldl-spark:4.1.3-iceberg1.12.0 Built 
+ Image ldl-airflow:3.3.2 Built 
+ Image ldl-airflow:3.3.2 Built 
+ Image ldl-airflow:3.3.2 Built 
+ Image ldl-airflow:3.3.2 Built 
+ Container ldl-objectstore Running 
+ Container ldl-lakekeeper Running 
+ Container ldl-spark Running 
+ Container ldl-postgres Running 
+ Container ldl-lakehouse-init Running 
+ Container ldl-docker-proxy Creating 
+ Container ldl-airflow-postgres Creating 
+ Container ldl-airflow-postgres Created 
+ Container ldl-airflow-init Creating 
+ Container ldl-docker-proxy Created 
+ Container ldl-airflow-init Created 
+ Container ldl-airflow-scheduler Creating 
+ Container ldl-airflow-dag-processor Creating 
+ Container ldl-airflow-apiserver Creating 
+ Container ldl-airflow-apiserver Created 
+ Container ldl-airflow-scheduler Created 
+ Container ldl-airflow-dag-processor Created 
+ Container ldl-airflow-postgres Starting 
+ Container ldl-postgres Waiting 
+ Container ldl-docker-proxy Starting 
+ Container ldl-airflow-postgres Started 
+ Container ldl-airflow-postgres Waiting 
+ Container ldl-docker-proxy Started 
+ Container ldl-postgres Healthy 
+ Container ldl-lakekeeper-migrate Starting 
+ Container ldl-lakekeeper-migrate Started 
+ Container ldl-lakekeeper-migrate Waiting 
+ Container ldl-lakekeeper-migrate Exited 
+ Container ldl-lakekeeper Waiting 
+ Container ldl-objectstore Waiting 
+ Container ldl-lakekeeper Healthy 
+ Container ldl-objectstore Healthy 
+ Container ldl-lakehouse-init Waiting 
+ Container ldl-lakehouse-init Healthy 
+ Container ldl-airflow-postgres Healthy 
+ Container ldl-airflow-init Starting 
+ Container ldl-airflow-init Started 
+ Container ldl-airflow-init Waiting 
+ Container ldl-docker-proxy Waiting 
+ Container ldl-airflow-init Waiting 
+ Container ldl-airflow-init Waiting 
+ Container ldl-docker-proxy Healthy 
+ Container ldl-airflow-init Exited 
+ Container ldl-airflow-dag-processor Starting 
+ Container ldl-airflow-init Exited 
+ Container ldl-airflow-init Exited 
+ Container ldl-airflow-apiserver Starting 
+ Container ldl-airflow-scheduler Starting 
+ Container ldl-airflow-dag-processor Started 
+ Container ldl-airflow-apiserver Started 
+ Container ldl-airflow-scheduler Started 
+ Container ldl-lakekeeper-migrate Waiting 
+ Container ldl-airflow-postgres Waiting 
+ Container ldl-objectstore Waiting 
+ Container ldl-airflow-dag-processor Waiting 
+ Container ldl-airflow-init Waiting 
+ Container ldl-lakehouse-init Waiting 
+ Container ldl-airflow-scheduler Waiting 
+ Container ldl-lakekeeper Waiting 
+ Container ldl-docker-proxy Waiting 
+ Container ldl-spark Waiting 
+ Container ldl-airflow-apiserver Waiting 
+ Container ldl-postgres Waiting 
+ Container ldl-postgres Healthy 
+ Container ldl-lakekeeper-migrate Exited 
+ Container ldl-docker-proxy Healthy 
+ Container ldl-airflow-postgres Healthy 
+ Container ldl-lakehouse-init Healthy 
+ Container ldl-spark Healthy 
+ Container ldl-airflow-init Exited 
+ Container ldl-objectstore Healthy 
+ Container ldl-lakekeeper Healthy 
+ Container ldl-airflow-scheduler Healthy 
+ Container ldl-airflow-dag-processor Healthy 
+ Container ldl-airflow-apiserver Healthy 

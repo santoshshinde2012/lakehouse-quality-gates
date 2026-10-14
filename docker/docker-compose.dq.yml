@@ -9,7 +9,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: lakehouse-quality-gates:0.5.0
+    image: lakehouse-quality-gates:1.0.0
     container_name: ${LDL_SODA_CONTAINER:-ldl-soda}
     environment:
       # Not DQ_ENGINE: the host .env (exported by make) usually says duckdb-local.

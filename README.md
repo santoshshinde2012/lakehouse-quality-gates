@@ -5,7 +5,7 @@
 **Soda data contracts as quality gates between bronze, silver and gold: bad data never reaches gold.**
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.5.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v0.5.0)
+[![Release](https://img.shields.io/badge/release-v1.0.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v1.0.0)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Coverage 99%](https://img.shields.io/badge/coverage-99%25-16a34a)](docs/results/README.md)
@@ -220,7 +220,7 @@ Data flows left to right; indigo is this project and the red dotted path is a bl
    make e2e-wap                       # or: AIRFLOW_API_PORT=8090 make e2e-wap
    ```
 
-   Expected: `RESULT: PASS` after 12 steps (about 15 minutes), including an Airflow run where `dq_bronze` fails and
+   Expected: `RESULT: PASS` after 11 steps (about 12 minutes), including an Airflow run where `dq_bronze` fails and
    `publish_bronze` never runs.
 <!-- /include -->
 
@@ -243,8 +243,8 @@ Every target, expected output and pass criterion: [running and testing](docs/gui
 
 | Measure | Result | Source |
 |---|---|---|
-| Tests and coverage | 110 passed, 99% line coverage | [v0.4.1 checks](docs/results/runs/2026-10-14-v0.4.1-checks/README.md) |
-| End-to-end | `e2e-live` 9/9 and `e2e-full` 15/15 steps passed | [fresh-clone run](docs/results/runs/2026-10-13-fresh-clone/README.md) |
+| Tests and coverage | 132 passed, 96% line coverage | [v1.0 fresh-clone run](docs/results/runs/2026-10-14-v1.0-fresh-clone/README.md) |
+| End-to-end | `e2e-live` 9/9, `e2e-full` 15/15 and `e2e-wap` 11/11 steps passed | [v1.0 fresh-clone run](docs/results/runs/2026-10-14-v1.0-fresh-clone/README.md) |
 | Gate time, host DuckDB, warm p50 per layer | 0.42–0.68 s up to 1M orders | [benchmarks](docs/benchmarks/results.md) |
 | All three gates at 5M orders, warm p50 | 3.09 s host DuckDB · 29.79 s Trino (4 GiB heap) | [benchmarks](docs/benchmarks/results.md) |
 | Gate time as a share of its Spark job | 2.3–4.9 % per layer | [analysis](docs/benchmarks/analysis.md) |

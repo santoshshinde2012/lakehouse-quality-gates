@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/santosh/Documents/workspace/SODA-fresh
+configfile: pyproject.toml
+testpaths: tests
+plugins: platformdirs-4.13.0, cov-7.1.0
+collected 141 items / 133 deselected / 8 selected
+
+tests/live/test_full_stack.py ....                                       [ 50%]
+tests/live/test_live_gates.py ...                                        [ 87%]
+tests/live/test_wap.py .                                                 [100%]
+
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/soda_core/common/sql_ast.py:1030
+  /Users/santosh/Documents/workspace/SODA-fresh/.venv/lib/python3.12/site-packages/soda_core/common/sql_ast.py:1030: DeprecationWarning: Not fully supported for all datasources yet. Only tested/verified for Postgres and Redshift. Use with caution.
+    class UNION_ALL(UNION):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========== 8 passed, 133 deselected, 1 warning in 214.67s (0:03:34) ===========

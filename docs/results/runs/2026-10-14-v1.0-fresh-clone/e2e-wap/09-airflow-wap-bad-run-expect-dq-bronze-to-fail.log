@@ -1,0 +1,19 @@
+cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_wap '{"bad_batch": true}'
+==> Waiting for lakehouse_retail_medallion_wap to be parsed…
+==> Triggering lakehouse_retail_medallion_wap (manual__ldl_20261014T062956)
+  [5s] state=running
+  [35s] state=running
+==> lakehouse_retail_medallion_wap failed
+dag_id                          logical_date    task_id           state            start_date                        end_date
+lakehouse_retail_medallion_wap                  land_smoke        success          2026-10-14T06:29:58.680966+00:00  2026-10-14T06:30:18.812597+00:00
+lakehouse_retail_medallion_wap                  wap_write_bronze  success          2026-10-14T06:30:19.793176+00:00  2026-10-14T06:30:42.195893+00:00
+lakehouse_retail_medallion_wap                  dq_bronze         failed           2026-10-14T06:30:42.917659+00:00  2026-10-14T06:30:45.400550+00:00
+lakehouse_retail_medallion_wap                  publish_bronze    upstream_failed  2026-10-14T06:30:45.924255+00:00  2026-10-14T06:30:45.924255+00:00
+lakehouse_retail_medallion_wap                  wap_write_silver  upstream_failed  2026-10-14T06:30:46.967514+00:00  2026-10-14T06:30:46.967514+00:00
+lakehouse_retail_medallion_wap                  dq_silver         upstream_failed  2026-10-14T06:30:47.656868+00:00  2026-10-14T06:30:47.656868+00:00
+lakehouse_retail_medallion_wap                  publish_silver    upstream_failed  2026-10-14T06:30:48.698760+00:00  2026-10-14T06:30:48.698760+00:00
+lakehouse_retail_medallion_wap                  wap_write_gold    upstream_failed  2026-10-14T06:30:49.728068+00:00  2026-10-14T06:30:49.728068+00:00
+lakehouse_retail_medallion_wap                  dq_gold           upstream_failed  2026-10-14T06:30:50.762866+00:00  2026-10-14T06:30:50.762866+00:00
+lakehouse_retail_medallion_wap                  publish_gold      upstream_failed  2026-10-14T06:30:51.795552+00:00  2026-10-14T06:30:51.795552+00:00
+lakehouse_retail_medallion_wap                  query_timetravel  upstream_failed  2026-10-14T06:30:52.354863+00:00  2026-10-14T06:30:52.354863+00:00
+make[1]: *** [airflow-wap-trigger-bad] Error 1

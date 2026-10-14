@@ -1,0 +1,17 @@
+2026-10-14T06:30:56.626188Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-14T06:30:57.213503Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-14T06:30:57.336968Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-14T06:30:57.407632Z [info     ] dq.gate.passed                 failed=0 layer=bronze passed=14 pipeline=retail run_id=20261014T063056Z-6fedbac7 status=passed warned=0
+2026-10-14T06:30:57.407692Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=passed
+2026-10-14T06:30:57.412865Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-14T06:30:57.468031Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-14T06:30:57.568068Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-14T06:30:57.665716Z [info     ] dq.gate.passed                 failed=0 layer=silver passed=21 pipeline=retail run_id=20261014T063056Z-6fedbac7 status=passed warned=0
+2026-10-14T06:30:57.665781Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=passed
+2026-10-14T06:30:57.668761Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-14T06:30:57.718647Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-14T06:30:57.834094Z [info     ] dq.gate.passed                 failed=0 layer=gold passed=11 pipeline=retail run_id=20261014T063056Z-6fedbac7 status=passed warned=0
+2026-10-14T06:30:57.834154Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=passed
+retail/bronze: passed (14 checks, run 20261014T063056Z-6fedbac7)
+retail/silver: passed (21 checks, run 20261014T063056Z-6fedbac7)
+retail/gold: passed (11 checks, run 20261014T063056Z-6fedbac7)
