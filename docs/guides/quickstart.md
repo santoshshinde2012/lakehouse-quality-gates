@@ -108,6 +108,38 @@ test tier, make target and benchmark in depth.
 To drive the pieces yourself (`make dq-up`, `make airflow-dq-up`, `make airflow-dq-trigger`), see the
 [runbook](runbook.md#daily-operation).
 
+## Write-audit-publish (bad data never reaches main)
+
+<!-- region:wap -->
+1. **Start the lakehouse with the WAP overlay**, then publish a good batch through audit branches.
+
+   ```bash
+   make wap-up
+   make wap-demo-good
+   ```
+
+   Expected: bronze, silver and gold each `passed`, and one line per table such as
+   `published bronze.orders_raw: main 6960… -> 6313… (22 rows)`.
+
+2. **Send the bad batch.**
+
+   ```bash
+   make wap-demo-bad
+   ```
+
+   Expected: `retail/bronze: blocked`, `main stays <same id>`, the audit branch kept with the bad rows, and
+   `OK: blocked as expected, main untouched`.
+
+3. **Run it all with Airflow and the WAP tests.**
+
+   ```bash
+   make e2e-wap                       # or: AIRFLOW_API_PORT=8090 make e2e-wap
+   ```
+
+   Expected: `RESULT: PASS` after 12 steps (about 15 minutes), including an Airflow run where `dq_bronze` fails and
+   `publish_bronze` never runs.
+<!-- /region -->
+
 ## What next
 
 - Read a report: `reports/<run>_retail_<layer>.md` lists every check and why a gate blocked.

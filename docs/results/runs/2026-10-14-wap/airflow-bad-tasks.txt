@@ -1,0 +1,14 @@
+==> Waiting for lakehouse_retail_medallion_wap to be parsed…
+==> Triggering lakehouse_retail_medallion_wap (manual__ldl_20261014T053851)
+==> lakehouse_retail_medallion_wap failed
+lakehouse_retail_medallion_wap land_smoke success 2026-10-14T05:38:53.635940+00:00 2026-10-14T05:39:10.659994+00:00
+lakehouse_retail_medallion_wap wap_write_bronze success 2026-10-14T05:39:11.661315+00:00 2026-10-14T05:39:31.163284+00:00
+lakehouse_retail_medallion_wap publish_bronze upstream_failed 2026-10-14T05:39:33.756491+00:00 2026-10-14T05:39:33.756491+00:00
+lakehouse_retail_medallion_wap wap_write_silver upstream_failed 2026-10-14T05:39:34.797985+00:00 2026-10-14T05:39:34.797985+00:00
+lakehouse_retail_medallion_wap dq_bronze failed 2026-10-14T05:39:31.759087+00:00 2026-10-14T05:39:33.487098+00:00
+lakehouse_retail_medallion_wap dq_silver upstream_failed 2026-10-14T05:39:35.827838+00:00 2026-10-14T05:39:35.827838+00:00
+lakehouse_retail_medallion_wap publish_silver upstream_failed 2026-10-14T05:39:36.857285+00:00 2026-10-14T05:39:36.857285+00:00
+lakehouse_retail_medallion_wap wap_write_gold upstream_failed 2026-10-14T05:39:37.883617+00:00 2026-10-14T05:39:37.883617+00:00
+lakehouse_retail_medallion_wap dq_gold upstream_failed 2026-10-14T05:39:38.912771+00:00 2026-10-14T05:39:38.912771+00:00
+lakehouse_retail_medallion_wap publish_gold upstream_failed 2026-10-14T05:39:39.611866+00:00 2026-10-14T05:39:39.611866+00:00
+lakehouse_retail_medallion_wap query_timetravel upstream_failed 2026-10-14T05:39:40.658716+00:00 2026-10-14T05:39:40.658716+00:00

@@ -344,9 +344,9 @@ flowchart LR
 | Failure propagation | Exit 1 fails the task; downstream tasks become `upstream_failed` (verified live, see [results](../results/README.md)) |
 | Idempotency | Gates are read-only and safe to re-run. Spark layers are `CREATE OR REPLACE`, so a re-run rebuilds the layer from the one below |
 | Re-run after a fix | Clear the failed `dq_<layer>` task (or the Spark task before it) in the Airflow UI |
-| Backfills | The DAG is unscheduled (manual trigger, `catchup=False`), like the original. Backfills are re-runs of the whole medallion; per-partition backfills need WAP + partition-scoped contracts ([write-audit-publish](write-audit-publish.md)) |
+| Backfills | The DAG is unscheduled (manual trigger, `catchup=False`), like the original. Backfills are re-runs of the whole medallion; per-partition backfills need partition-scoped contracts on top of [write-audit-publish](write-audit-publish.md) |
 | Demo fault injection | `inject_bad_batch` is a no-op unless the run conf has `inject_bad_batch: true`; the Jinja renders to the literal words `yes`/`no`, so no conf value reaches the shell |
-| Concurrency | One DAG run at a time is assumed: layers are rebuilt in place |
+| Concurrency | One DAG run at a time is assumed: layers are rebuilt in place. The WAP DAG enforces it (`max_active_runs=1`) |
 
 ---
 

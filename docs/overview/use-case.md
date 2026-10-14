@@ -50,9 +50,10 @@ data has been cleaned.
 
 ## Limits and next steps
 
-- The Spark jobs use `CREATE OR REPLACE`, so a blocked silver gate stops gold from being built, but silver
-  itself has already been overwritten. Real write-audit-publish (an Iceberg branch per run, verify, then
-  fast-forward `main`) would isolate even the failing layer. That is the natural next step: see [write-audit-publish](../architecture/write-audit-publish.md).
+- In the gated DAG the Spark jobs use `CREATE OR REPLACE`, so a blocked silver gate stops gold from being built,
+  but silver itself has already been overwritten. The write-audit-publish DAG and `soda-dq wap run` isolate even
+  the failing layer: each layer stays on an Iceberg audit branch until its gate passes, and `main` keeps the last
+  good data. See [write-audit-publish](../architecture/write-audit-publish.md).
 - Soda's dedicated group-by and reconciliation check types, and percentage thresholds on `failed_rows`, need a
   paid Soda licence. These contracts stay inside the free Soda Core: the gold-to-silver reconciliation is a SQL
   `metric` check.

@@ -1,0 +1,32 @@
+{
+  "action": "status",
+  "seconds": 3.235,
+  "tables": {
+    "bronze.customers_raw": {
+      "main_before": null,
+      "main_snapshot": 2315605737112221829,
+      "main_rows": 10,
+      "branch_snapshot": null,
+      "branch_rows": null,
+      "refs": {
+        "audit_20261014t052958z_19ce388e": 4347840016123168408,
+        "audit_20261014t053852": 2363753605907019308,
+        "audit_t1": 8868359162645345213,
+        "main": 2315605737112221829
+      }
+    },
+    "bronze.orders_raw": {
+      "main_before": null,
+      "main_snapshot": 2937753052092199088,
+      "main_rows": 22,
+      "branch_snapshot": null,
+      "branch_rows": null,
+      "refs": {
+        "audit_20261014t052958z_19ce388e": 6160888266221912068,
+        "audit_20261014t053852": 7353232630138230011,
+        "audit_t1": 2085056837443191778,
+        "main": 2937753052092199088
+      }
+    }
+  }
+}

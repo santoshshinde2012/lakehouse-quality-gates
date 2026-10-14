@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     iceberg_sink: bool = False
     slack_webhook_url: SecretStr | None = None
     slack_only_on_problems: bool = True
+    # write-audit-publish (ADR 0006)
+    wap_spark_container: str = "ldl-spark"
+    wap_job: str = "/opt/soda-wap/wap_job.py"
+    wap_timeout_s: int = Field(default=900, ge=10)
+    wap_drop_blocked: bool = False  # default: keep a blocked audit branch for forensics
     log_json: bool = False
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 

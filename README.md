@@ -18,7 +18,8 @@
 Each layer of the [local-data-lakehouse](https://github.com/santoshshinde2012/local-data-lakehouse) medallion gets a
 declarative [Soda Core v4](https://docs.soda.io/) contract (46 checks in total). A gate verifies the contract right after
 the layer is built, on DuckDB or Trino over Apache Iceberg. If it fails, the Airflow task fails and nothing downstream
-is built from bad data.
+is built from bad data. With **write-audit-publish**, each layer is first written to an Iceberg audit branch and only
+fast-forwarded to `main` when its gate passes, so readers of `main` never see a bad batch.
 
 ## Architecture
 
@@ -191,6 +192,41 @@ Data flows left to right; indigo is this project and the red dotted path is a bl
    runner container, an Airflow run that succeeds and one that stops at `dq_bronze`.
 <!-- /include -->
 
+## Write-audit-publish
+
+<!-- include:docs/guides/quickstart.md#wap -->
+1. **Start the lakehouse with the WAP overlay**, then publish a good batch through audit branches.
+
+   ```bash
+   make wap-up
+   make wap-demo-good
+   ```
+
+   Expected: bronze, silver and gold each `passed`, and one line per table such as
+   `published bronze.orders_raw: main 6960… -> 6313… (22 rows)`.
+
+2. **Send the bad batch.**
+
+   ```bash
+   make wap-demo-bad
+   ```
+
+   Expected: `retail/bronze: blocked`, `main stays <same id>`, the audit branch kept with the bad rows, and
+   `OK: blocked as expected, main untouched`.
+
+3. **Run it all with Airflow and the WAP tests.**
+
+   ```bash
+   make e2e-wap                       # or: AIRFLOW_API_PORT=8090 make e2e-wap
+   ```
+
+   Expected: `RESULT: PASS` after 12 steps (about 15 minutes), including an Airflow run where `dq_bronze` fails and
+   `publish_bronze` never runs.
+<!-- /include -->
+
+How it works: [write-audit-publish](docs/architecture/write-audit-publish.md) · proof with snapshot ids:
+[WAP run](docs/results/runs/2026-10-14-wap/README.md).
+
 ## Testing
 
 | Command | Tier | Needs | Time |
@@ -198,6 +234,7 @@ Data flows left to right; indigo is this project and the red dotted path is a bl
 | `make test-all` | Lint, mypy, unit + integration tests, contract validation, demo | Python | about 20 s |
 | `make e2e-live` | Gates on the live light stack, good and bad batch | Docker | about 1 min |
 | `make e2e-full` | Spark, Trino, runner container, Airflow good and bad runs | Docker, 8 GB | 17 to 30 min |
+| `make e2e-wap` | Write-audit-publish: CLI and Airflow, good and bad batch, `main` unchanged after the bad one | Docker, 8 GB | about 15 min |
 | `make bench-all` | Latency, accuracy and tool comparison benchmarks | Full stack | about 2 h |
 
 Every target, expected output and pass criterion: [running and testing](docs/guides/running-and-testing.md).

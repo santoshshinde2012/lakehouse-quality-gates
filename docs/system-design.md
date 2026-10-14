@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Version** | 1.2 |
-| **Status** | Accepted. Performance figures are measured; write-audit-publish ([section 13](#13-roadmap-write-audit-publish)) is proposed |
+| **Version** | 2.0 |
+| **Status** | Accepted. Performance figures are measured; write-audit-publish ([section 13](#13-write-audit-publish)) is implemented (v1.0.0) |
 | **Author** | Santosh Shinde |
-| **Date** | 2026-10-13 |
+| **Date** | 2026-10-14 |
 | **Repository** | [santoshshinde2012/lakehouse-quality-gates](https://github.com/santoshshinde2012/lakehouse-quality-gates) |
 | **Reviewers** | Data platform owners of `local-data-lakehouse` |
 
@@ -29,15 +29,16 @@
 10. [Scalability and capacity](#10-scalability-and-capacity)
 11. [Trade-offs and alternatives considered](#11-trade-offs-and-alternatives-considered)
 12. [Known limitations and risks](#12-known-limitations-and-risks)
-13. [Roadmap: write-audit-publish](#13-roadmap-write-audit-publish)
+13. [Write-audit-publish](#13-write-audit-publish)
 14. [Testing strategy](#14-testing-strategy)
 15. [References](#15-references)
 
 ## 1. Executive summary
 
 > [!IMPORTANT]
-> **Decision.** Keep Soda Core v4 as the gate engine and add Iceberg write-audit-publish next. Today a gate stops
-> promotion but cannot hide a layer Spark has already written ([L1](#12-known-limitations-and-risks)).
+> **Decision.** Keep Soda Core v4 as the gate engine, and publish every layer through Iceberg write-audit-publish:
+> a layer is written to an audit branch, gated there, and fast-forwarded to `main` only when its gate passes
+> ([section 13](#13-write-audit-publish)). This resolves [L1](#12-known-limitations-and-risks).
 
 `local-data-lakehouse` builds a retail medallion (bronze, silver and gold Apache Iceberg tables) with Spark,
 orchestrated by Airflow 3. Before this project nothing stopped a bad batch from flowing from bronze into the
@@ -61,10 +62,10 @@ notifiers. It sits next to the lakehouse and changes none of its files.
 | Where does it break? | **Trino with the lakehouse's default 1 GiB heap fails at 5M orders** (`EXCEEDED_LOCAL_MEMORY_LIMIT`; the gate fails *closed*). With `make trino-heap` (4 GiB) it passes, taking 29.79 s for the three gates |
 | How does Soda compare? | Same six checks at 1M rows: Soda 0.44 s / 204 MiB, Pointblank 0.47 s / 389 MiB, datacontract-cli 1.08 s / 286 MiB, Pandera 2.83 s / 1.5 GiB, GX Core 11.5 s / 723 MiB. All five got every verdict right |
 
-**Decision.** Keep Soda Core v4 (Elastic License 2.0, internal use is allowed) as the gate engine and
-add Iceberg **write-audit-publish** on Spark next ([section 13](#13-roadmap-write-audit-publish)), which closes the one real correctness gap:
-today a gate stops *promotion* but cannot hide a bad layer that Spark has already written with
-`CREATE OR REPLACE`. The fully OSI-licensed fallback is ODCS v3.2 + datacontract-cli + Pointblank ([section 4](#4-background-and-tool-selection)).
+**Decision.** Keep Soda Core v4 (Elastic License 2.0, internal use is allowed) as the gate engine, with Iceberg
+**write-audit-publish** on Spark ([section 13](#13-write-audit-publish)). This closes the one real correctness gap of
+the gate-after-write DAG, where a gate stopped *promotion* but could not hide a bad layer that Spark had already
+written with `CREATE OR REPLACE`. The fully OSI-licensed fallback is ODCS v3.2 + datacontract-cli + Pointblank ([section 4](#4-background-and-tool-selection)).
 
 ## 2. Problem statement, goals and non-goals
 
@@ -381,7 +382,7 @@ so contract *coverage*, not accuracy, is the risk (failure mode 5 in [section 9]
 | 3 | Soda raises inside a check | `ContractResult.errors` | block | 3 | 2 | Fail closed; error text in reasons |
 | 4 | Metric cannot be computed | NOT_EVALUATED | block (default) | 3 | 2 | `DQ_ALLOW_NOT_EVALUATED` only as a deliberate override |
 | 5 | Gate passes but data is bad (missing check) | Bad data promoted | Downstream checks (gold reconciliation), consumers | 5 | 2 | Contract review, [accuracy suite](benchmarks/results.md#detection-accuracy), WAP |
-| 6 | Bad layer visible before the gate runs | Readers see unaudited data for the gate's duration | Known gap | 4 | 4 | WAP ([section 13](#13-roadmap-write-audit-publish)) |
+| 6 | Bad layer visible before the gate runs | Readers see unaudited data for the gate's duration | Gate-after-write DAG only | 4 | 1 | Resolved by WAP ([section 13](#13-write-audit-publish)): the batch stays on an audit branch |
 | 7 | Slack down | No alert | `dq.notify.failed` log | 2 | 2 | Gate result unaffected; Airflow failure alerts |
 | 8 | Container killed (OOM) | Task fails | Airflow, exit code ≠ 0/1 | 3 | 1 | Measured RSS headroom ([resources](benchmarks/results.md#memory-vs-batch-size)); spill dir on tmpfs |
 | 9 | Clock skew | Freshness false block | freshness check | 2 | 1 | `BRONZE_MAX_AGE_HOURS` override |
@@ -409,34 +410,37 @@ first), are in [capacity planning](benchmarks/analysis.md#scaling).
 | Contract format | Soda YAML + one `{{ dataset_root }}` token | Jinja templating, Python-defined checks | Keep contracts plain Soda; one token is enough ([ADR 0003](adr/0003-dataset-root-token.md)) |
 | Warn vs fail at bronze | Value checks warn at bronze, fail at silver | Fail everything at bronze | Bronze is raw by definition; silver is where the contract is enforced |
 | Blocking semantics | Fail closed | Fail open on infrastructure errors | A gate that did not run proved nothing |
-| Publishing | Gate after write (today) | WAP | WAP needs Spark-side branch writes; planned ([section 13](#13-roadmap-write-audit-publish)) |
+| Publishing | Write-audit-publish (WAP DAG and `soda-dq wap run`); gate after write kept in the original gated DAG | Gate after write only | Readers of `main` never see a blocked batch ([section 13](#13-write-audit-publish), [ADR 0006](adr/0006-write-audit-publish.md)) |
 
 ## 12. Known limitations and risks
 
 > [!NOTE]
-> **At a glance.** L1, `CREATE OR REPLACE` before the gate, is the one real correctness gap; write-audit-publish closes it.
+> **At a glance.** L1, `CREATE OR REPLACE` before the gate, was the one real correctness gap; write-audit-publish resolves it (v1.0.0).
 
 | # | Limitation / risk | Impact | Plan |
 |---|---|---|---|
-| L1 | **Spark writes with `CREATE OR REPLACE` before the gate runs**: the gate stops promotion to the next layer but cannot hide the layer it checked | Readers of that layer see unaudited data until the gate fails and someone rolls back | WAP ([section 13](#13-roadmap-write-audit-publish)); until then, roll back with `rollback_to_snapshot` ([runbook](guides/runbook.md#a-gate-blocked-triage)) |
+| L1 | **Spark writes with `CREATE OR REPLACE` before the gate runs**: the gate stops promotion to the next layer but cannot hide the layer it checked | Readers of that layer see unaudited data until the gate fails and someone rolls back | **Resolved** in v1.0.0 by write-audit-publish ([section 13](#13-write-audit-publish)); still applies to the gate-after-write DAG `lakehouse_retail_medallion_dq` |
 | L2 | Soda Core v4 is ELv2, not OSI | Redistribution needs a licence review | Pinned; OSI fallback designed ([section 4](#4-background-and-tool-selection)) |
 | L3 | No failing-row extracts without Soda's diagnostics warehouse | Triage needs a manual query ([runbook](guides/runbook.md#a-gate-blocked-triage) has them) | Pointblank or a SQL quarantine step |
 | L4 | Freshness and reference checks scan whole tables | Linear cost with table size ([capacity planning](benchmarks/analysis.md#scaling)) | Partition-scoped contracts with `filter` on the batch |
 | L5 | The scale benchmark builds layers with DuckDB, not Spark | Overhead ratios at scale use DuckDB build times | Spark reference measured at the sample size ([overhead](benchmarks/results.md#gate-overhead-against-the-spark-pipeline)) |
-| L6 | Single-node, single-run assumptions | No concurrency control | WAP branches per run |
-| L7 | Trino `CREATE BRANCH` / `FAST FORWARD` are not in OSS Trino 483 (trinodb/trino#28464 closed unmerged) | WAP publish must run on Spark | Spark `CALL system.fast_forward` |
+| L6 | Single-node, single-run assumptions | No concurrency control | One audit branch per run; the WAP DAG allows one active run (fast-forward needs main as the branch's ancestor) |
+| L7 | Trino `CREATE BRANCH` / `FAST FORWARD` are not in OSS Trino 483 (trinodb/trino#28464 closed unmerged) | WAP publish runs on Spark | Implemented with Spark `CALL system.fast_forward` |
 | L8 | Trino at the lakehouse default heap (1 GiB) cannot evaluate the bronze and silver order checks at 5M orders | False blocks at large batches on the Trino engine | Raise Trino memory or use DuckDB for large batches ([latency](benchmarks/results.md#gate-latency-vs-batch-size)) |
 
-## 13. Roadmap: write-audit-publish
+## 13. Write-audit-publish
 
 > [!NOTE]
-> **At a glance.** Proposed, not built: Spark writes to an audit branch, the gate reads the branch, and Spark
-> fast-forwards `main` only when the gate passes.
+> **At a glance.** Implemented in v1.0.0: Spark writes each layer to an audit branch, the gate reads the branch's
+> snapshots, and Spark fast-forwards `main` only when the gate passes.
 
-Readers of `main` would never see a batch that has not passed its gate, which closes L1. Publishing has to run on
-Spark because OSS Trino 483 cannot create or fast-forward branches (L7). Estimated effort is 3 to 5 days, and it
-needs changes to the lakehouse's Spark jobs, so it needs agreement from that repository's owners. The sequence,
-step-by-step design and rollback are in [write-audit-publish](architecture/write-audit-publish.md).
+Readers of `main` never see a batch that has not passed its gate, which resolves L1. The Spark job lives in this
+repository (`wap/wap_job.py`, mounted into `ldl-spark` by a compose overlay) and reuses the lakehouse's SQL files
+read-only, so no lakehouse file changes. The gate reads the branch through DuckDB views pinned to each table's branch
+snapshot (`AT (VERSION => id)`), so contracts are unchanged. Publishing runs on Spark because OSS Trino 483 cannot
+fast-forward branches (L7). Proof, with snapshot ids before and after a good and a bad batch, is in the
+[WAP run](results/runs/2026-10-14-wap/README.md); the sequence, components and rollback are in
+[write-audit-publish](architecture/write-audit-publish.md) and the decision in [ADR 0006](adr/0006-write-audit-publish.md).
 
 ## 14. Testing strategy
 

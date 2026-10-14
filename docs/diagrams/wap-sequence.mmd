@@ -1,26 +1,27 @@
 %%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
-%% Title: Write-audit-publish (proposed)
-%% Purpose: How Iceberg branches would hide a layer until its gate passes
-%% Last updated: 2026-10-13
+%% Title: Write-audit-publish
+%% Purpose: How each layer stays on an Iceberg audit branch until its gate passes
+%% Last updated: 2026-10-14
 %% Theme: docs/diagrams/THEME.md (shared init line above). Edit here, then run: make diagrams
 sequenceDiagram
   autonumber
-  participant AF as Airflow DAG
-  participant SP as Spark job
-  participant LK as Lakekeeper (Iceberg)
-  participant DQ as soda-dq gate
-  participant PB as Publisher (Spark)
-  AF->>SP: run layer, spark.wap.branch = audit_RUN
-  SP->>LK: commit snapshot to branch audit_RUN
+  participant AF as Airflow DAG / soda-dq wap run
+  participant SP as Spark (wap_job.py in ldl-spark)
+  participant LK as Lakekeeper (Iceberg REST)
+  participant DQ as soda-dq gate (DuckDB)
+  AF->>SP: write LAYER --branch audit_RUN
+  SP->>LK: CREATE BRANCH audit_RUN from main, then DELETE + INSERT on t.branch_audit_RUN
   Note over LK: main is unchanged: readers still<br/>see the last published snapshot
-  AF->>DQ: soda-dq verify LAYER --branch audit_RUN
-  DQ->>LK: read FOR VERSION AS OF 'audit_RUN'
-  DQ-->>AF: GateReport
+  AF->>DQ: soda-dq wap verify LAYER --branch audit_RUN
+  DQ->>LK: PyIceberg: snapshot id of audit_RUN per table
+  DQ->>LK: views in dq_audit read t AT (VERSION => snapshot id)
+  DQ-->>AF: GateReport (same contracts, same policy)
   alt passed or passed with warnings
-    AF->>PB: publish
-    PB->>LK: CALL system.fast_forward(t, 'main', 'audit_RUN')
-    Note over PB,LK: Spark publishes because<br/>Trino 483 cannot fast-forward branches
+    AF->>SP: publish LAYER --branch audit_RUN
+    SP->>LK: CALL system.fast_forward(t, 'main', 'audit_RUN')
+    SP->>LK: DROP BRANCH audit_RUN
+    Note over LK: main now points at the audited snapshot
   else blocked
-    DQ-->>AF: exit 1, task fails, downstream skipped
-    Note over LK: branch is never published<br/>and expires by retention
+    DQ-->>AF: exit 1, dq task fails, publish and later layers never run
+    Note over LK: main keeps the previous good snapshot,<br/>audit_RUN is kept with the bad rows for triage
   end

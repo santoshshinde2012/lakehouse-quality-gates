@@ -46,7 +46,7 @@ Terms are defined once in the [glossary](overview/glossary.md); measured evidenc
 | [Deployment](architecture/deployment.md) | Containers, ports, profiles and the runner image |
 | [Security](architecture/security.md) | Credentials, container hardening, secrets, licence |
 | [Observability](architecture/observability.md) | Logs, reports, `ops.dq_results`, alerts |
-| [Write-audit-publish](architecture/write-audit-publish.md) | Proposed: Iceberg branches so readers never see unaudited data |
+| [Write-audit-publish](architecture/write-audit-publish.md) | Implemented: each layer on an Iceberg audit branch, gated, then fast-forwarded to `main` |
 | [Design principles](architecture/design-principles.md) | SOLID mapped to real classes, typing, errors, configuration |
 
 ### Guides

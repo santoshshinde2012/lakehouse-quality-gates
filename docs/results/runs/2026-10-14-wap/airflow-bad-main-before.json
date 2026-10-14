@@ -1,0 +1,20 @@
+{
+  "action": "status",
+  "seconds": 3.073,
+  "tables": {
+    "bronze.customers_raw": {
+      "main_before": null,
+      "main_snapshot": 2315605737112221829,
+      "main_rows": 10,
+      "branch_snapshot": null,
+      "branch_rows": null
+    },
+    "bronze.orders_raw": {
+      "main_before": null,
+      "main_snapshot": 2937753052092199088,
+      "main_rows": 22,
+      "branch_snapshot": null,
+      "branch_rows": null
+    }
+  }
+}

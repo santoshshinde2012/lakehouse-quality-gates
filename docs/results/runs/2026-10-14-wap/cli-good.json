@@ -1,0 +1,132 @@
+[
+  {
+    "layer": "bronze",
+    "branch": "audit_20261014t052802z_1d8e9e16",
+    "outcome": "published",
+    "gate": "passed",
+    "run_id": "20261014T052802Z-1d8e9e16",
+    "reasons": [],
+    "written": {
+      "action": "write",
+      "seconds": 5.452,
+      "tables": {
+        "bronze.customers_raw": {
+          "main_before": null,
+          "main_snapshot": 1660378615478777296,
+          "main_rows": 10,
+          "branch_snapshot": 5352607284838812996,
+          "branch_rows": 10
+        },
+        "bronze.orders_raw": {
+          "main_before": null,
+          "main_snapshot": 6960657473168426969,
+          "main_rows": 22,
+          "branch_snapshot": 6313071372401083325,
+          "branch_rows": 22
+        }
+      }
+    },
+    "published": {
+      "action": "publish",
+      "seconds": 3.444,
+      "tables": {
+        "bronze.customers_raw": {
+          "main_before": 1660378615478777296,
+          "main_snapshot": 5352607284838812996,
+          "main_rows": 10,
+          "branch_snapshot": 5352607284838812996,
+          "branch_rows": 10
+        },
+        "bronze.orders_raw": {
+          "main_before": 6960657473168426969,
+          "main_snapshot": 6313071372401083325,
+          "main_rows": 22,
+          "branch_snapshot": 6313071372401083325,
+          "branch_rows": 22
+        }
+      }
+    }
+  },
+  {
+    "layer": "silver",
+    "branch": "audit_20261014t052802z_1d8e9e16",
+    "outcome": "published",
+    "gate": "passed",
+    "run_id": "20261014T052802Z-1d8e9e16",
+    "reasons": [],
+    "written": {
+      "action": "write",
+      "seconds": 5.595,
+      "tables": {
+        "silver.customers": {
+          "main_before": null,
+          "main_snapshot": 6378550253007205579,
+          "main_rows": 10,
+          "branch_snapshot": 2923366684003229905,
+          "branch_rows": 10
+        },
+        "silver.orders": {
+          "main_before": null,
+          "main_snapshot": 4981470092929694725,
+          "main_rows": 19,
+          "branch_snapshot": 5507301427094681899,
+          "branch_rows": 19
+        }
+      }
+    },
+    "published": {
+      "action": "publish",
+      "seconds": 3.421,
+      "tables": {
+        "silver.customers": {
+          "main_before": 6378550253007205579,
+          "main_snapshot": 2923366684003229905,
+          "main_rows": 10,
+          "branch_snapshot": 2923366684003229905,
+          "branch_rows": 10
+        },
+        "silver.orders": {
+          "main_before": 4981470092929694725,
+          "main_snapshot": 5507301427094681899,
+          "main_rows": 19,
+          "branch_snapshot": 5507301427094681899,
+          "branch_rows": 19
+        }
+      }
+    }
+  },
+  {
+    "layer": "gold",
+    "branch": "audit_20261014t052802z_1d8e9e16",
+    "outcome": "published",
+    "gate": "passed",
+    "run_id": "20261014T052802Z-1d8e9e16",
+    "reasons": [],
+    "written": {
+      "action": "write",
+      "seconds": 4.593,
+      "tables": {
+        "gold.daily_order_metrics": {
+          "main_before": null,
+          "main_snapshot": 2389062495651120009,
+          "main_rows": 2,
+          "branch_snapshot": 7658322153456504503,
+          "branch_rows": 2
+        }
+      }
+    },
+    "published": {
+      "action": "publish",
+      "seconds": 3.037,
+      "tables": {
+        "gold.daily_order_metrics": {
+          "main_before": 2389062495651120009,
+          "main_snapshot": 7658322153456504503,
+          "main_rows": 2,
+          "branch_snapshot": 7658322153456504503,
+          "branch_rows": 2
+        }
+      }
+    }
+  }
+]

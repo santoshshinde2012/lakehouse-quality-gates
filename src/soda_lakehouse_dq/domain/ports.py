@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 from soda_lakehouse_dq.domain.models import ContractResult, ContractSpec, GateReport, Layer, VariableValue
+from soda_lakehouse_dq.domain.wap import BranchState
 
 
 @runtime_checkable
@@ -50,3 +51,36 @@ class Clock(Protocol):
     def now(self) -> datetime: ...
 
     def new_run_id(self) -> str: ...
+
+
+# --- write-audit-publish (ADR 0006) -----------------------------------------------------------------
+
+
+@runtime_checkable
+class AuditWriter(Protocol):
+    """Builds a layer's tables on an Iceberg audit branch; ``main`` is never written."""
+
+    def write(self, layer: Layer, branch: str, source: str | None = None) -> BranchState: ...
+
+
+@runtime_checkable
+class BranchPublisher(Protocol):
+    """Moves ``main`` to an audited branch, or removes a branch."""
+
+    def publish(self, layer: Layer, branch: str) -> BranchState: ...
+
+    def drop(self, layer: Layer, branch: str) -> BranchState: ...
+
+
+@runtime_checkable
+class SnapshotReader(Protocol):
+    """Reads Iceberg refs from the catalog: the snapshot id a branch (or ``main``) points at."""
+
+    def snapshot(self, table: str, ref: str) -> int | None: ...
+
+
+@runtime_checkable
+class BranchGate(Protocol):
+    """Runs a layer's gate against pinned snapshots (``schema.table`` -> snapshot id) instead of main."""
+
+    def verify(self, pipeline: str, layer: Layer, pins: Mapping[str, int], run_id: str) -> GateReport: ...

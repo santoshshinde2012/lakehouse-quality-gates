@@ -51,6 +51,8 @@ ignore = ["PLR0913", "S101", "ANN401", "S603", "S607", "PLC0415"]
 "airflow/**" = ["ANN"]
 # Benchmark harnesses: SQL built from generated paths/ints, subprocess calls, wide result rows.
 "benchmarks/**" = ["S603", "S607", "S608", "PLR0912", "PLR0913", "PLR0914", "PLR0915", "PLR0917", "PLR2004", "E501", "RUF001", "C901"]
+# Spark job: identifiers are validated against [a-z0-9_]; pyspark style F alias.
+"wap/**" = ["N812", "S608", "E501", "UP017"]  # runs on the Spark image Python 3.10
 "scripts/bench_charts.py" = ["E501", "PLR2004", "PLR0917", "RUF001", "RUF046", "PLC0206"]
 "scripts/check_numbers.py" = ["RUF001"]
 "scripts/gen_scale_data.py" = ["S311", "PLR0913", "PLR0917", "PLR2004"]

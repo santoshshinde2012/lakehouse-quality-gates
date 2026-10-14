@@ -7,7 +7,7 @@ Soda's DuckDB dialect has a single namespace prefix (schema), so contracts addre
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -17,6 +17,7 @@ from soda_lakehouse_dq.adapters.lakehouse_repo import import_lakehouse_client
 from soda_lakehouse_dq.domain.errors import DataSourceError
 
 ConnectionFactory = Callable[[], Any]
+AUDIT_CATALOG = "dq_audit"
 
 
 def _quote_ident(name: str) -> str:
@@ -51,10 +52,13 @@ class DuckDBProvider:
         connection_factory: ConnectionFactory,
         name: str,
         catalog_alias: str,
+        *,
         httpfs_client: str | None = None,
         temp_directory: str | None = None,
+        pins: Mapping[str, int] | None = None,
     ) -> None:
         self.name = name
+        self._pins = dict(pins or {})
         self._factory = connection_factory
         self._alias = catalog_alias
         self._httpfs_client = httpfs_client
@@ -77,7 +81,33 @@ class DuckDBProvider:
     def configure(self, con: Any) -> None:
         """Session setup before Soda gets the connection: container settings, then the current catalog."""
         apply_session_settings(con, self._httpfs_client, self._temp_directory)
-        con.execute(f"USE {self._default_schema(con)}")
+        if self._pins:
+            con.execute(f"USE {self._pin_snapshots(con)}")
+        else:
+            con.execute(f"USE {self._default_schema(con)}")
+
+    def _pin_snapshots(self, con: Any) -> str:
+        """Write-audit-publish: mirror the catalog as views in an in-memory ``dq_audit`` catalog, where each
+        pinned ``schema.table`` reads its audit-branch snapshot (``AT (VERSION => id)``) and every other table
+        reads main. ``USE`` it, so the unchanged contracts resolve ``silver.orders`` to the branch."""
+        listed = con.execute(
+            "SELECT table_schema, table_name FROM information_schema.tables WHERE table_catalog = ?",
+            [self._alias],
+        ).fetchall()
+        tables = {f"{s}.{t}" for s, t in listed} | set(self._pins)
+        con.execute(f"ATTACH IF NOT EXISTS ':memory:' AS {AUDIT_CATALOG}")
+        for name in sorted(tables):
+            schema, _, table = name.partition(".")
+            src = f"{_quote_ident(self._alias)}.{_quote_ident(schema)}.{_quote_ident(table)}"
+            pin = self._pins.get(name)
+            at = f" AT (VERSION => {int(pin)})" if pin is not None else ""
+            con.execute(f"CREATE SCHEMA IF NOT EXISTS {AUDIT_CATALOG}.{_quote_ident(schema)}")
+            con.execute(
+                f"CREATE OR REPLACE VIEW {AUDIT_CATALOG}.{_quote_ident(schema)}.{_quote_ident(table)} "  # noqa: S608 (quoted identifiers, int snapshot id)
+                f"AS SELECT * FROM {src}{at}"
+            )
+        first = sorted(self._pins)[0].partition(".")[0]
+        return f"{AUDIT_CATALOG}.{_quote_ident(first)}"
 
     def _warm(self, con: Any, dataset: str) -> None:
         """Load a table's metadata before Soda reads ``information_schema``.

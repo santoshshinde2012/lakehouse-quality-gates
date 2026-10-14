@@ -39,7 +39,7 @@ A **check outcome** belongs to one check; a **gate status** belongs to the whole
 | **Notifier** | Who is told about a gate result: console, Slack. Port: `Notifier` |
 | **Port / adapter** | A port is a small `Protocol` in the domain; an adapter implements it with a real library (ports and adapters, ADR 0005) |
 | **Iceberg snapshot / branch** | A snapshot is one committed version of a table; a branch is a named pointer to snapshots, `main` being the default |
-| **WAP** | Write-audit-publish: write a batch to a branch, gate it, then fast-forward `main` (proposed, see [write-audit-publish](../architecture/write-audit-publish.md)) |
+| **WAP** | Write-audit-publish: write a batch to a branch, gate it, then fast-forward `main` (implemented, see [write-audit-publish](../architecture/write-audit-publish.md)) |
 | **Vended credentials** | Short-lived S3 credentials that the Lakekeeper REST catalog hands out per table |
 | **`dataset_root` token** | The `{{ dataset_root }}` placeholder in a contract's `dataset:` key, rendered per engine (ADR 0003) |
 | **Run id** | Unique id of one gate run, shared by all its reports |

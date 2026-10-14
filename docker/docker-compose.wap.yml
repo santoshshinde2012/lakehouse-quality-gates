@@ -1,0 +1,15 @@
+# Overlay for local-data-lakehouse's Spark service: mounts our write-audit-publish job and the bad-batch
+# fixture into ldl-spark (read-only). Apply AFTER the repo's own files; no repo file changes:
+#
+#   cd "$DQ_LDL_REPO_PATH"
+#   SODA_HOME=/abs/path docker compose -f docker-compose.yml -f "$SODA_HOME/docker/docker-compose.wap.yml" \
+#     --profile full up -d --wait spark
+#
+# (make wap-up does this; make airflow-dq-up includes it too).
+services:
+  spark:
+    volumes:
+      - ${SODA_HOME:?set SODA_HOME}/wap:/opt/soda-wap:ro
+      - ${SODA_HOME:?set SODA_HOME}/fixtures:/opt/soda-wap-fixtures:ro
+      # generated batches of the WAP overhead benchmark (benchmarks/wap_overhead.py)
+      - ${SODA_HOME:?set SODA_HOME}/reports:/opt/soda-wap-reports:ro

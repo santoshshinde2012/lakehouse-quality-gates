@@ -3,6 +3,7 @@
 #
 #   scripts/e2e.sh live   T2: lakehouse light profile (Lakekeeper + RustFS), host DuckDB gates, good + bad batch
 #   scripts/e2e.sh full   T3: full profile with Spark + Trino, Trino gates, the ldl-soda container, Airflow good + bad
+#   scripts/e2e.sh wap    T4: write-audit-publish: CLI good + bad batch, Airflow WAP DAG good + bad, pytest WAP tests
 #
 # Needs DQ_LDL_REPO_PATH (environment or .env) pointing at a local-data-lakehouse checkout. Idempotent: it
 # reuses a stack that is already running and only stops what it started, always with `down` and never `-v`,
@@ -10,7 +11,7 @@
 set -uo pipefail
 
 MODE="${1:-}"
-case "$MODE" in live | full) ;; *) echo "usage: $0 live|full" >&2; exit 2 ;; esac
+case "$MODE" in live | full | wap) ;; *) echo "usage: $0 live|full|wap" >&2; exit 2 ;; esac
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -106,11 +107,25 @@ if [[ "$MODE" == live ]]; then
   step "restore good batch" 0 seed fixtures/good_batch
   step "gates after restore (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "pytest -m live" 0 uv run --frozen pytest -m live -p no:cacheprovider
+elif [[ "$MODE" == wap ]]; then
+  if running ldl-spark; then echo "==> full lakehouse already running: reusing it"; else STARTED_LAKEHOUSE=1; fi
+  running ldl-soda || STARTED_RUNNER=1
+  running ldl-airflow-apiserver || running ldl-airflow-api-server || STARTED_AIRFLOW=1
+  step "lakehouse up (full profile, WAP overlay)" 0 make wap-up
+  step "WAP good batch (expect 3 layers published)" 0 make wap-demo-good WAP_EVIDENCE="$LOG_DIR"
+  step "WAP bad batch (expect bronze blocked, main untouched)" 0 make wap-demo-bad WAP_EVIDENCE="$LOG_DIR"
+  step "gates on main after the bad batch (expect pass)" 0 "${DQ[@]}" run -e duckdb
+  step "runner container up (make dq-up)" 0 make dq-up
+  step "Airflow up on :$AIRFLOW_API_PORT" 0 make airflow-dq-up
+  step "Airflow WAP good run (expect success)" 0 make airflow-wap-trigger
+  step "Airflow WAP bad run (expect dq_bronze to fail)" 2 make airflow-wap-trigger-bad
+  step "gates on main after the Airflow bad run (expect pass)" 0 "${DQ[@]}" run -e duckdb
+  step "pytest WAP tests (-m full -k wap)" 0 uv run --frozen pytest -m full -k wap -p no:cacheprovider
 else
   if running ldl-trino; then echo "==> full lakehouse already running: reusing it"; else STARTED_LAKEHOUSE=1; fi
   running ldl-soda || STARTED_RUNNER=1
   running ldl-airflow-apiserver || running ldl-airflow-api-server || STARTED_AIRFLOW=1
-  step "lakehouse up (full profile, Trino)" 0 make -C "$LDL" up-full TRINO=1
+  step "lakehouse up (full profile, Trino, WAP overlay)" 0 make wap-up
   step "lakehouse Spark pipeline (make e2e)" 0 make -C "$LDL" e2e
   step "gates on Spark output, duckdb (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "gates on Spark output, trino (expect pass)" 0 "${DQ[@]}" run -e trino

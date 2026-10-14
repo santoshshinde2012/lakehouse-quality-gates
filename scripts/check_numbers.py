@@ -15,7 +15,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LATEST = ROOT / "docs" / "results" / "runs" / "2026-10-13-fresh-clone"
+
+
+def _latest_e2e() -> Path:
+    """Newest run folder (named by date) with end-to-end logs."""
+    runs = sorted(p.parent for p in (ROOT / "docs" / "results" / "runs").glob("*/e2e-full"))
+    return runs[-1]
+
+
+LATEST = _latest_e2e()
 
 
 def _bench_charts() -> object:
@@ -102,6 +110,7 @@ RULES = (
     ),
     Rule("e2e-live steps", re.compile(r"`e2e-live` (\d+/\d+)"), e2e_steps("live")),
     Rule("e2e-full steps", re.compile(r"`e2e-full` (\d+/\d+)"), e2e_steps("full")),
+    Rule("e2e-wap steps", re.compile(r"`e2e-wap` (\d+/\d+)"), e2e_steps("wap")),
 )
 
 

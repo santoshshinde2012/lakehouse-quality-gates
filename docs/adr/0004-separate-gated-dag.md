@@ -13,6 +13,10 @@
 
 ## Consequences and follow-up
 
+> [!NOTE]
+> The follow-up below is done: [ADR 0006](0006-write-audit-publish.md) adds write-audit-publish in a third DAG,
+> `lakehouse_retail_medallion_wap`. This DAG is kept unchanged.
+
 The Spark jobs write with `CREATE OR REPLACE`, so a gate stops *promotion to the next layer* but cannot
 undo the layer it checked. A follow-up should use Iceberg branches for write-audit-publish (write to an
 `audit_<run_id>` branch, gate, then `fast_forward` main) so consumers never see unaudited data.

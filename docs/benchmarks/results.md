@@ -227,6 +227,30 @@ xychart-beta
 
 Raw data: [`tools.csv`](../results/benchmarks/2026-10-14-v0.4.1/tools.csv) · [`tools_versions.json`](../results/benchmarks/2026-10-14-v0.4.1/tools_versions.json)
 
+### Write-audit-publish overhead
+
+**At 1M orders write-audit-publish adds 3.9–4.5 s of Spark work per layer (branch write plus fast-forward against a direct write); end to end, with a second spark-submit and the gate, a layer takes 18–19 s longer.**
+
+```mermaid
+%%{init: {'theme':'base','themeVariables':{'fontFamily':'Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif','fontSize':'14px','primaryColor':'#ffffff','primaryTextColor':'#0f172a','primaryBorderColor':'#94a3b8','secondaryColor':'#f8fafc','tertiaryColor':'#f8fafc','lineColor':'#64748b','textColor':'#0f172a','clusterBkg':'#f8fafc','clusterBorder':'#cbd5e1','titleColor':'#334155','edgeLabelBackground':'#ffffff','noteBkgColor':'#f8fafc','noteTextColor':'#0f172a','noteBorderColor':'#cbd5e1','actorBkg':'#ffffff','actorBorder':'#94a3b8','actorTextColor':'#0f172a','actorLineColor':'#94a3b8','signalColor':'#475569','signalTextColor':'#0f172a','labelBoxBkgColor':'#f8fafc','labelBoxBorderColor':'#94a3b8','labelTextColor':'#0f172a','loopTextColor':'#0f172a','activationBkgColor':'#eef2ff','activationBorderColor':'#4f46e5','sequenceNumberColor':'#ffffff','classText':'#0f172a','xyChart':{'backgroundColor':'#ffffff','plotColorPalette':'#4f46e5, #d97706, #0d9488','titleColor':'#0f172a','xAxisLabelColor':'#334155','yAxisLabelColor':'#334155','xAxisLineColor':'#94a3b8','yAxisLineColor':'#94a3b8'}}}}%%
+xychart-beta
+  title "Extra Spark time per layer with WAP (s)"
+  x-axis ["br 100k", "si 100k", "go 100k", "br 1M", "si 1M", "go 1M"]
+  y-axis "seconds" 0 --> 5.15
+  bar [3.947, 3.509, 3.456, 4.479, 4.291, 3.850]
+```
+
+| orders | layer | rows on main | direct s | branch write s | gate s | fast-forward s | extra s | extra | wall direct s | wall WAP s |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 100k | bronze | 110,000 | 6.91 | 7.17 | 0.48 | 3.69 | 3.95 | 57 % | 20.4 | 37.9 |
+| 100k | silver | 110,000 | 6.99 | 6.77 | 0.47 | 3.73 | 3.51 | 50 % | 20.5 | 37.6 |
+| 100k | gold | 90 | 4.59 | 4.72 | 0.39 | 3.33 | 3.46 | 75 % | 18.1 | 35.3 |
+| 1M | bronze | 1,100,000 | 8.61 | 9.05 | 0.64 | 4.04 | 4.48 | 52 % | 22.1 | 40.8 |
+| 1M | silver | 1,100,000 | 8.66 | 8.99 | 0.65 | 3.96 | 4.29 | 50 % | 22.1 | 41.0 |
+| 1M | gold | 90 | 4.83 | 5.16 | 0.55 | 3.52 | 3.85 | 80 % | 18.5 | 36.2 |
+
+Raw data: [`wap_overhead.csv`](../results/benchmarks/2026-10-14-wap/wap_overhead.csv)
+
 <!-- bench-charts:end -->
 
 ## Headline chart

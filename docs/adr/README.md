@@ -10,5 +10,6 @@ Each ADR records one decision, its context and its consequences. Status values: 
 | [0003](0003-dataset-root-token.md) | One `{{ dataset_root }}` token in contracts, rendered per engine | accepted |
 | [0004](0004-separate-gated-dag.md) | A separate gated Airflow DAG next to the original; write-audit-publish later | accepted |
 | [0005](0005-ports-and-adapters.md) | Ports and adapters with a single composition root | accepted |
+| [0006](0006-write-audit-publish.md) | Write-audit-publish with Iceberg audit branches, DuckDB pinned-snapshot audit and Spark fast-forward | accepted |
 
 New ADR: copy the shape of an existing file, number it next, and add it to this table.

@@ -8,6 +8,8 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 
 | Run | Date | Commit | What it shows | Reproduce |
 |---|---|---|---|---|
+| [Write-audit-publish](runs/2026-10-14-wap/README.md) | 2026-10-14 | v1.0.0 (pre-release tree) | Good batch published to `main` (snapshot ids before and after), bad batch blocked with `main` unchanged and the branch kept; CLI, Airflow and the live test | `make e2e-wap` |
+| [WAP overhead](benchmarks/2026-10-14-wap/wap_overhead.csv) | 2026-10-14 | v1.0.0 (pre-release tree) | Direct write against audit branch + gate + fast-forward at 100k and 1M orders, charted in [results](../benchmarks/results.md#write-audit-publish-overhead) | `make bench-wap` |
 | [v0.5.0 benchmarks](benchmarks/2026-10-14-v0.4.1/specs.json) | 2026-10-14 | `e39dc18` (v0.4.1) | Own end-to-end benchmarks charted in [results](../benchmarks/results.md): latency 10k–5M on DuckDB, Trino (4 GiB heap) and the container, memory, seed-to-gold pipeline, Spark overhead, Airflow good/bad runs, accuracy, five-tool comparison | `make bench-all` |
 | [v0.4.1 checks](runs/2026-10-14-v0.4.1-checks/README.md) | 2026-10-14 | v0.4.1 | `make test-all` after the documentation tidy: 110 tests, 99% coverage, demo | `make test-all` |
 | [Fresh-clone run](runs/2026-10-13-fresh-clone/README.md) | 2026-10-13 | `51cf981` (v0.4.0) | Every documented path from a new clone: `test-all`, `e2e-live`, `e2e-full`, benchmarks at 10k/100k, `bench-tiny` | `make test-all e2e-live e2e-full`, then `make bench SIZES="10000 100000" WARM=2 BENCH_OUT=...`, `make bench-accuracy`, `make bench-tools TOOL_SIZES=100000` |
@@ -24,6 +26,8 @@ All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Doc
 |---|---|
 | `runs/2026-10-14-v0.4.1-checks/` | `test-all.log` |
 | `runs/2026-10-13-fresh-clone/` | `test-all.log` (tests and coverage), `e2e-live/` and `e2e-full/` (one log per step), benchmark CSV/JSON and the generated `summary.md` |
+| `runs/2026-10-14-wap/` | Evidence JSON of the CLI runs, Airflow task states, `main` refs before and after the bad run |
+| `benchmarks/2026-10-14-wap/` | `wap_overhead.csv` |
 | `benchmarks/2026-10-14-v0.4.1/` | Current benchmark data: `perf_raw`, `pipeline_raw`, `spark_reference`, `airflow_runs`, `airflow_tasks`, `accuracy`, `tools` (CSV; JSON lines gzipped), `specs.json`, `tools_versions.json` |
 | `benchmarks/` (top level) | Superseded v0.3.0 benchmark data: raw CSV and JSON lines, machine `specs.json`, `tools_versions.json`, generated `summary.md` |
 | `runs/2026-10-13-v0.2-verification/` | `logs/`, `gates/` (JSON, Markdown and JUnit report per gate), `docker/`, `airflow/`, `tests/` (JUnit) and `coverage/coverage.xml` |

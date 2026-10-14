@@ -11,9 +11,11 @@ DQ_LDL_REPO_PATH ?= $(abspath ../local-data-lakehouse)
 AIRFLOW_API_PORT ?= 8080
 export AIRFLOW_API_PORT
 LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.yml \
-	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml --profile full
+	-f $(SODA_HOME)/docker/docker-compose.airflow-dq.yml -f $(SODA_HOME)/docker/docker-compose.wap.yml --profile full
+# The lakehouse's own `make up-full`, with our WAP overlay (mounts wap/ and fixtures/ into ldl-spark).
+LDL_WAP_FILES := -f docker-compose.yml -f $(SODA_HOME)/docker/docker-compose.wap.yml
 
-.PHONY: test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench-airflow bench-charts trino-heap trino-heap-reset bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
+.PHONY: wap-up wap-demo-good wap-demo-bad e2e-wap airflow-wap-trigger airflow-wap-trigger-bad bench-wap test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench-airflow bench-charts trino-heap trino-heap-reset bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
 	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check docs docs-check clean dist
 
@@ -50,6 +52,14 @@ help:
 	@echo "  make airflow-dq-trigger trigger lakehouse_retail_medallion_dq and wait"
 	@echo "  make airflow-dq-trigger-bad  same, bad batch injected (dq_bronze must fail; exits non-zero)"
 	@echo "  make airflow-dq-down    stop Airflow + lakehouse (volumes kept)"
+	@echo ""
+	@echo "Write-audit-publish (Iceberg audit branches, ADR 0006)"
+	@echo "  make wap-up             lakehouse full profile with docker/docker-compose.wap.yml (Trino too)"
+	@echo "  make wap-demo-good      good batch: each layer on an audit branch, gated, fast-forwarded to main"
+	@echo "  make wap-demo-bad       bad batch: bronze gate blocks, main untouched, branch kept"
+	@echo "  make airflow-wap-trigger | airflow-wap-trigger-bad   lakehouse_retail_medallion_wap good | bad"
+	@echo "  make e2e-wap            T4: wap-up, CLI good + bad, Airflow good + bad, pytest WAP tests"
+	@echo "  make bench-wap          WAP overhead at WAP_SIZES (direct write vs branch + gate + fast-forward)"
 	@echo "  AIRFLOW_API_PORT=8080   Airflow host port (override if taken, e.g. 8090)"
 	@echo ""
 	@echo "Benchmarks (live stack; BENCH_OUT=dir keeps a run apart from docs/results/benchmarks)"
@@ -111,6 +121,29 @@ e2e-live:
 
 e2e-full:
 	scripts/e2e.sh full
+
+e2e-wap:
+	scripts/e2e.sh wap
+
+wap-up:
+	cd "$(DQ_LDL_REPO_PATH)" && SODA_HOME="$(SODA_HOME)" $(MAKE) up-full TRINO=1 COMPOSE_FILES="$(LDL_WAP_FILES)"
+
+WAP_EVIDENCE ?= reports/wap
+wap-demo-good:
+	@echo "==> good batch through write-audit-publish (expect: 3 layers published)"
+	DQ_ENGINE=duckdb $(RUN) soda-dq wap run --all --batch good --evidence $(WAP_EVIDENCE)/good.json
+
+wap-demo-bad:
+	@echo "==> bad batch through write-audit-publish (expect: bronze blocked, main unchanged, branch kept)"
+	@DQ_ENGINE=duckdb $(RUN) soda-dq wap run --all --batch bad --evidence $(WAP_EVIDENCE)/bad.json; code=$$?; \
+	  if [ $$code = 1 ]; then echo "OK: blocked as expected, main untouched"; else echo "UNEXPECTED exit $$code"; exit 1; fi
+
+airflow-wap-trigger:
+	cd "$(DQ_LDL_REPO_PATH)" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_wap
+
+# Bad batch on the audit branch: dq_bronze must fail and publish_bronze never runs (exits non-zero on purpose).
+airflow-wap-trigger-bad:
+	cd "$(DQ_LDL_REPO_PATH)" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_wap '{"bad_batch": true}'
 
 pre-commit:
 	$(RUN) pre-commit run --all-files
@@ -248,5 +281,10 @@ trino-heap: ## Recreate the lakehouse Trino with a 4 GiB heap (benchmarks/trino/
 
 trino-heap-reset: ## Back to the lakehouse default 1 GiB heap
 	cd "$(DQ_LDL_REPO_PATH)" && docker compose -f docker-compose.yml --profile full --profile trino up -d --wait --force-recreate trino
+
+WAP_SIZES ?= 100000 1000000
+bench-wap: ## WAP overhead: direct write vs audit branch + gate + fast-forward (restores the sample after)
+	DQ_ENGINE=duckdb $(RUN) python benchmarks/wap_overhead.py --sizes $(WAP_SIZES) --repeats $(or $(REPEATS),2) --out $(BENCH_OUT)
+	$(MAKE) wap-demo-good
 
 bench-all: bench bench-accuracy bench-spark bench-tools bench-airflow bench-report bench-charts ## Everything above

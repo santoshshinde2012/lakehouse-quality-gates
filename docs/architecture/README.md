@@ -11,7 +11,7 @@ order the first time; each page stands on its own afterwards.
 | 4 | [Deployment](deployment.md) | Which containers run where and how they connect |
 | 5 | [Security](security.md) | Credentials, hardening and licence |
 | 6 | [Observability](observability.md) | How to see what the gates did |
-| 7 | [Write-audit-publish](write-audit-publish.md) | The proposed next step that closes the main correctness gap |
+| 7 | [Write-audit-publish](write-audit-publish.md) | Audit branches, the gate on the branch and the fast-forward to `main` |
 | 8 | [Design principles](design-principles.md) | The engineering rules behind the code |
 
 Diagrams on these pages: [catalogue](../diagrams/README.md).

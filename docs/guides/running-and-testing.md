@@ -13,6 +13,7 @@ see [troubleshooting](troubleshooting.md).
 - [T0 and T1: no Docker](#t0-and-t1-no-docker)
 - [T2: live light stack](#t2-live-light-stack)
 - [T3: full stack with Trino, the runner container and Airflow](#t3-full-stack-with-trino-the-runner-container-and-airflow)
+- [T4: write-audit-publish](#t4-write-audit-publish)
 - [Benchmarks and the accuracy suite](#benchmarks-and-the-accuracy-suite)
 - [Regenerating docs, diagrams and results](#regenerating-docs-diagrams-and-results)
 - [Make targets](#make-targets)
@@ -57,6 +58,7 @@ each; a unit test fails if a setting is missing from it. Optional: `uv run pre-c
 | T1 | `integration` | real Soda Core against in-memory DuckDB built from `fixtures/`: good batch passes, bad batch blocks every layer | Python | `make test-integration` | about 4 s |
 | T2 | `live` | gates on the running light lakehouse (Lakekeeper + RustFS) with host DuckDB, good and bad batch | Docker, `DQ_LDL_REPO_PATH` | `make e2e-live` | 25 s to 1.5 min |
 | T3 | `full` | lakehouse Spark pipeline, Trino gates, the `ldl-soda` container, the Airflow good and bad runs | Docker (8 GB), `DQ_LDL_REPO_PATH` | `make e2e-full` | 17 to 30 min |
+| T4 | `full` (`-k wap`) | write-audit-publish: audit branches, the gate on the branch, fast-forward; CLI and Airflow, good and bad batch | Docker (8 GB), `DQ_LDL_REPO_PATH` | `make e2e-wap` | about 15 min |
 
 pytest selects T0 and T1 by default (`addopts = -m 'not live and not full'`); CI runs exactly those plus lint, mypy and
 the docs checks. The `live` and `full` tests skip with the reason (for example `Lakekeeper is not reachable at
@@ -120,6 +122,29 @@ Teardown stops Airflow, the runner and the lakehouse if the script started them 
 
 To run only the pytest tiers against a stack you already started: `make test-live` or `make test-full`.
 
+## T4: write-audit-publish
+
+```bash
+AIRFLOW_API_PORT=8090 make e2e-wap     # drop the port when 8080 is free
+```
+
+`scripts/e2e.sh wap` runs:
+
+1. `make wap-up`: the lakehouse full profile with `docker/docker-compose.wap.yml`, which mounts `wap/`, `fixtures/`
+   and `reports/` into `ldl-spark` (no lakehouse file changes);
+2. `make wap-demo-good`: each layer written to `audit_<run>`, gated, fast-forwarded (exit 0);
+3. `make wap-demo-bad`: the bad batch on the bronze branch, gate blocked, `main` untouched, branch kept (the
+   target checks for exit 1);
+4. `soda-dq run -e duckdb` on `main` (exit 0: `main` still holds the good data);
+5. `make dq-up`, `make airflow-dq-up`, a good run of `lakehouse_retail_medallion_wap` (success) and a run with
+   conf `{"bad_batch": true}` (`dq_bronze` fails, `publish_bronze` and later tasks are `upstream_failed`; exit 2);
+6. the gates on `main` again (exit 0), then `pytest -m full -k wap`, which checks snapshot ids: after a good batch
+   `main` points at the audited snapshot with the same row count; after a bad batch `main`'s snapshot id and rows
+   are unchanged and the branch holds the extra rows.
+
+The evidence JSON of steps 2 and 3 lands in `reports/e2e-wap/`. Design and commands:
+[write-audit-publish](../architecture/write-audit-publish.md).
+
 ## Benchmarks and the accuracy suite
 
 The benchmarks need the full stack with Trino (`make up-full TRINO=1` in the lakehouse, and `make dq-up` for the
@@ -135,6 +160,7 @@ afterwards. `BENCH_OUT=dir` writes a run to its own folder so it never mixes wit
 | `make bench-tools` | Soda against datacontract-cli, Great Expectations, Pointblank and Pandera, in a pinned venv (`benchmarks/tools/requirements.txt`) | `make bench-tools TOOL_SIZES=100000 BENCH_OUT=...` | `correct=True` for every tool that supports all six checks |
 | `make bench-tiny` | the 7-row comparison in [benchmark-tiny](../research/benchmark-tiny/README.md), no Docker | `make bench-tiny` | bad batch fails for every tool; summary in `docs/research/benchmark-tiny/results/` |
 | `make bench-report` | `summary.md` from the raw files in `BENCH_OUT` | `make bench-report BENCH_OUT=...` | file written |
+| `make bench-wap` | write-audit-publish overhead: direct write to `main` against branch write + gate + fast-forward, at `WAP_SIZES` | `make bench-wap WAP_SIZES=100000 REPEATS=1 BENCH_OUT=...` | every row `gate_status=passed`; restores the sample with `make wap-demo-good` |
 
 `bench-tools` records the exact package versions in `tools_versions.json` next to `tools.csv`. The full published run
 (10k to 5M orders) took about two hours; the quick sizes above take about 5 minutes. Method and caveats:
@@ -158,6 +184,7 @@ afterwards. `BENCH_OUT=dir` writes a run to its own folder so it never mixes wit
 |---|---|
 | Setup | `env`, `venv`, `lock`, `pre-commit` |
 | Quality and tests | `fmt`, `lint`, `typecheck`, `test-unit`, `test-integration`, `test`, `test-all`, `check`, `validate`, `demo` |
+| Write-audit-publish | `wap-up`, `wap-demo-good`, `wap-demo-bad`, `airflow-wap-trigger`, `airflow-wap-trigger-bad`, `e2e-wap`, `bench-wap` |
 | Live | `e2e-live`, `e2e-full`, `test-live`, `test-full`, `list`, `verify`, `run`, `dq-build`, `dq-up`, `dq-down`, `dq-shell`, `airflow-dq-up`, `airflow-dq-trigger`, `airflow-dq-trigger-bad`, `airflow-dq-down` |
 | Benchmarks | `bench`, `bench-accuracy`, `bench-spark`, `bench-tools`, `bench-tiny`, `bench-report`, `bench-all` |
 | Docs and housekeeping | `docs`, `docs-check`, `diagrams`, `diagrams-check`, `clean`, `dist` |

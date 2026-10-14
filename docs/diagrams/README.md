@@ -17,7 +17,7 @@ All sources share one init line and palette, described in [THEME.md](THEME.md).
 | [`gate-run-sequence.mmd`](gate-run-sequence.mmd) | Gate run sequence | sequence | What happens, step by step, when one layer is gated (here: silver). | [data-flow.md](../architecture/data-flow.md) |
 | [`airflow-dag.mmd`](airflow-dag.mmd) | Airflow DAG `lakehouse_retail_medallion_dq` | flowchart | The tasks of the gated DAG and how a failed gate stops the run. | [data-flow.md](../architecture/data-flow.md) |
 | [`deployment.mmd`](deployment.mmd) | Deployment on Docker network `ldl-net` | flowchart | The containers, their host ports and how they connect. | [deployment.md](../architecture/deployment.md) |
-| [`wap-sequence.mmd`](wap-sequence.mmd) | Write-audit-publish (proposed) | sequence | How Iceberg branches would keep a layer hidden from readers until its gate passes. | [write-audit-publish.md](../architecture/write-audit-publish.md) |
+| [`wap-sequence.mmd`](wap-sequence.mmd) | Write-audit-publish | sequence | How each layer stays on an Iceberg audit branch until its gate passes, then is fast-forwarded to main. | [write-audit-publish.md](../architecture/write-audit-publish.md) |
 
 ## Editing a diagram
 

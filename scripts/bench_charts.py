@@ -41,6 +41,14 @@ def latest_data(root: Path = ROOT) -> Path:
     return runs[-1] if runs else root / "docs" / "results" / "benchmarks"
 
 
+def latest_wap(root: Path = ROOT) -> Path | None:
+    """Newest benchmark folder with a write-audit-publish overhead run (benchmarks/wap_overhead.py)."""
+    runs = sorted(
+        p for p in (root / "docs" / "results" / "benchmarks").glob("20*") if (p / "wap_overhead.csv").exists()
+    )
+    return runs[-1] if runs else None
+
+
 def read(path: Path) -> list[Row]:
     if not path.exists():
         return []
@@ -118,6 +126,8 @@ class Charts:
         specs = data / "specs.json"
         self.specs: dict[str, object] = json.loads(specs.read_text()) if specs.exists() else {}
         self.sizes = sorted({int(r["rows"]) for r in self.perf})
+        self.wap_dir = latest_wap(root)
+        self.wap = read(self.wap_dir / "wap_overhead.csv") if self.wap_dir else []
 
     def link(self, name: str) -> str:
         return f"[`{name}`]({(self.rel / name).as_posix()})"
@@ -440,6 +450,57 @@ class Charts:
             self.link("airflow_tasks.csv") + " · " + self.link("airflow_runs.csv"),
         )
 
+    def wap_overhead(self) -> str:
+        if not self.wap or self.wap_dir is None:
+            return ""
+        cells: dict[tuple[int, str], dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+        for r in self.wap:
+            c = cells[(int(r["rows"]), r["layer"])]
+            for k in (
+                "direct_s",
+                "write_s",
+                "gate_s",
+                "publish_s",
+                "direct_wall_s",
+                "write_wall_s",
+                "publish_wall_s",
+            ):
+                c[k].append(float(r[k]))
+            c["table_rows"].append(float(r["table_rows"]))
+        sizes = sorted({s for s, _ in cells})
+        keys = [(s, layer) for s in sizes for layer in LAYERS if (s, layer) in cells]
+
+        def med(key: tuple[int, str], name: str) -> float:
+            return p50(cells[key][name])
+
+        def extra(key: tuple[int, str]) -> float:
+            return med(key, "write_s") + med(key, "publish_s") - med(key, "direct_s")
+
+        def wall(key: tuple[int, str]) -> float:
+            return med(key, "write_wall_s") + med(key, "gate_s") + med(key, "publish_wall_s")
+
+        rows = [[human(s), layer, f"{med((s, layer), 'table_rows'):,.0f}", num(med((s, layer), "direct_s")),
+                 num(med((s, layer), "write_s")), num(med((s, layer), "gate_s")), num(med((s, layer), "publish_s")),
+                 num(extra((s, layer))), f"{num(100 * extra((s, layer)) / med((s, layer), 'direct_s'), 0)} %",
+                 num(med((s, layer), "direct_wall_s"), 1), num(wall((s, layer)), 1)] for s, layer in keys]  # fmt: skip
+        big = sizes[-1]
+        big_keys = [k for k in keys if k[0] == big]
+        ext = [extra(k) for k in big_keys]
+        walls = [wall(k) - med(k, "direct_wall_s") for k in big_keys]
+        take = (
+            f"At {human(big)} orders write-audit-publish adds {num(min(ext), 1)}–{num(max(ext), 1)} s of Spark work per "
+            f"layer (branch write plus fast-forward against a direct write); end to end, with a second spark-submit "
+            f"and the gate, a layer takes {num(min(walls), 0)}–{num(max(walls), 0)} s longer."
+        )
+        x = [f"{layer[:2]} {human(s)}" for s, layer in keys]
+        chart = xychart(self.theme, "Extra Spark time per layer with WAP (s)", x, "seconds",
+                        [("extra s", [max(extra(k), 0.0) for k in keys])], "bar")  # fmt: skip
+        rel = Path("..") / self.wap_dir.relative_to(self.root / "docs")
+        hdr = ["orders", "layer", "rows on main", "direct s", "branch write s", "gate s", "fast-forward s",
+               "extra s", "extra", "wall direct s", "wall WAP s"]  # fmt: skip
+        return section("Write-audit-publish overhead", take, chart, table(hdr, rows),
+                       f"[`wap_overhead.csv`]({(rel / 'wap_overhead.csv').as_posix()})")  # fmt: skip
+
     def render(self) -> str:
         spec = self.specs
         pk = spec.get("packages", {})
@@ -449,7 +510,8 @@ class Charts:
                  f"({spec.get('trino_heap', 'default heap')}), commit `{spec.get('commit', '?')}`, {pkgs}. "
                  "Do not edit by hand.")  # fmt: skip
         parts: list[Callable[[], str]] = [self.latency, self.per_layer, self.memory, self.pipeline, self.overhead,
-                                          self.airflow, self.accuracy, self.tools_sections]  # fmt: skip
+                                          self.airflow, self.accuracy, self.tools_sections,
+                                          self.wap_overhead]  # fmt: skip
         return "\n".join([intro, "", *[p() for p in parts if p()]])
 
 
