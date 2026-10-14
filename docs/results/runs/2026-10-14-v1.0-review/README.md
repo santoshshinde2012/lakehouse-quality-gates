@@ -22,6 +22,7 @@ The workflows pass **live 9/9, full 15/15, WAP 11/11**. The source fingerprint i
 | Evidence | Scope |
 |---|---|
 | [Local validation](test-all.log), [pytest JUnit](pytest.xml), [line coverage](coverage.xml) | Formatting, lint, strict types, unit/integration tests, contract validation, good/bad fixture gates |
+| [Colored CLI check](colored-cli-check.log), [JUnit](colored-cli-pytest.xml) | All 18 WAP CLI tests with forced terminal color, including portable invalid-input error assertions |
 | [Light-stack workflow](e2e-live.log) | Real good/bad DuckDB gates and restoration |
 | [Full-stack workflow](e2e-full.log) | Spark, DuckDB, Trino, hardened runner, and Airflow good/bad/restore |
 | [WAP workflow](e2e-wap.log) | CLI and Airflow publication, blocked candidates, retained approved data |
@@ -54,7 +55,10 @@ container state and retains volumes.
 The initial full workflow selected the eight existing live/full tests. The new Iceberg history case is
 recorded separately, so all current live/full cases have evidence without treating its first skipped
 attempt as a pass. The `attempts/` directory preserves a resolved Mermaid rendering error and the history
-attempt made after automatic stack teardown, plus a hook run whose captured output changed its own staged log; these are excluded from success counts.
+attempt made after automatic stack teardown, plus a hook run whose captured output changed its own staged log; these are excluded from success counts. The first Linux CI run also exposed two
+error-message assertions that depended on terminal coloring; its log and JUnit are preserved in
+`attempts/ci-linux-01.log` and `attempts/ci-linux-pytest-01.xml`. The CLI correctly rejected both inputs.
+The assertions now ignore ANSI styling, and the local suite was rerun after that portability fix.
 
 No performance workloads were rerun. Archived 46-check timing results remain scoped to their earlier
 contracts/publisher; this review verifies the current 53-check implementation. Concurrent-writer, partial

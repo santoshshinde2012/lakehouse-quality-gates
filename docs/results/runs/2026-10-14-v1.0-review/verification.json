@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "finished_at": "2026-10-14T15:37:25.196218+00:00",
+  "finished_at": "2026-10-14T15:47:02.007794+00:00",
   "base_commit": "9cd3ed37870063ed1d4988ce53cd12232c8840f8",
   "branch": "codex/enterprise-verification",
   "source_was_working_tree": true,
@@ -194,7 +194,7 @@
     "tests/unit/test_benchmark_processes.py": "d359dc249156cf11e6c929cab478bf39b6a36d96a36e4f26f10a58bb4552a0ba",
     "tests/unit/test_check_numbers.py": "02dcc0601d976d6686958373191c355fd3c702edbcad175c3754006883fa538c",
     "tests/unit/test_cli.py": "ab82a13553a3e867bd03756b4a48bfcac9d5665eec0182dd8f5ce203049aa722",
-    "tests/unit/test_cli_wap.py": "6a847f64c9b1e3d65afe50ffbe523a296cae77412bbaa59dd56df3bdd4068d5c",
+    "tests/unit/test_cli_wap.py": "0c5b767d5ac509dde989f1c98cc2708c2509172764f402cc7fffb5020a056a89",
     "tests/unit/test_contract_repository.py": "e7186e0011ff48a25e6257cdf907ee8e3f4fef532c172e8b886a90f27b235c96",
     "tests/unit/test_diagrams.py": "0c5c7c1a1d980dd9bb341a6ced2dd550053684a13ca20e86e4f1180d00cec011",
     "tests/unit/test_doc_snippets.py": "4d3c51da291651384ec150137075924d7df5a7a2f5cf420e9b7bb4f8fe652da9",
@@ -265,6 +265,12 @@
       "executed": 40,
       "failed_or_error": 0,
       "skipped": 0
+    },
+    "colored-cli": {
+      "junit": "colored-cli-pytest.xml",
+      "executed": 18,
+      "failed_or_error": 0,
+      "skipped": 0
     }
   },
   "coverage": {
@@ -279,7 +285,7 @@
     "full": 15,
     "wap": 11
   },
-  "gate_report_triples": 92,
+  "gate_report_triples": 104,
   "synthetic_history_json_reports": 2,
   "snapshot_manifests": 12,
   "commands": [
@@ -295,10 +301,11 @@
     "make diagrams-check",
     "uv run --frozen pre-commit run --all-files",
     "uv run --frozen python scripts/airflow_bad_evidence.py dq docs/results/runs/2026-10-14-v1.0-review/e2e-full/airflow-dq-bad-trigger.txt",
-    "uv run --frozen python scripts/airflow_bad_evidence.py wap docs/results/runs/2026-10-14-v1.0-review/e2e-wap/airflow-wap-bad-trigger.txt"
+    "uv run --frozen python scripts/airflow_bad_evidence.py wap docs/results/runs/2026-10-14-v1.0-review/e2e-wap/airflow-wap-bad-trigger.txt",
+    "FORCE_COLOR=1 uv run --frozen pytest tests/unit/test_cli_wap.py --no-cov --junitxml=docs/results/runs/2026-10-14-v1.0-review/colored-cli-pytest.xml -q"
   ],
   "scope_notes": [
-    "Final local checks reran after all behavioral and task-state assertion fixes: 359 tests, no selected skips or failures. Earlier temporary-output retention check executed 40 script regressions; final local suite includes all 44.",
+    "Final local checks reran after all behavioral, task-state assertion and terminal-color portability fixes: 359 tests, no selected skips or failures. Earlier temporary-output retention check executed 40 script regressions; final local suite includes all 44.",
     "Full workflow ran eight existing live/full cases before the history case was added; history is verified separately.",
     "Runner package source matches all 39 host files byte for byte; runtime control and version artifacts included.",
     "Gate reports cover this review session, including earlier successful checks during implementation.",
@@ -306,6 +313,17 @@
     "Bad-trigger text attachments are exact excerpts of corresponding original numbered step logs; original logs remain unchanged.",
     "Live WAP proves normal good/bad publication; concurrency, malformed-input and recovery scenarios are focused unit regressions.",
     "Historical 46-check performance benchmarks were not rerun; current implementation has 53 checks.",
-    "Checksums detect attachment changes; evidence remains trusted local data, not a signed authorization token."
+    "Checksums detect attachment changes; evidence remains trusted local data, not a signed authorization token.",
+    "Initial Linux CI test-message assertions failed only under ANSI-colored output; failure evidence is preserved and excluded from success counts. All 18 WAP CLI tests passed with forced color after the assertion-only fix, and the full local suite reran."
+  ],
+  "ci_attempts": [
+    {
+      "run_id": 38591155254,
+      "head_commit": "4c1d684df25103e761f4fd268d3d01ee43328fcc",
+      "source_job": "failed: two terminal-color-sensitive test message assertions",
+      "docker_job": "passed; all three report triples downloaded and inspected",
+      "failure_log": "attempts/ci-linux-01.log",
+      "failure_junit": "attempts/ci-linux-pytest-01.xml"
+    }
   ]
 }

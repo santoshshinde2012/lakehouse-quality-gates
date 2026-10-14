@@ -5,6 +5,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from soda_lakehouse_dq import cli
@@ -133,7 +134,7 @@ def test_wap_run_usage_errors(wap):
 def test_wap_run_rejects_empty_source_before_writing(wap, source):
     result = runner.invoke(cli.app, ["wap", "run", "--all", "--source", source, "--batch", "unknown"])
     assert result.exit_code == 2
-    assert "--source must be a nonempty" in result.output
+    assert "--source must be a nonempty" in unstyle(result.output)
     assert not wap.run_wap.calls
 
 
