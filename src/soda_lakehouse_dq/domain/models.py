@@ -66,7 +66,7 @@ class ContractSpec:
     rendered_path: Path
     dataset: str
     references: tuple[str, ...] = ()
-    """Other datasets the contract reads (``valid_reference_data``)."""
+    """Other datasets read via reference checks or explicit ``attributes.read_dependencies``."""
 
     @property
     def datasets(self) -> tuple[str, ...]:

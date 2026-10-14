@@ -37,7 +37,8 @@ def dataset_table(dataset: str) -> str:
 
 class VerifyBranchUseCase:
     """Gate one layer against what is on ``branch``: every dataset the layer's contracts read is pinned to the
-    branch's snapshot when the branch exists on that table; other tables (references) are read from main."""
+    branch's snapshot when the branch exists on that table; references otherwise pin main's current snapshot.
+    """
 
     def __init__(
         self,
@@ -63,6 +64,11 @@ class VerifyBranchUseCase:
             )
         if not pins:
             raise DataQualityError(f"branch {branch!r}: nothing to audit")
+        for table in sorted(set(tables) - pins.keys()):
+            main = self._snapshots.snapshot(table, "main")
+            if main is None:
+                raise DataQualityError(f"reference table {table!r} has no main snapshot; nothing to audit")
+            pins[table] = main
         return pins
 
     def execute(self, pipeline: str, layer: Layer, branch: str, run_id: str) -> GateReport:
@@ -73,7 +79,18 @@ class VerifyBranchUseCase:
         pins = self.pins(pipeline, layer, branch)
         before = {table: self._snapshots.snapshot(table, "main") for table in pins}
         log.info("dq.wap.verify", layer=layer.value, branch=branch, pins=pins)
-        audit = BranchAudit(branch, self._gate.verify(pipeline, layer, pins, run_id), pins, before)
+        report = self._gate.verify(pipeline, layer, pins, run_id)
+        read_tables = {
+            dataset_table(dataset) for result in report.results for dataset in result.contract.datasets
+        }
+        if read_tables != pins.keys():
+            uncovered = ", ".join(sorted(read_tables - pins.keys())) or "none"
+            removed = ", ".join(sorted(pins.keys() - read_tables)) or "none"
+            raise DataQualityError(
+                "contract read dependencies changed during audit; rerun verification "
+                f"(unpinned: {uncovered}; no longer read: {removed})"
+            )
+        audit = BranchAudit(branch, report, pins, before)
         if self._audit_sink is not None:
             self._audit_sink.write(audit)
         return audit

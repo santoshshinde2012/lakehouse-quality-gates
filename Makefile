@@ -236,7 +236,7 @@ clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
 
 dist: clean
-	tar --exclude=.venv --exclude=.git --exclude=.env --exclude='*/__pycache__' \
+	tar --exclude=.venv --exclude=.git --exclude=.env --exclude='*/__pycache__' --exclude='*/article' \
 	    -C .. -czf ../SODA.tar.gz $(notdir $(SODA_HOME))
 
 # ---- benchmarks (need the live stack; they OVERWRITE the retail tables, see benchmarks/README.md) ----

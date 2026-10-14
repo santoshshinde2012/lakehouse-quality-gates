@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repeats", type=int, default=2)
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
-    wap = build_wap(Settings(engine=Engine.DUCKDB, sinks=[]))
+    wap = build_wap(Settings(engine=Engine.DUCKDB, sinks=[], iceberg_sink=False, slack_webhook_url=None))
     args.out.mkdir(parents=True, exist_ok=True)
     path = args.out / "wap_overhead.csv"
     with path.open("w", newline="", encoding="utf-8") as fh:

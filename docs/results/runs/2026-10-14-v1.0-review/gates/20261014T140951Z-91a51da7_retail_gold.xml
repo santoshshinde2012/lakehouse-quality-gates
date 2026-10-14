@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites name="soda-dq retail/gold">
+  <testsuite name="retail.gold.daily_order_metrics" tests="17" failures="0" errors="0" skipped="0">
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="Gold metrics schema is unchanged" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="Gold has at least one day" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="Cancelled + refunded never exceed orders" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="No metrics for future days" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="Gold order count reconciles with silver" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="order_date: Order date present" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="order_date: One row per day" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="orders: Order count present" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="orders: At least one order per day" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="revenue: Revenue present" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="revenue: Revenue is not negative" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="avg_order_value: Average order value is not negative" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="avg_order_value: Average order value is plausible" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="cancelled_orders: Cancelled order count present" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="cancelled_orders: Cancelled order count is not negative" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="refunded_orders: Refunded order count present" />
+    <testcase classname="lakehouse_trino/lakehouse/gold/daily_order_metrics" name="refunded_orders: Refunded order count is not negative" />
+  </testsuite>
+</testsuites>

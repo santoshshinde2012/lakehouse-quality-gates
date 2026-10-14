@@ -1,0 +1,247 @@
+{
+  "run_id": "20261014T140949Z-1c182203",
+  "pipeline": "retail",
+  "layer": "gold",
+  "engine": "duckdb",
+  "status": "passed",
+  "created_at": "2026-10-14T14:09:50.910119+00:00",
+  "summary": {
+    "passed": 17,
+    "warned": 0,
+    "failed": 0,
+    "not_evaluated": 0,
+    "excluded": 0,
+    "total": 17
+  },
+  "reasons": [],
+  "contracts": [
+    {
+      "name": "retail.gold.daily_order_metrics",
+      "dataset": "lakehouse_duckdb/gold/daily_order_metrics",
+      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/gold/daily_order_metrics.yml",
+      "errors": [],
+      "checks": [
+        {
+          "name": "Gold metrics schema is unchanged",
+          "type": "schema",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "schema_events_count": 0
+          },
+          "details": []
+        },
+        {
+          "name": "Gold has at least one day",
+          "type": "row_count",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Cancelled + refunded never exceed orders",
+          "type": "failed_rows",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "failed_rows_count": 0,
+            "failed_rows_percent": 0.0,
+            "dataset_rows_tested": 2,
+            "check_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "No metrics for future days",
+          "type": "failed_rows",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "failed_rows_count": 0,
+            "failed_rows_percent": 0.0,
+            "dataset_rows_tested": 2,
+            "check_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Gold order count reconciles with silver",
+          "type": "metric",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Order date present",
+          "type": "missing",
+          "column": "order_date",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "One row per day",
+          "type": "duplicate",
+          "column": "order_date",
+          "outcome": "passed",
+          "metrics": {
+            "duplicate_count": 0,
+            "duplicate_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Order count present",
+          "type": "missing",
+          "column": "orders",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "At least one order per day",
+          "type": "invalid",
+          "column": "orders",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Revenue present",
+          "type": "missing",
+          "column": "revenue",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Revenue is not negative",
+          "type": "invalid",
+          "column": "revenue",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Average order value is not negative",
+          "type": "invalid",
+          "column": "avg_order_value",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Average order value is plausible",
+          "type": "invalid",
+          "column": "avg_order_value",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Cancelled order count present",
+          "type": "missing",
+          "column": "cancelled_orders",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Cancelled order count is not negative",
+          "type": "invalid",
+          "column": "cancelled_orders",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Refunded order count present",
+          "type": "missing",
+          "column": "refunded_orders",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 2,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        },
+        {
+          "name": "Refunded order count is not negative",
+          "type": "invalid",
+          "column": "refunded_orders",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 2,
+            "missing_count": 0,
+            "dataset_rows_tested": 2
+          },
+          "details": []
+        }
+      ]
+    }
+  ]
+}

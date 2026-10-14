@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "branch": "audit_20261014t143139z_208e5e09",
+  "pipeline": "retail",
+  "layer": "bronze",
+  "run_id": "20261014T143139Z-208e5e09",
+  "gate": "passed",
+  "engine": "duckdb",
+  "created_at": "2026-10-14T14:32:08.183540+00:00",
+  "reasons": [],
+  "pins": {
+    "bronze.customers_raw": 921535027530336369,
+    "bronze.orders_raw": 3029273953392603093
+  },
+  "main_before": {
+    "bronze.customers_raw": 847443064561994108,
+    "bronze.orders_raw": 8255177474570753418
+  }
+}

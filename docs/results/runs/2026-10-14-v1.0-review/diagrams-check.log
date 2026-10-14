@@ -1,0 +1,7 @@
+python3 scripts/diagrams.py --check
+tmp=$(mktemp -d); for f in docs/diagrams/*.mmd; do \
+	  npx -y @mermaid-js/mermaid-cli@11 -q -i $f -o $tmp/$(basename $f .mmd).svg || exit 1; done; \
+	python3 scripts/bench_charts.py --extract $tmp/charts && for f in $tmp/charts/*.mmd; do \
+	  npx -y @mermaid-js/mermaid-cli@11 -q -i $f -o $f.svg || exit 1; done; rm -rf $tmp; echo "diagrams and benchmark charts OK"
+11 charts written to /var/folders/ll/2btx3mzx3cv207gm_x_l9kfc0000gn/T/tmp.JoSTNvmPKB/charts
+diagrams and benchmark charts OK

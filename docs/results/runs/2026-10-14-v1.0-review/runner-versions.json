@@ -1,0 +1,13 @@
+{
+  "python": "3.12.15",
+  "platform": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.36",
+  "packages": {
+    "lakehouse-quality-gates": "1.0.0",
+    "soda-core": "4.26.0",
+    "soda-duckdb": "4.26.0",
+    "soda-trino": "4.26.0",
+    "duckdb": "1.5.6",
+    "pyiceberg": "0.12.0",
+    "pyarrow": "25.0.1"
+  }
+}

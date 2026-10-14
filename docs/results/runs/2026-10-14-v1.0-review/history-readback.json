@@ -1,0 +1,34 @@
+{
+  "table": "ops.dq_results",
+  "scope": "Synthetic execution-error and empty-gate records written by tests/live/test_result_history.py and read back from live Iceberg storage",
+  "rows": [
+    {
+      "run_id": "history_probe_39b84e2416294eb8ad252dcf4d6cd317",
+      "created_at": "2026-10-14 14:26:56.011431+00:00",
+      "pipeline": "retail",
+      "layer": "bronze",
+      "engine": "duckdb",
+      "gate_status": "blocked",
+      "contract": null,
+      "dataset": null,
+      "check_name": "Quality gate decision",
+      "check_type": "gate_decision",
+      "column_name": null,
+      "outcome": "failed"
+    },
+    {
+      "run_id": "history_probe_eeb4ac93423f46cb87dc87cdef20e976",
+      "created_at": "2026-10-14 14:26:54.648009+00:00",
+      "pipeline": "retail",
+      "layer": "bronze",
+      "engine": "duckdb",
+      "gate_status": "blocked",
+      "contract": "retail.bronze.history_probe",
+      "dataset": "lakehouse_duckdb/bronze/orders_raw",
+      "check_name": "Contract execution error",
+      "check_type": "execution_error",
+      "column_name": null,
+      "outcome": "failed"
+    }
+  ]
+}

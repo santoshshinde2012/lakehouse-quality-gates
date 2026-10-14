@@ -1,5 +1,5 @@
 # Generated verification results are kept byte-for-byte.
-exclude: ^docs/results/.*\.(xml|svg|json|html|log|md|css|js|png)$
+exclude: ^docs/results/.*\.(xml|svg|json|html|log|md|css|js|png|txt)$
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

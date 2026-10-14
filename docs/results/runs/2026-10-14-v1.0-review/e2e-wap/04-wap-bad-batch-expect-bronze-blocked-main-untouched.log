@@ -1,0 +1,12 @@
+==> bad batch through write-audit-publish (expect: bronze blocked, main unchanged, branch kept)
+2026-10-14T14:34:17.586793Z [info     ] dq.wap.verify                  branch=audit_20261014t143355z_9e74887b layer=bronze pins={'bronze.customers_raw': 228900679422413439, 'bronze.orders_raw': 3730060568747580496}
+2026-10-14T14:34:17.593016Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-14T14:34:18.486510Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-14T14:34:18.547128Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-14T14:34:18.626470Z [error    ] dq.gate.blocked                failed=2 layer=bronze passed=10 pipeline=retail reasons=['retail.bronze.orders_raw: failed: No order duplicated inside one source file', 'retail.bronze.orders_raw: failed: customer_id: Every order has a customer', 'retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)', 'retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)'] run_id=20261014T143355Z-9e74887b status=blocked warned=2
+2026-10-14T14:34:18.626536Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=blocked
+2026-10-14T14:34:18.627027Z [error    ] dq.wap.blocked                 branch=audit_20261014t143355z_9e74887b kept=True layer=bronze
+retail/bronze: blocked (14 checks, run 20261014T143355Z-9e74887b)
+  blocked   bronze.customers_raw: main stays 921535027530336369 (10 rows); branch audit_20261014t143355z_9e74887b kept at 228900679422413439 (12 rows)
+  blocked   bronze.orders_raw: main stays 3029273953392603093 (22 rows); branch audit_20261014t143355z_9e74887b kept at 3730060568747580496 (29 rows)
+OK: blocked as expected, main untouched

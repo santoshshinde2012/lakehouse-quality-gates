@@ -30,3 +30,17 @@ def test_a_wrong_number_is_reported(tmp_path: Path) -> None:
     found = _load().problems(tmp_path)
     assert any("says 999" in line for line in found)
     assert any("says 12" in line for line in found)
+
+
+def test_e2e_summary_requires_success_and_all_step_attachments(tmp_path: Path) -> None:
+    module = _load()
+    steps = tmp_path / "e2e-live"
+    steps.mkdir()
+    summary = tmp_path / "e2e-live.log"
+    summary.write_text("PASS | startup | exit 0\nPASS | gate | exit 0\nRESULT: PASS\n")
+    (steps / "01-startup.log").write_text("up\n")
+    assert module.e2e_result(tmp_path, "live") == "incomplete step attachments"
+    (steps / "02-gate.log").write_text("passed\n")
+    assert module.e2e_result(tmp_path, "live") == "2/2"
+    summary.write_text("RESULT: PASS\nPASS | startup | exit 0\nFAIL | gate | exit 1\nRESULT: FAIL\n")
+    assert module.e2e_result(tmp_path, "live") == "workflow failed"

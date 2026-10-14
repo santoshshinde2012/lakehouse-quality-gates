@@ -1,0 +1,17 @@
+2026-10-14T13:59:07.641490Z [info     ] dq.verify.start                contracts=2 layer=bronze pipeline=retail
+2026-10-14T13:59:07.939177Z [info     ] dq.contract.verify             contract=retail.bronze.customers_raw dataset=lakehouse_duckdb/bronze/customers_raw
+2026-10-14T13:59:08.069282Z [info     ] dq.contract.verify             contract=retail.bronze.orders_raw dataset=lakehouse_duckdb/bronze/orders_raw
+2026-10-14T13:59:08.184027Z [error    ] dq.gate.blocked                failed=2 layer=bronze passed=10 pipeline=retail reasons=['retail.bronze.orders_raw: failed: No order duplicated inside one source file', 'retail.bronze.orders_raw: failed: customer_id: Every order has a customer', 'retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)', 'retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)'] run_id=20261014T135908Z-c552e5c8 status=blocked warned=2
+2026-10-14T13:59:08.184096Z [info     ] dq.verify.done                 layer=bronze pipeline=retail status=blocked
+retail/bronze: blocked (14 checks, run 20261014T135908Z-c552e5c8)
+2026-10-14T13:59:08.505362Z [info     ] dq.verify.start                contracts=2 layer=silver pipeline=retail
+2026-10-14T13:59:08.814221Z [info     ] dq.contract.verify             contract=retail.silver.customers dataset=lakehouse_duckdb/silver/customers
+2026-10-14T13:59:08.966135Z [info     ] dq.contract.verify             contract=retail.silver.orders dataset=lakehouse_duckdb/silver/orders
+2026-10-14T13:59:09.102445Z [error    ] dq.gate.blocked                failed=6 layer=silver passed=15 pipeline=retail reasons=['retail.silver.customers: failed: email: Email is well-formed', 'retail.silver.customers: failed: email: Email unique', 'retail.silver.orders: failed: No order timestamped in the future', 'retail.silver.orders: failed: customer_id: Customer id present', 'retail.silver.orders: failed: customer_id: Customer exists in silver.customers', 'retail.silver.orders: failed: amount: Amount is not negative', 'retail.silver.orders: warned: amount: Amount below the outlier ceiling'] run_id=20261014T135909Z-1d186449 status=blocked warned=1
+2026-10-14T13:59:09.102507Z [info     ] dq.verify.done                 layer=silver pipeline=retail status=blocked
+retail/silver: blocked (22 checks, run 20261014T135909Z-1d186449)
+2026-10-14T13:59:09.405827Z [info     ] dq.verify.start                contracts=1 layer=gold pipeline=retail
+2026-10-14T13:59:09.718533Z [info     ] dq.contract.verify             contract=retail.gold.daily_order_metrics dataset=lakehouse_duckdb/gold/daily_order_metrics
+2026-10-14T13:59:09.859375Z [error    ] dq.gate.blocked                failed=1 layer=gold passed=15 pipeline=retail reasons=['retail.gold.daily_order_metrics: failed: No metrics for future days', 'retail.gold.daily_order_metrics: warned: avg_order_value: Average order value is plausible'] run_id=20261014T135909Z-52837dd5 status=blocked warned=1
+2026-10-14T13:59:09.859443Z [info     ] dq.verify.done                 layer=gold pipeline=retail status=blocked
+retail/gold: blocked (17 checks, run 20261014T135909Z-52837dd5)

@@ -1,0 +1,2 @@
+Verified lakehouse_retail_medallion_dq: upstream writes succeeded, dq_bronze failed, all downstream tasks blocked
+Verified lakehouse_retail_medallion_wap: upstream writes succeeded, dq_bronze failed, all downstream tasks blocked

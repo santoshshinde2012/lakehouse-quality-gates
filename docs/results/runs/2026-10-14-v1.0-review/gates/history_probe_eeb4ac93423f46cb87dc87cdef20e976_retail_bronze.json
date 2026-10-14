@@ -1,0 +1,30 @@
+{
+  "run_id": "history_probe_eeb4ac93423f46cb87dc87cdef20e976",
+  "pipeline": "retail",
+  "layer": "bronze",
+  "engine": "duckdb",
+  "status": "blocked",
+  "created_at": "2026-10-14T14:26:54.648009+00:00",
+  "summary": {
+    "passed": 0,
+    "warned": 0,
+    "failed": 0,
+    "not_evaluated": 0,
+    "excluded": 0,
+    "total": 0
+  },
+  "reasons": [
+    "Synthetic blocked attempt for history verification"
+  ],
+  "contracts": [
+    {
+      "name": "retail.bronze.history_probe",
+      "dataset": "lakehouse_duckdb/bronze/orders_raw",
+      "source": "history_probe.yml",
+      "errors": [
+        "Synthetic execution failure for history verification"
+      ],
+      "checks": []
+    }
+  ]
+}

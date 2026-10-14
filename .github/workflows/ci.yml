@@ -39,6 +39,7 @@ jobs:
           python scripts/check_links.py
           python scripts/diagrams.py --check
           python scripts/doc_snippets.py --check
+          python scripts/check_numbers.py
       - name: Docs (markdownlint)
         run: npx --yes markdownlint-cli2@0.23.3
       - name: Contract syntax (Soda)
@@ -54,7 +55,9 @@ jobs:
         if: always()
         with:
           name: dq-reports
-          path: reports/
+          path: |
+            reports/
+            coverage.xml
 
   docker:
     runs-on: ubuntu-latest
@@ -63,7 +66,23 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build runner image
         run: docker build -f docker/Dockerfile -t lakehouse-quality-gates:ci .
+      - name: Prepare reports for the non-root runner
+        run: sudo install -d -o 10001 -g 10001 -m 0755 reports/docker
       - name: Smoke test inside the image
         run: |
-          docker run --rm -e DQ_ENGINE=duckdb-local lakehouse-quality-gates:ci soda-dq validate
-          docker run --rm -e DQ_ENGINE=duckdb-local lakehouse-quality-gates:ci soda-dq run
+          runtime=(
+            --rm --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges:true
+            -e DQ_ENGINE=duckdb-local -e DQ_DUCKDB_TEMP_DIRECTORY=/tmp/duckdb
+            --mount "type=bind,src=$PWD/reports/docker,dst=/opt/soda-dq/reports"
+          )
+          docker run "${runtime[@]}" lakehouse-quality-gates:ci soda-dq validate
+          docker run "${runtime[@]}" lakehouse-quality-gates:ci soda-dq run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-dq-reports
+          # Rendered contracts are private scratch files; retain the readable report triples.
+          path: |
+            reports/docker/*.json
+            reports/docker/*.md
+            reports/docker/*.xml

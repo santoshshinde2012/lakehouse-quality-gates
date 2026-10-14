@@ -17,6 +17,15 @@ from soda_lakehouse_dq.domain.wap import BranchAudit, validate_branch
 _TABLE = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate manifest field {key!r}")
+        result[key] = value
+    return result
+
+
 def audit_to_dict(audit: BranchAudit) -> dict[str, Any]:
     report = audit.report
     return {
@@ -57,8 +66,8 @@ def write_audit(path: Path, audit: BranchAudit) -> None:
 
 def load_audit(path: Path) -> BranchAudit:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(data, dict) or data.get("version") != 1:
+        data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_unique_object)
+        if not isinstance(data, dict) or type(data.get("version")) is not int or data["version"] != 1:
             raise ValueError("expected a version 1 audit manifest")
         branch = validate_branch(data["branch"])
         layer = Layer(data["layer"])
@@ -77,8 +86,17 @@ def load_audit(path: Path) -> BranchAudit:
             for table, pin in before.items()
         ):
             raise ValueError("invalid main_before snapshots")
-        if any(not isinstance(data[key], str) or not data[key] for key in ("pipeline", "run_id", "engine")):
+        if any(
+            not isinstance(data[key], str) or not data[key].strip()
+            for key in ("pipeline", "run_id", "engine")
+        ):
             raise ValueError("pipeline, run_id and engine are required")
+        reasons = data.get("reasons", [])
+        if not isinstance(reasons, list) or any(not isinstance(reason, str) for reason in reasons):
+            raise ValueError("reasons must be a list of strings")
+        created_at = datetime.fromisoformat(data["created_at"])
+        if created_at.tzinfo is None:
+            raise ValueError("created_at must include a timezone")
         report = GateReport(
             data["run_id"],
             data["pipeline"],
@@ -86,8 +104,8 @@ def load_audit(path: Path) -> BranchAudit:
             data["engine"],
             status,
             (),
-            tuple(data.get("reasons", [])),
-            datetime.fromisoformat(data["created_at"]),
+            tuple(reasons),
+            created_at,
         )
         return BranchAudit(branch, report, pins, before)
     except (OSError, ValueError, TypeError, KeyError) as exc:

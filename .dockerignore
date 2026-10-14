@@ -7,3 +7,11 @@
 reports
 dist
 .env
+article
+docs
+tests
+benchmarks
+scripts
+.coverage
+coverage.xml
+*.bak

@@ -28,7 +28,7 @@ See [write-audit-publish](../architecture/write-audit-publish.md) for branch ret
 |---|---|---|
 | `0` | Gate **passed** or **passed with warnings** | Task succeeds; the next layer runs |
 | `1` | Gate **blocked** | Task fails; downstream tasks are `upstream_failed` |
-| `2` | Configuration or usage error: missing contracts, unreachable catalog, bad `--set`, unknown sink | Task fails; no gate decision was made |
+| `2` | Configuration, usage, or operational error: missing contracts, unreachable catalog, invalid options, report persistence, or publication failure | Task fails; inspect reports and saved pins because a decision may exist or publication may be partial |
 
 ## Settings (`DQ_*`)
 
@@ -43,6 +43,7 @@ pydantic-settings in [`settings.py`](../../src/soda_lakehouse_dq/settings.py).
 | `DQ_LAKEKEEPER_WAREHOUSE` | `lakehouse` | Lakekeeper warehouse |
 | `DQ_CATALOG_ALIAS` | `lakehouse` | DuckDB alias for the attached catalog |
 | `DQ_TRINO_HOST` / `DQ_TRINO_PORT` | `localhost` / `8088` | Trino coordinator |
+| `DQ_DUCKDB_DATASOURCE_NAME` / `DQ_TRINO_DATASOURCE_NAME` | `lakehouse_duckdb` / `lakehouse_trino` | Dataset prefixes used when rendering contracts |
 | `DQ_FAIL_ON_WARN` | `false` | Make warnings block |
 | `DQ_ALLOW_NOT_EVALUATED` | `false` | Let not-evaluated checks pass |
 | `DQ_SINKS` | `["json","junit","markdown"]` | Report formats written to `DQ_REPORTS_DIR` |
@@ -53,6 +54,13 @@ pydantic-settings in [`settings.py`](../../src/soda_lakehouse_dq/settings.py).
 | `DQ_DUCKDB_HTTPFS_CLIENT` | unset | `httplib` inside containers (DNS for `*.localhost`) |
 | `DQ_DUCKDB_TEMP_DIRECTORY` | unset | Writable spill directory, e.g. `/tmp/duckdb` on a read-only root filesystem |
 | `DQ_CONTRACTS_DIR`, `DQ_DATASOURCES_DIR`, `DQ_REPORTS_DIR`, `DQ_SAMPLE_DIR` | project folders | Path overrides |
+| `DQ_WAP_SPARK_CONTAINER` / `DQ_WAP_JOB` | `ldl-spark` / `/opt/soda-wap/wap_job.py` | Spark container and mounted WAP job |
+| `DQ_WAP_TIMEOUT_S` | `900` | Timeout for a Spark WAP command, minimum 10 seconds |
+| `DQ_WAP_DROP_BLOCKED` | `false` | Delete blocked source branches instead of retaining them for triage |
 | `AIRFLOW_API_PORT` (Makefile) | `8080` | Airflow UI/API host port |
 
 `SODA_CORE_TELEMETRY_ENABLED` defaults to `false` (set in the image and at start-up unless you set it yourself). Gate policy settings are explained in the [gate policy](../architecture/data-flow.md#gate-policy-decision-flow).
+
+The supplied Airflow/socket-proxy integration uses the lakehouse's default container names, including
+`ldl-soda` and `ldl-spark`. A standalone runner can use `LDL_SODA_CONTAINER`, but changing names for Airflow
+also requires matching environment and exact proxy allowlist entries in deployment overlays.

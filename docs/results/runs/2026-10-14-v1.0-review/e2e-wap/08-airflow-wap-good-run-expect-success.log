@@ -1,0 +1,10 @@
+cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_wap
+==> Waiting for lakehouse_retail_medallion_wap to be parsed…
+==> Triggering lakehouse_retail_medallion_wap (manual__ldl_20261014T143609)
+  [5s] state=running
+  [35s] state=running
+  [65s] state=running
+  [95s] state=running
+  [125s] state=running
+  [155s] state=success
+==> lakehouse_retail_medallion_wap succeeded

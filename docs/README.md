@@ -58,6 +58,7 @@ Terms are defined once in the [glossary](overview/glossary.md); measured evidenc
 | [Contracts](guides/contracts.md) | Contract conventions, every check per layer, and how to add one |
 | [Configuration](guides/configuration.md) | CLI commands, exit codes and every `DQ_*` setting |
 | [Runbook](guides/runbook.md) | Daily operation, triaging a blocked gate, a manual walkthrough of every component |
+| [Enterprise operating model](guides/enterprise-readiness.md) | Quality ownership, publication boundaries, evidence trust, access, recovery, and rollout decisions |
 | [Troubleshooting](guides/troubleshooting.md) | Symptoms and fixes |
 
 ### Benchmarks

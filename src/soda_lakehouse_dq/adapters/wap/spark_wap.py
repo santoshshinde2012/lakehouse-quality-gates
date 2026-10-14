@@ -7,6 +7,8 @@ builds the command, runs it through an injectable runner and maps that line to d
 from __future__ import annotations
 
 import json
+import math
+import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
@@ -33,34 +35,69 @@ def subprocess_runner(timeout_s: float = 900) -> Runner:
     return run
 
 
-def _int(value: Any) -> int | None:
-    return None if value is None else int(value)
+def _int(value: Any, *, snapshot: bool = False) -> int | None:
+    if value is None:
+        return None
+    if type(value) is not int or value < (1 if snapshot else 0):
+        raise ValueError("snapshot ids must be positive integers; row counts must be nonnegative integers")
+    return value
+
+
+def _table_state(name: str, data: Any) -> TableState:
+    if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9_]+\.[a-z0-9_]+", name):
+        raise ValueError(f"invalid table {name!r}")
+    if not isinstance(data, dict):
+        raise ValueError(f"invalid state for table {name!r}")
+    refs = data.get("refs", {})
+    if not isinstance(refs, dict) or any(
+        not isinstance(ref, str) or not ref or type(pin) is not int or pin <= 0 for ref, pin in refs.items()
+    ):
+        raise ValueError(f"invalid refs for table {name!r}")
+    return TableState(
+        table=name,
+        main_snapshot=_int(data.get("main_snapshot"), snapshot=True),
+        main_rows=_int(data.get("main_rows")),
+        branch_snapshot=_int(data.get("branch_snapshot"), snapshot=True),
+        branch_rows=_int(data.get("branch_rows")),
+        main_before=_int(data.get("main_before"), snapshot=True),
+        refs=refs,
+    )
 
 
 def parse_wap_json(output: str) -> BranchState:
     lines = [line for line in output.splitlines() if line.startswith(MARKER)]
     if not lines:
         raise DataSourceError("WAP Spark step printed no WAP_JSON line")
-    data = json.loads(lines[-1][len(MARKER) :])
-    tables = {
-        name: TableState(
-            table=name,
-            main_snapshot=_int(t.get("main_snapshot")),
-            main_rows=_int(t.get("main_rows")),
-            branch_snapshot=_int(t.get("branch_snapshot")),
-            branch_rows=_int(t.get("branch_rows")),
-            main_before=_int(t.get("main_before")),
-            refs={str(k): int(v) for k, v in t.get("refs", {}).items()},
+    try:
+        data = json.loads(lines[-1][len(MARKER) :])
+        if not isinstance(data, dict) or data.get("action") not in {
+            "write",
+            "direct",
+            "publish",
+            "drop",
+            "status",
+        }:
+            raise ValueError("invalid WAP action")
+        branch = data["branch"]
+        if branch is not None and (
+            not isinstance(branch, str) or not re.fullmatch(r"[a-z0-9_]{1,64}", branch)
+        ):
+            raise ValueError("invalid WAP branch")
+        seconds = data["seconds"]
+        if type(seconds) not in (int, float) or not math.isfinite(seconds) or seconds < 0:
+            raise ValueError("invalid WAP duration")
+        tables = data["tables"]
+        if not isinstance(tables, dict) or not tables:
+            raise ValueError("WAP table states are required")
+        return BranchState(
+            action=data["action"],
+            layer=Layer(data["layer"]),
+            branch=branch,
+            seconds=float(seconds),
+            tables={name: _table_state(name, state) for name, state in tables.items()},
         )
-        for name, t in data.get("tables", {}).items()
-    }
-    return BranchState(
-        action=str(data["action"]),
-        layer=Layer(data["layer"]),
-        branch=data.get("branch"),
-        seconds=float(data.get("seconds", 0.0)),
-        tables=tables,
-    )
+    except (KeyError, ValueError, TypeError, OverflowError) as exc:
+        raise DataSourceError(f"invalid WAP_JSON response: {exc}") from exc
 
 
 class SparkSubmitWap:
@@ -88,7 +125,14 @@ class SparkSubmitWap:
         return args
 
     def _run(self, action: str, layer: Layer, branch: str | None, source: str | None = None) -> BranchState:
-        return parse_wap_json(self._runner(self.command(action, layer, branch, source)))
+        return self._result(self._runner(self.command(action, layer, branch, source)), action, layer, branch)
+
+    @staticmethod
+    def _result(output: str, action: str, layer: Layer, branch: str | None) -> BranchState:
+        state = parse_wap_json(output)
+        if (state.action, state.layer, state.branch) != (action, layer, branch):
+            raise DataSourceError("WAP Spark response action/layer/branch does not match the requested step")
+        return state
 
     def write(self, layer: Layer, branch: str, source: str | None = None) -> BranchState:
         return self._run("write", layer, branch, source)
@@ -103,7 +147,7 @@ class SparkSubmitWap:
     ) -> BranchState:
         args = self.command("publish", layer, branch)
         args += ["--pins", json.dumps(dict(pins)), "--main-before", json.dumps(dict(main_before or {}))]
-        return parse_wap_json(self._runner(args))
+        return self._result(self._runner(args), "publish", layer, branch)
 
     def drop(self, layer: Layer, branch: str) -> BranchState:
         return self._run("drop", layer, branch)

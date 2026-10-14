@@ -20,7 +20,7 @@ from soda_lakehouse_dq.adapters.datasources.duckdb_provider import (
 from soda_lakehouse_dq.adapters.local_medallion import load_medallion
 from soda_lakehouse_dq.adapters.wap.audit_json import load_audit, write_audit
 from soda_lakehouse_dq.container import build_container, build_wap
-from soda_lakehouse_dq.domain.errors import DataQualityError
+from soda_lakehouse_dq.domain.errors import DataQualityError, DataSourceError
 from soda_lakehouse_dq.domain.models import GateReport, Layer, VariableValue, coerce_variable
 from soda_lakehouse_dq.domain.wap import BranchState, WapLayerResult, WapOutcome
 from soda_lakehouse_dq.logging_config import configure_logging
@@ -234,6 +234,38 @@ def wap_evidence(results: list[WapLayerResult]) -> list[dict[str, object]]:
 LayerOpt = Annotated[list[Layer] | None, typer.Option("--layer", "-l", help="Layer(s); default with --all")]
 
 
+def _check_wap_evidence_path(path: Path) -> None:
+    """Reject unusable output paths before a WAP run can write or publish data."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.exists() and not path.is_file():
+            raise DataSourceError(f"cannot write WAP evidence at {path}: destination is not a regular file")
+        with tempfile.TemporaryFile(dir=path.parent):
+            pass
+    except OSError as exc:
+        raise DataSourceError(f"cannot write WAP evidence at {path}: {exc}") from exc
+
+
+def _write_wap_evidence(path: Path, results: list[WapLayerResult]) -> None:
+    """Keep previous evidence intact if the final write or replacement fails."""
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as fh:
+            temporary = Path(fh.name)
+            os.fchmod(fh.fileno(), 0o644)
+            json.dump(wap_evidence(results), fh, indent=2)
+            fh.write("\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        temporary.replace(path)
+    except OSError as exc:
+        raise DataSourceError(f"cannot persist WAP evidence at {path}: {exc}") from exc
+    finally:
+        if temporary is not None:
+            with contextlib.suppress(OSError):
+                temporary.unlink(missing_ok=True)
+
+
 @wap_app.command("run")
 def wap_run(  # noqa: PLR0917 (typer options)
     layer: LayerOpt = None,
@@ -247,11 +279,15 @@ def wap_run(  # noqa: PLR0917 (typer options)
     """Write each layer to an audit branch, verify it, publish to main only when the gate passes."""
     if not layer and not all_layers:
         raise typer.BadParameter("give --layer (repeatable) or --all")
+    if source is not None and not source.strip():
+        raise typer.BadParameter("--source must be a nonempty CSV directory inside ldl-spark")
     if batch not in WAP_BATCHES and source is None:
         raise typer.BadParameter(f"--batch must be one of {sorted(WAP_BATCHES)}")
     layers = Layer.ordered() if all_layers else tuple(sorted(set(layer or []), key=Layer.ordered().index))
     try:
         settings = _settings(Engine.DUCKDB)
+        if evidence is not None:
+            _check_wap_evidence_path(evidence)
         wap = build_wap(settings)
         results = wap.run_wap.execute(pipeline, layers, source=source or WAP_BATCHES[batch], branch=branch)
     except DataQualityError as exc:
@@ -275,8 +311,11 @@ def wap_run(  # noqa: PLR0917 (typer options)
                     f"  blocked   {name}: main stays {s.main_snapshot} ({s.main_rows} rows); {branch_status}"
                 )
     if evidence is not None:
-        evidence.parent.mkdir(parents=True, exist_ok=True)
-        evidence.write_text(json.dumps(wap_evidence(results), indent=2) + "\n", encoding="utf-8")
+        try:
+            _write_wap_evidence(evidence, results)
+        except DataQualityError as exc:
+            typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(2) from exc
     raise typer.Exit(1 if any(r.outcome is WapOutcome.BLOCKED for r in results) else 0)
 
 

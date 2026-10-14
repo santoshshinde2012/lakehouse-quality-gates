@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "branch": "audit_livetest_good",
+  "pipeline": "retail",
+  "layer": "silver",
+  "run_id": "20261014T144410Z-c6d5c6cc",
+  "gate": "passed",
+  "engine": "duckdb",
+  "created_at": "2026-10-14T14:45:38.175898+00:00",
+  "reasons": [],
+  "pins": {
+    "silver.customers": 9213930048594061432,
+    "silver.orders": 731750606645913531
+  },
+  "main_before": {
+    "silver.customers": 2756671711169908356,
+    "silver.orders": 6507899490893683708
+  }
+}

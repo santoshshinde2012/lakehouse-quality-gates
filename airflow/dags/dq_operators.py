@@ -44,7 +44,7 @@ def fault_injection_command(container: str = SODA_CONTAINER) -> str:
         shlex.quote(a)
         for a in ["docker", "exec", container, "soda-dq", "seed", "/opt/soda-dq/fixtures/bad_batch", "--yes"]
     )
-    flag = "{{ 'yes' if dag_run.conf.get('inject_bad_batch') else 'no' }}"
+    flag = "{{ 'yes' if dag_run.conf.get('inject_bad_batch') is sameas true else 'no' }}"
     return f'if [ "{flag}" = yes ]; then {seed}; else echo "no fault injected"; fi'
 
 

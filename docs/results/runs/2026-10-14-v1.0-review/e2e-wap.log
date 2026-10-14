@@ -1,0 +1,29 @@
+scripts/e2e.sh wap
+==> uv sync
+==> full lakehouse already running: reusing it
+==> lakehouse up (full profile, WAP overlay)
+==> WAP good batch (expect 3 layers published)
+==> WAP bad batch (expect bronze blocked, main untouched)
+==> gates on main after the bad batch (expect pass)
+==> runner container up (make dq-up)
+==> Airflow up on :8090
+==> Airflow WAP good run (expect success)
+==> Airflow WAP bad run (expect dq_bronze to fail)
+==> gates on main after the Airflow bad run (expect pass)
+==> pytest WAP tests (-m full -k wap)
+==> KEEP_UP=1: leaving the stack running
+
+e2e-wap summary (logs in reports/e2e-wap/run-QdSrvze3/)
+      | step                                           | result
+PASS  | uv sync                                        | exit 0 (expected 0), 0s
+PASS  | lakehouse up (full profile, WAP overlay)       | exit 0 (expected 0), 4s
+PASS  | WAP good batch (expect 3 layers published)     | exit 0 (expected 0), 136s
+PASS  | WAP bad batch (expect bronze blocked, main untouched) | exit 0 (expected 0), 23s
+PASS  | gates on main after the bad batch (expect pass) | exit 0 (expected 0), 1s
+PASS  | runner container up (make dq-up)               | exit 0 (expected 0), 69s
+PASS  | Airflow up on :8090                            | exit 0 (expected 0), 35s
+PASS  | Airflow WAP good run (expect success)          | exit 0 (expected 0), 279s
+PASS  | Airflow WAP bad run (expect dq_bronze to fail) | exit 2 (expected 2), 205s
+PASS  | gates on main after the Airflow bad run (expect pass) | exit 0 (expected 0), 2s
+PASS  | pytest WAP tests (-m full -k wap)              | exit 0 (expected 0), 308s
+RESULT: PASS

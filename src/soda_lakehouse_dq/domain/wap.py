@@ -24,7 +24,7 @@ def branch_name(run_id: str, prefix: str = "audit") -> str:
 
 
 def validate_branch(name: str) -> str:
-    if not _BRANCH.match(name) or name == "main" or name.startswith("publish_"):
+    if not _BRANCH.fullmatch(name) or name == "main" or name.startswith("publish_"):
         raise DataQualityError(
             f"invalid audit branch {name!r}: use 1-64 of [a-z0-9_], excluding 'main' and reserved 'publish_'"
         )

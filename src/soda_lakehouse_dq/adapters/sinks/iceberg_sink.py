@@ -1,4 +1,4 @@
-"""Optional Iceberg sink: append one row per check to ``ops.dq_results`` through PyIceberg.
+"""Optional Iceberg sink: append check and execution records to ``ops.dq_results`` through PyIceberg.
 
 Requires the ``lakehouse`` extra and a running Lakekeeper. Enabled with ``DQ_ICEBERG_SINK=true``.
 """
@@ -8,20 +8,24 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from soda_lakehouse_dq.domain.models import GateReport
+from soda_lakehouse_dq.domain.models import GateReport, Outcome
 
 TABLE = "ops.dq_results"
 
 
 def report_rows(report: GateReport) -> list[dict[str, Any]]:
-    return [
-        {
-            "run_id": report.run_id,
-            "created_at": report.created_at,
-            "pipeline": report.pipeline,
-            "layer": report.layer.value,
-            "engine": report.engine,
-            "gate_status": report.status.value,
+    """Persist failed attempts even without checks; run_id links detailed errors to the JSON report."""
+    context = {
+        "run_id": report.run_id,
+        "created_at": report.created_at,
+        "pipeline": report.pipeline,
+        "layer": report.layer.value,
+        "engine": report.engine,
+        "gate_status": report.status.value,
+    }
+    rows = [
+        context
+        | {
             "contract": r.contract.name,
             "dataset": r.contract.dataset,
             "check_name": c.name,
@@ -32,6 +36,32 @@ def report_rows(report: GateReport) -> list[dict[str, Any]]:
         for r in report.results
         for c in r.checks
     ]
+    rows.extend(
+        context
+        | {
+            "contract": r.contract.name,
+            "dataset": r.contract.dataset,
+            "check_name": "Contract execution error",
+            "check_type": "execution_error",
+            "column_name": None,
+            "outcome": Outcome.FAILED.value,
+        }
+        for r in report.results
+        for _ in r.errors
+    )
+    if report.blocked and not rows:
+        rows.append(
+            context
+            | {
+                "contract": None,
+                "dataset": None,
+                "check_name": "Quality gate decision",
+                "check_type": "gate_decision",
+                "column_name": None,
+                "outcome": Outcome.FAILED.value,
+            }
+        )
+    return rows
 
 
 class IcebergSink:

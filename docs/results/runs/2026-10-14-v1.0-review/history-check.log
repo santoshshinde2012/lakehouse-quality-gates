@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.9, pytest-9.1.1, pluggy-1.6.0 -- /Users/santosh/Documents/workspace/SODA/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/santosh/Documents/workspace/SODA
+configfile: pyproject.toml
+plugins: platformdirs-4.13.0, cov-7.1.0
+collecting ... collected 1 item
+
+tests/live/test_result_history.py::test_history_records_execution_errors_and_empty_blocked_attempts PASSED [100%]
+
+- generated xml file: /Users/santosh/Documents/workspace/SODA/docs/results/runs/2026-10-14-v1.0-review/history-pytest.xml -
+============================== 1 passed in 2.13s ===============================

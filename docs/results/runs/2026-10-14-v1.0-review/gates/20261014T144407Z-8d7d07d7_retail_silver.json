@@ -1,0 +1,319 @@
+{
+  "run_id": "20261014T144407Z-8d7d07d7",
+  "pipeline": "retail",
+  "layer": "silver",
+  "engine": "duckdb",
+  "status": "passed",
+  "created_at": "2026-10-14T14:44:08.943971+00:00",
+  "summary": {
+    "passed": 22,
+    "warned": 0,
+    "failed": 0,
+    "not_evaluated": 0,
+    "excluded": 0,
+    "total": 22
+  },
+  "reasons": [],
+  "contracts": [
+    {
+      "name": "retail.silver.customers",
+      "dataset": "lakehouse_duckdb/silver/customers",
+      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/silver/customers.yml",
+      "errors": [],
+      "checks": [
+        {
+          "name": "Silver customers schema is unchanged",
+          "type": "schema",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "schema_events_count": 0
+          },
+          "details": []
+        },
+        {
+          "name": "Silver customers is not empty",
+          "type": "row_count",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "check_rows_tested": 10,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Customer id present",
+          "type": "missing",
+          "column": "customer_id",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 10,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Customer id unique after dedup",
+          "type": "duplicate",
+          "column": "customer_id",
+          "outcome": "passed",
+          "metrics": {
+            "duplicate_count": 0,
+            "duplicate_percent": 0.0,
+            "check_rows_tested": 10,
+            "missing_count": 0,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Name present",
+          "type": "missing",
+          "column": "name",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 10,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Email present",
+          "type": "missing",
+          "column": "email",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 10,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Email is well-formed",
+          "type": "invalid",
+          "column": "email",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 10,
+            "missing_count": 0,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Email unique",
+          "type": "duplicate",
+          "column": "email",
+          "outcome": "passed",
+          "metrics": {
+            "duplicate_count": 0,
+            "duplicate_percent": 0.0,
+            "check_rows_tested": 10,
+            "missing_count": 0,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        },
+        {
+          "name": "Signup date present",
+          "type": "missing",
+          "column": "signup_date",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 10,
+            "dataset_rows_tested": 10
+          },
+          "details": []
+        }
+      ]
+    },
+    {
+      "name": "retail.silver.orders",
+      "dataset": "lakehouse_duckdb/silver/orders",
+      "source": "/Users/santosh/Documents/workspace/SODA/contracts/retail/silver/orders.yml",
+      "errors": [],
+      "checks": [
+        {
+          "name": "Silver orders schema is unchanged",
+          "type": "schema",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "schema_events_count": 0
+          },
+          "details": []
+        },
+        {
+          "name": "Silver orders is not empty",
+          "type": "row_count",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "No order timestamped in the future",
+          "type": "failed_rows",
+          "column": null,
+          "outcome": "passed",
+          "metrics": {
+            "failed_rows_count": 0,
+            "failed_rows_percent": 0.0,
+            "dataset_rows_tested": 19,
+            "check_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Order id present",
+          "type": "missing",
+          "column": "order_id",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Order id unique after dedup",
+          "type": "duplicate",
+          "column": "order_id",
+          "outcome": "passed",
+          "metrics": {
+            "duplicate_count": 0,
+            "duplicate_percent": 0.0,
+            "check_rows_tested": 19,
+            "missing_count": 0,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Customer id present",
+          "type": "missing",
+          "column": "customer_id",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Customer exists in silver.customers",
+          "type": "invalid",
+          "column": "customer_id",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 19,
+            "missing_count": 0,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Order timestamp present",
+          "type": "missing",
+          "column": "order_ts",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Status present",
+          "type": "missing",
+          "column": "status",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Status is canonical",
+          "type": "invalid",
+          "column": "status",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 19,
+            "missing_count": 0,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Amount present",
+          "type": "missing",
+          "column": "amount",
+          "outcome": "passed",
+          "metrics": {
+            "missing_count": 0,
+            "missing_percent": 0.0,
+            "check_rows_tested": 19,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Amount is not negative",
+          "type": "invalid",
+          "column": "amount",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 19,
+            "missing_count": 0,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        },
+        {
+          "name": "Amount below the outlier ceiling",
+          "type": "invalid",
+          "column": "amount",
+          "outcome": "passed",
+          "metrics": {
+            "invalid_count": 0,
+            "invalid_percent": 0.0,
+            "check_rows_tested": 19,
+            "missing_count": 0,
+            "dataset_rows_tested": 19
+          },
+          "details": []
+        }
+      ]
+    }
+  ]
+}

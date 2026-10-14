@@ -1,0 +1,22 @@
+Captured main snapshots and rows for five tables: /Users/santosh/Documents/workspace/SODA/reports/e2e-wap/run-QdSrvze3/airflow-main-before.json
+cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_wap '{"bad_batch": true}'
+==> Waiting for lakehouse_retail_medallion_wap to be parsed…
+==> Triggering lakehouse_retail_medallion_wap (manual__ldl_20261014T144152)
+  [5s] state=running
+  [35s] state=running
+==> lakehouse_retail_medallion_wap failed
+dag_id                          logical_date    task_id           state            start_date                        end_date
+lakehouse_retail_medallion_wap                  query_timetravel  upstream_failed  2026-10-14T14:43:02.881225+00:00  2026-10-14T14:43:02.881225+00:00
+lakehouse_retail_medallion_wap                  land_smoke        success          2026-10-14T14:41:55.224560+00:00  2026-10-14T14:42:20.940962+00:00
+lakehouse_retail_medallion_wap                  wap_write_bronze  success          2026-10-14T14:42:22.076417+00:00  2026-10-14T14:42:51.837420+00:00
+lakehouse_retail_medallion_wap                  dq_bronze         failed           2026-10-14T14:42:53.053918+00:00  2026-10-14T14:42:57.318189+00:00
+lakehouse_retail_medallion_wap                  publish_bronze    upstream_failed  2026-10-14T14:42:58.451013+00:00  2026-10-14T14:42:58.451013+00:00
+lakehouse_retail_medallion_wap                  wap_write_silver  upstream_failed  2026-10-14T14:42:58.997160+00:00  2026-10-14T14:42:58.997160+00:00
+lakehouse_retail_medallion_wap                  dq_silver         upstream_failed  2026-10-14T14:42:59.247356+00:00  2026-10-14T14:42:59.247356+00:00
+lakehouse_retail_medallion_wap                  publish_silver    upstream_failed  2026-10-14T14:43:00.289981+00:00  2026-10-14T14:43:00.289981+00:00
+lakehouse_retail_medallion_wap                  wap_write_gold    upstream_failed  2026-10-14T14:43:00.363275+00:00  2026-10-14T14:43:00.363275+00:00
+lakehouse_retail_medallion_wap                  dq_gold           upstream_failed  2026-10-14T14:43:01.428520+00:00  2026-10-14T14:43:01.428520+00:00
+lakehouse_retail_medallion_wap                  publish_gold      upstream_failed  2026-10-14T14:43:01.842378+00:00  2026-10-14T14:43:01.842378+00:00
+make[1]: *** [airflow-wap-trigger-bad] Error 1
+Captured main snapshots and rows for five tables: /Users/santosh/Documents/workspace/SODA/reports/e2e-wap/run-QdSrvze3/airflow-main-after.json
+Airflow WAP bad run preserved all five main snapshot ids and row counts

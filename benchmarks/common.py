@@ -37,9 +37,18 @@ class ProbeRun:
 
 def run_probe(engine: str, layer: str, extra_env: Mapping[str, str] | None = None) -> ProbeRun:
     """Run benchmarks/probe.py for one layer on one engine as a fresh process."""
-    env = {**os.environ, "DQ_SINKS": "[]", **(extra_env or {})}
+    env = {
+        **os.environ,
+        **(extra_env or {}),
+        "DQ_SINKS": "[]",
+        "DQ_ICEBERG_SINK": "false",
+        "DQ_SLACK_WEBHOOK_URL": "",
+    }
     if engine == "container":
-        cmd: list[str] = ["docker", "exec", "-i", "-e", "DQ_SINKS=[]", CONTAINER, "python", "-", layer]
+        cmd: list[str] = [
+            "docker", "exec", "-i", "-e", "DQ_SINKS=[]", "-e", "DQ_ICEBERG_SINK=false",
+            "-e", "DQ_SLACK_WEBHOOK_URL=", CONTAINER, "python", "-", layer,
+        ]  # fmt: skip
         stdin = PROBE.read_text()
     else:
         env["DQ_ENGINE"] = engine
@@ -48,6 +57,8 @@ def run_probe(engine: str, layer: str, extra_env: Mapping[str, str] | None = Non
     start = time.perf_counter()
     proc = subprocess.run(cmd, input=stdin, capture_output=True, text=True, env=env, cwd=ROOT, check=False)
     elapsed = time.perf_counter() - start
+    if proc.returncode != 0:
+        raise RuntimeError(f"probe failed ({engine}/{layer}, rc={proc.returncode}): {proc.stderr[-2000:]}")
     for line in proc.stdout.splitlines():
         if line.startswith("BENCH_JSON "):
             return ProbeRun(elapsed, json.loads(line.removeprefix("BENCH_JSON ")))

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from soda_lakehouse_dq.adapters.filesystem import validate_path_component
 from soda_lakehouse_dq.domain.models import GateReport, Outcome
 
 
@@ -42,5 +43,8 @@ def report_to_dict(report: GateReport) -> dict[str, Any]:
 
 
 def report_path(directory: Path, report: GateReport, suffix: str) -> Path:
+    validate_path_component(report.run_id, "run_id")
+    validate_path_component(report.pipeline, "pipeline")
+    validate_path_component(suffix, "report suffix")
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"{report.run_id}_{report.pipeline}_{report.layer.value}.{suffix}"

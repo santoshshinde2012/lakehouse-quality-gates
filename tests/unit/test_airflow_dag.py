@@ -6,6 +6,7 @@ import sys
 import types
 
 import pytest
+from jinja2 import Environment, StrictUndefined
 
 from tests.conftest import PROJECT_ROOT
 
@@ -69,6 +70,7 @@ def dag_module(monkeypatch):
 def test_dag_chain_has_a_gate_after_every_layer(dag_module):
     dag = dag_module.dag
     assert dag.dag_id == "lakehouse_retail_medallion_dq"
+    assert dag.kwargs["max_active_runs"] == 1
     order, task = [], dag.tasks[0]
     while task:
         order.append(task.task_id)
@@ -107,6 +109,19 @@ def test_fault_injection_is_off_unless_conf_flag(dag_module):
     assert "dag_run.conf.get('inject_bad_batch')" in cmd
     assert "docker exec ldl-soda soda-dq seed /opt/soda-dq/fixtures/bad_batch --yes" in cmd
     assert cmd.endswith('else echo "no fault injected"; fi')
+
+
+@pytest.mark.parametrize("value", [True, False, "true", "false", 1, None, {"enabled": True}])
+def test_fault_injection_requires_json_boolean_true(dag_module, value):
+    import dq_operators
+
+    rendered = (
+        Environment(undefined=StrictUndefined)
+        .from_string(dq_operators.fault_injection_command())
+        .render(dag_run=types.SimpleNamespace(conf={"inject_bad_batch": value}))
+    )
+    flag = "yes" if value is True else "no"
+    assert rendered.startswith(f'if [ "{flag}" = yes ]; then ')
 
 
 @pytest.fixture
@@ -158,3 +173,16 @@ def test_wap_commands(wap_dag):
                 lambda: ops.wap_gate_command("gold", "a;b")):  # fmt: skip
         with pytest.raises(ValueError):  # noqa: PT011
             bad()
+
+
+@pytest.mark.parametrize("value", [True, False, "true", "false", 1, None, {"enabled": True}])
+def test_wap_bad_source_requires_json_boolean_true(wap_dag, value):
+    import wap_operators
+
+    rendered = (
+        Environment(undefined=StrictUndefined)
+        .from_string(wap_operators.SOURCE)
+        .render(dag_run=types.SimpleNamespace(conf={"bad_batch": value}))
+    )
+    expected = "/opt/soda-wap-fixtures/bad_batch" if value is True else "/opt/data/sample"
+    assert rendered == expected

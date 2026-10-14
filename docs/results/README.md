@@ -8,6 +8,7 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 
 | Run | Date | Commit | What it shows | Reproduce |
 |---|---|---|---|---|
+| [Enterprise source review](runs/2026-10-14-v1.0-review/README.md) | 2026-10-14 | `9cd3ed3` + `codex/enterprise-verification` working tree | 359 tests, 97% line coverage, 53 checks; live 9/9, full 15/15, WAP 11/11; real history readback and first-use bootstrap; gate reports, audit manifests, exact Airflow snapshots, JUnit, coverage, source hashes and checksums | `make test-all e2e-live e2e-full e2e-wap` |
 | [PR validation](runs/2026-10-14-v1.0-pr-checks/README.md) | 2026-10-14 | `2200222` + `codex/harden-quality-gates-wap` working tree | 216 tests, 97% coverage, 53 contract checks after the CLI reporting fix; lint, strict types, contract syntax and fixture demos; live tiers were not rerun | `make test-all` |
 | [Hardening checks](runs/2026-10-14-v1.0-hardening/test-all.log) | 2026-10-14 | `2200222` + working tree | 214 tests, 97% coverage, 53 contract checks; [live 9/9](runs/2026-10-14-v1.0-hardening/e2e-live.log), [full 15/15](runs/2026-10-14-v1.0-hardening/e2e-full.log), [WAP 11/11](runs/2026-10-14-v1.0-hardening/e2e-wap.log); failure and concurrency regressions | `make test-all e2e-live e2e-full e2e-wap` |
 | [Write-audit-publish](runs/2026-10-14-wap/README.md) | 2026-10-14 | v1.0.0 (pre-release tree) | Good batch published to `main` (snapshot ids before and after), bad batch blocked with `main` unchanged and the branch kept; CLI, Airflow and the live test | `make e2e-wap` |
@@ -21,12 +22,14 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 | [Archive](archive/README.md) | 2026-10-13 | | Superseded artefacts kept for the record (early Airflow debugging runs) | |
 
 All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Docker Desktop 29.8 with 10 CPUs and
-8 GB, Python 3.12, Soda Core 4.26.0, local-data-lakehouse `main` (Lakekeeper, RustFS, Spark 4.1.3, Trino 483, Airflow 3).
+8 GB, Python 3.12, local-data-lakehouse `main` (Lakekeeper, RustFS, Spark 4.1.3, Trino 483, Airflow 3). Gate and live-stack runs used Soda Core 4.26.0;
+the five-tool benchmark used its separate pinned environment, including Soda 4.27.0 (see `tools_versions.json`).
 
 ## What each folder contains
 
 | Folder | Contents |
 |---|---|
+| `runs/2026-10-14-v1.0-review/` | Full attachment index, raw workflow logs and reports, pytest and coverage XML, snapshot manifests, Airflow before/after state, runtime/source fingerprints, checksum manifest |
 | `runs/2026-10-14-v1.0-pr-checks/` | `README.md` (validation scope and base), unchanged `test-all.log` from the final PR checks |
 | `runs/2026-10-14-v0.4.1-checks/` | `test-all.log` |
 | `runs/2026-10-13-fresh-clone/` | `test-all.log` (tests and coverage), `e2e-live/` and `e2e-full/` (one log per step), benchmark CSV/JSON and the generated `summary.md` |
