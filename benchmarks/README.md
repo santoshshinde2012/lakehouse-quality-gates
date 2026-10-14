@@ -30,3 +30,26 @@ How each number is taken:
 - Percentiles are nearest-rank over five warm runs, so p95 is the slowest warm run.
 - The per-run JSON lines (every check result) are committed gzipped as `perf_raw.jsonl.gz` to stay under the
   500 KB pre-commit limit; `run_perf` writes plain `perf_raw.jsonl`, gzip it before committing.
+
+The five-tool comparison runs locally without Docker and does not overwrite lakehouse tables.
+Use a separate output directory to retain each measurement set:
+
+```bash
+make bench-tools TOOL_SIZES='100000 1000000' REPEATS=5 BENCH_OUT=/tmp/lqg-tool-run
+```
+
+Here, `run_s` includes tool imports, Parquet loading, setup, validation, and diagnostic mapping;
+`process_s` also includes interpreter startup and shutdown. Each size includes five deliberately
+injected defect categories at roughly 0.1% each. These timings include failure handling. The harness
+verifies actual fixture sizes and ground-truth counts, interleaves tools with rotating starts,
+and scores six identified pass/fail decisions. Diagnostic counts use each tool's own semantics.
+Soda also runs an unscored row-count check. Backend choices differ, and no equal CPU or thread
+budget is imposed. Fresh processes do not establish cold operating-system caches.
+
+Alongside `tools.csv`, each run saves exact versions, `tools_metadata.json`, `tools_raw.jsonl`,
+per-process logs, and the executed harness snapshot under `tools_logs/`. Metadata records timestamps,
+the source revision and dirty state, fixture hashes and counts, execution order, and result hashes.
+Failed processes, incomplete results, or incorrect scored verdicts make the command exit nonzero.
+GX results are matched by explicit check identity because its result order can differ from the
+declaration order. Historical archives retain the original harness's positional mapping and should
+not be used as correctly labeled GX diagnostic counts.
