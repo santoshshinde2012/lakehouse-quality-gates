@@ -18,11 +18,13 @@ env:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.12.23"
           enable-cache: true
@@ -51,7 +53,7 @@ jobs:
       - name: Gate summary
         if: always()
         run: cat reports/*_retail_*.md >> "$GITHUB_STEP_SUMMARY" || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: dq-reports
@@ -60,10 +62,12 @@ jobs:
             coverage.xml
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Build runner image
         run: docker build -f docker/Dockerfile -t lakehouse-quality-gates:ci .
       - name: Prepare reports for the non-root runner
@@ -77,7 +81,7 @@ jobs:
           )
           docker run "${runtime[@]}" lakehouse-quality-gates:ci soda-dq validate
           docker run "${runtime[@]}" lakehouse-quality-gates:ci soda-dq run
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: docker-dq-reports

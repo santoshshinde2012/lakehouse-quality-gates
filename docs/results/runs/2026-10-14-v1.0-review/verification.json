@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "finished_at": "2026-10-14T15:47:02.007794+00:00",
+  "finished_at": "2026-10-14T15:56:18.713224+00:00",
   "base_commit": "9cd3ed37870063ed1d4988ce53cd12232c8840f8",
   "branch": "codex/enterprise-verification",
   "source_was_working_tree": true,
@@ -9,11 +9,11 @@
     ".dockerignore": "4edf890954211cbdd83b270a4d109e34892d0b7226f94242f423f70d9d2a6188",
     ".editorconfig": "acdd296cc8a5a957cbb387e8a4726bbcf884f9ad41afd3b2ec71ce47d85182d3",
     ".env.example": "55a32d6f1df84d4ecf228af5cc0a2066ec3248e02f2e743eafa1e14e9a343b6c",
-    ".github/workflows/ci.yml": "31922fab1f72acd2a249296d317b595dfb0f834f9a1318cf81370b57b83ec1fb",
+    ".github/workflows/ci.yml": "6a6552ef866e1646f61cff88a3934f62457f5be9b4d9f5a003aeadba9cbb081c",
     ".gitignore": "bff9bc21185a6fcbe29b7934cc6622ef4ccd3c92c9610a140a282fa6c905a762",
     ".markdownlint-cli2.yaml": "51147004feab52823644a236c3df21d5197981b9990a5712beae057fe0e9a19e",
     ".pre-commit-config.yaml": "2cc52a92a028da58e33306292daee60351ecfa755d03fae089575106ce6ba6f7",
-    "CHANGELOG.md": "57dbef5f1565951440e72b63ae88d1d0089c9c447cc2b03a2a19b07f9c22adfd",
+    "CHANGELOG.md": "201cb6e7a041fa5aec1c2aeb0fce8cf1babf68eca672eeebc244cb45a7261de3",
     "CONTRIBUTING.md": "3b8b0d0e9fc0f49da655d2cfb0e68a843dcdce96c4cb0a261748e632f7fd02e2",
     "LICENSE": "06654cbd9a0b9ead5e58c09770161444b9eb1f30788e24141b0d46251248bdb7",
     "Makefile": "24045d4f8fdadb0c83b7b61c36971dbfd8c2fb7e922cc4bf41886e12c399a11c",
@@ -314,7 +314,8 @@
     "Live WAP proves normal good/bad publication; concurrency, malformed-input and recovery scenarios are focused unit regressions.",
     "Historical 46-check performance benchmarks were not rerun; current implementation has 53 checks.",
     "Checksums detect attachment changes; evidence remains trusted local data, not a signed authorization token.",
-    "Initial Linux CI test-message assertions failed only under ANSI-colored output; failure evidence is preserved and excluded from success counts. All 18 WAP CLI tests passed with forced color after the assertion-only fix, and the full local suite reran."
+    "Initial Linux CI test-message assertions failed only under ANSI-colored output; failure evidence is preserved and excluded from success counts. All 18 WAP CLI tests passed with forced color after the assertion-only fix, and the full local suite reran.",
+    "Final CI-only maintenance pins Ubuntu 24.04 and verified Node 24 action release commits; application source and test behavior are unchanged. CI verifies the resulting workflow; final job results and uploaded artifacts are linked from PR #2."
   ],
   "ci_attempts": [
     {
@@ -325,5 +326,33 @@
       "failure_log": "attempts/ci-linux-01.log",
       "failure_junit": "attempts/ci-linux-pytest-01.xml"
     }
-  ]
+  ],
+  "ci_workflow": {
+    "runner": "ubuntu-24.04",
+    "uv_version": "0.12.23",
+    "actions": [
+      {
+        "name": "actions/checkout",
+        "version": "v7.0.1",
+        "commit": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+        "runtime": "node24",
+        "source": "https://github.com/actions/checkout/releases/tag/v7.0.1"
+      },
+      {
+        "name": "actions/upload-artifact",
+        "version": "v7.0.2",
+        "commit": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+        "runtime": "node24",
+        "source": "https://github.com/actions/upload-artifact/releases/tag/v7.0.2"
+      },
+      {
+        "name": "astral-sh/setup-uv",
+        "version": "v10.3.0",
+        "commit": "1c37ad07a6a961277cf70c0d37d6f313000f5884",
+        "runtime": "node24",
+        "source": "https://github.com/astral-sh/setup-uv/releases/tag/v10.3.0"
+      }
+    ],
+    "checkout_persist_credentials": false
+  }
 }

@@ -15,6 +15,7 @@ versioning: [SemVer](https://semver.org/).
   Airflow demo injection requires a boolean `true`; WAP evidence failures return configuration errors.
 - Benchmark harnesses reject failed subprocess measurements and return failure on accuracy mismatches.
   CI retains coverage XML, and documentation verifies recorded run outcomes and step attachments.
+- CI pins Ubuntu 24.04 and Node 24 action release commits, with persisted checkout credentials disabled.
 - Empty contracts block the gate; silver requires an order status, and gold requires revenue and valid,
   non-negative counters. The current retail contracts contain 53 checks (14 bronze, 22 silver, 17 gold).
 - Rendered contracts use immutable content-based paths and atomic writes so concurrent engines cannot

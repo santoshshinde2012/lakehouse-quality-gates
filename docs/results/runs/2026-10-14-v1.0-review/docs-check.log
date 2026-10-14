@@ -1,5 +1,5 @@
 python3 scripts/check_links.py
-checked 162 Markdown files: 0 broken links
+checked 174 Markdown files: 0 broken links
 npx -y markdownlint-cli2@0.23.3
 markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
 Finding: README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
