@@ -1,0 +1,16 @@
+{
+  "container": "ldl-soda",
+  "image_id": "sha256:9f417fd97f0c34ef5c73ea3828c6f4fb47be059b91002bb032f8887d2337a081",
+  "user": "dq",
+  "read_only_root": true,
+  "capabilities_dropped": [
+    "ALL"
+  ],
+  "security_options": [
+    "no-new-privileges:true"
+  ],
+  "temp_filesystems": [
+    "/tmp"
+  ],
+  "scope": "Runner created by the current WAP workflow; environment values excluded"
+}

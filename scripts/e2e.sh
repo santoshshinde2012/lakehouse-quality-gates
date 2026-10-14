@@ -67,12 +67,17 @@ step() {
   local secs=$((SECONDS - start))
   if [[ "$code" == "$expected" ]]; then
     RESULTS+=("PASS|$name|exit $code (expected $expected)|${secs}s")
+    return 0
   else
     RESULTS+=("FAIL|$name|exit $code (expected $expected), see ${log#"$ROOT"/}|${secs}s")
     FAILED=1
     tail -20 "$log" | sed 's/^/    /'
+    return 1
   fi
 }
+
+# Startup failure must not fall through into seed jobs or fault injection on a partial stack.
+required_step() { step "$@" || exit 1; }
 
 cleanup() {
   local code=$? project containers active name
@@ -123,48 +128,95 @@ blocks_every_layer() { # every layer of the bad batch must exit 1
   done
 }
 
-step "uv sync" 0 uv sync --frozen --all-extras
+pytest_complete() {
+  local report="$LOG_DIR/pytest-$MODE.xml" code
+  uv run --frozen pytest "$@" --junitxml="$report" --basetemp="$LOG_DIR/pytest-tmp"
+  code=$?
+  [[ $code == 0 ]] || return "$code"
+  # Deselected tests are absent from JUnit. Selected skips are incomplete e2e coverage.
+  uv run --frozen python - "$report" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    cases = ET.parse(path).getroot().findall(".//testcase")
+except (OSError, ET.ParseError) as exc:
+    print(f"Cannot validate e2e JUnit report {path}: {exc}", file=sys.stderr)
+    sys.exit(1)
+skipped = sum(case.find("skipped") is not None for case in cases)
+failed = sum(case.find("failure") is not None or case.find("error") is not None for case in cases)
+print(f"E2E JUnit: {len(cases)} selected tests, {skipped} skipped, {failed} failed ({path})")
+if not cases or skipped or failed:
+    print("E2E tests must execute completely, without selected skips or failures", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+airflow_bad_trigger() {
+  local kind="$1" output="$LOG_DIR/airflow-$1-bad-trigger.txt" code
+  make "airflow-$kind-trigger-bad" >"$output" 2>&1
+  code=$?
+  cat "$output" || return 1
+  [[ $code == 2 ]] || { echo "Airflow $kind bad trigger exited $code, expected 2" >&2; return 1; }
+  uv run --frozen python scripts/airflow_bad_evidence.py "$kind" "$output" || return 1
+  return 2
+}
+
+airflow_wap_bad() {
+  local before="$LOG_DIR/airflow-main-before.json" after="$LOG_DIR/airflow-main-after.json" code
+  uv run --frozen python scripts/wap_main_evidence.py capture "$before" || return 1
+  airflow_bad_trigger wap
+  code=$?
+  uv run --frozen python scripts/wap_main_evidence.py capture "$after" || return 1
+  [[ $code == 2 ]] || return 1
+  uv run --frozen python scripts/wap_main_evidence.py compare "$before" "$after" || return 1
+  return 2
+}
+
+required_step "uv sync" 0 uv sync --frozen --all-extras
 if [[ ! -x "$LDL/.venv/bin/python" ]]; then
-  step "lakehouse venv (make venv)" 0 make -C "$LDL" venv
+  required_step "lakehouse venv (make venv)" 0 make -C "$LDL" venv
 fi
 
 if [[ "$MODE" == live ]]; then
   if running ldl-lakekeeper; then echo "==> lakehouse already running: reusing it"; fi
-  step "lakehouse up (light profile)" 0 make -C "$LDL" up-light
+  required_step "lakehouse up (light profile)" 0 make -C "$LDL" up-light
   step "seed good batch (DuckDB)" 0 seed fixtures/good_batch
   step "gates on good batch, duckdb (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "seed bad batch" 0 seed fixtures/bad_batch
   step "gates on bad batch, duckdb (expect 3 blocks)" 0 blocks_every_layer duckdb
   step "restore good batch" 0 seed fixtures/good_batch
   step "gates after restore (expect pass)" 0 "${DQ[@]}" run -e duckdb
-  step "pytest -m live" 0 uv run --frozen pytest -m live -p no:cacheprovider
+  step "pytest -m live" 0 pytest_complete -m live -p no:cacheprovider
 elif [[ "$MODE" == wap ]]; then
   if running ldl-spark; then echo "==> full lakehouse already running: reusing it"; fi
-  step "lakehouse up (full profile, WAP overlay)" 0 make wap-up
+  required_step "lakehouse up (full profile, WAP overlay)" 0 make wap-up
   step "WAP good batch (expect 3 layers published)" 0 make wap-demo-good WAP_EVIDENCE="$LOG_DIR"
   step "WAP bad batch (expect bronze blocked, main untouched)" 0 make wap-demo-bad WAP_EVIDENCE="$LOG_DIR"
   step "gates on main after the bad batch (expect pass)" 0 "${DQ[@]}" run -e duckdb
-  step "runner container up (make dq-up)" 0 make dq-up
-  step "Airflow up on :$AIRFLOW_API_PORT" 0 make airflow-dq-up
+  required_step "runner container up (make dq-up)" 0 make dq-up
+  required_step "Airflow up on :$AIRFLOW_API_PORT" 0 make airflow-dq-up
   step "Airflow WAP good run (expect success)" 0 make airflow-wap-trigger
-  step "Airflow WAP bad run (expect dq_bronze to fail)" 2 make airflow-wap-trigger-bad
+  step "Airflow WAP bad run (expect dq_bronze to fail)" 2 airflow_wap_bad
   step "gates on main after the Airflow bad run (expect pass)" 0 "${DQ[@]}" run -e duckdb
-  step "pytest WAP tests (-m full -k wap)" 0 uv run --frozen pytest -m full -k wap -p no:cacheprovider
+  step "pytest WAP tests (-m full -k wap)" 0 pytest_complete -m full -k wap -p no:cacheprovider
 else
   if running ldl-trino; then echo "==> full lakehouse already running: reusing it"; fi
-  step "lakehouse up (full profile, Trino, WAP overlay)" 0 make wap-up
-  step "lakehouse Spark pipeline (make e2e)" 0 make -C "$LDL" e2e
+  required_step "lakehouse up (full profile, Trino, WAP overlay)" 0 make wap-up
+  required_step "lakehouse Spark pipeline (make e2e)" 0 make -C "$LDL" e2e
   step "gates on Spark output, duckdb (expect pass)" 0 "${DQ[@]}" run -e duckdb
   step "gates on Spark output, trino (expect pass)" 0 "${DQ[@]}" run -e trino
   step "seed bad batch" 0 seed fixtures/bad_batch
   step "gates on bad batch, trino (expect 3 blocks)" 0 blocks_every_layer trino
   step "restore good batch" 0 seed fixtures/good_batch
-  step "runner container up (make dq-up)" 0 make dq-up
+  required_step "runner container up (make dq-up)" 0 make dq-up
   step "gates in ldl-soda container (expect pass)" 0 docker exec ldl-soda soda-dq run
-  step "Airflow up on :$AIRFLOW_API_PORT" 0 make airflow-dq-up
+  required_step "Airflow up on :$AIRFLOW_API_PORT" 0 make airflow-dq-up
   step "Airflow good run (expect success)" 0 make airflow-dq-trigger
-  step "Airflow bad run (expect dq_bronze to fail)" 2 make airflow-dq-trigger-bad
+  step "Airflow bad run (expect dq_bronze to fail)" 2 airflow_bad_trigger dq
   step "Airflow good run again (restores data)" 0 make airflow-dq-trigger
-  step "pytest -m 'live or full'" 0 uv run --frozen pytest -m "live or full" -p no:cacheprovider
+  step "pytest -m 'live or full'" 0 pytest_complete -m "live or full" -p no:cacheprovider
 fi
 exit $FAILED

@@ -38,6 +38,8 @@ PIPE_FIELDS = ("rows", "drop_s", "bronze_s", "silver_s", "gold_s", "table", "tab
 
 
 def _bench_json(proc: subprocess.CompletedProcess[str]) -> dict[str, Any]:
+    if proc.returncode != 0:
+        raise RuntimeError(f"benchmark seed failed (rc={proc.returncode}): {proc.stderr[-2000:]}")
     for line in proc.stdout.splitlines():
         if line.startswith("BENCH_JSON "):
             return dict(json.loads(line.removeprefix("BENCH_JSON ")))
@@ -85,6 +87,8 @@ def bench_scale(rows: int, warm: int, engines: list[str], tag: str) -> None:
             for run in range(1 + warm):
                 since = now_utc()
                 result = run_probe(engine, layer)
+                if result.payload["status"] != "passed":
+                    raise RuntimeError(f"clean benchmark data did not pass: {rows}/{engine}/{layer}")
                 row: dict[str, Any] = {
                     "rows": rows, "engine": engine, "layer": layer, "run": run,
                     "phase": "cold" if run == 0 else "warm", "process_s": round(result.process_s, 3),

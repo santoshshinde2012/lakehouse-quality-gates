@@ -76,7 +76,7 @@ on every contract, then the demo (good batch on CSV fixtures, then the bad batch
 Pass criteria:
 
 - `All checks passed!` from ruff and `Success: no issues found` from mypy.
-- pytest: `216 passed, 8 deselected` (the 8 are the live and full tests) and coverage of at least 95%.
+- pytest: `359 passed, 9 deselected` (the 9 are the live and full tests) and coverage of at least 95%.
 - `validate`: every contract reported valid.
 - Demo good: three `PASSED` gates, exit 0. Demo bad: `OK: bronze|silver|gold blocked as expected`.
 - Last line: `test-all: PASS (...)`.

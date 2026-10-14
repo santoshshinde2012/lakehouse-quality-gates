@@ -38,6 +38,22 @@ class JUnitXmlSink:
             for error in result.errors:
                 case = ET.SubElement(suite, "testcase", classname=result.contract.dataset, name="execution")
                 ET.SubElement(case, "error", message="contract execution error").text = error
+        if report.blocked and not any(result.failed or result.errors for result in report.results):
+            # Native outcomes alone do not represent policy failures: fail_on_warn and
+            # NOT_EVALUATED can block while every check is reported as passing or skipped.
+            suite = ET.SubElement(
+                suites,
+                "testsuite",
+                name="quality gate decision",
+                tests="1",
+                failures="1",
+                errors="0",
+                skipped="0",
+            )
+            case = ET.SubElement(
+                suite, "testcase", classname=f"{report.pipeline}/{report.layer.value}", name="gate"
+            )
+            ET.SubElement(case, "failure", message="quality gate blocked").text = "\n".join(report.reasons)
         ET.indent(suites)
         path: Path = report_path(self._directory, report, "xml")
         ET.ElementTree(suites).write(path, encoding="utf-8", xml_declaration=True)

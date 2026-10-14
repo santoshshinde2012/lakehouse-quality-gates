@@ -51,7 +51,7 @@ The design is a small hexagonal Python service (`soda-dq`) with one composition 
 one port (DuckDB on the Iceberg catalog, Trino, and in-memory DuckDB from CSV files), run on the host or in a hardened container, four result sinks and two
 notifiers. It sits next to the lakehouse and changes none of its files.
 
-**What the measurements say** (Apple M1 Pro, Docker Desktop with 8 GiB; details in [Benchmarks](benchmarks/README.md)):
+**What the measurements say** (Apple M1 Pro, Docker Desktop with 8 GiB; details in [Benchmarks](benchmarks/README.md)). These archived runs used the earlier 46-check contracts; the current contracts contain 53 checks and have not been performance-benchmarked:
 
 | Question | Answer (measured) |
 |---|---|
@@ -60,10 +60,10 @@ notifiers. It sits next to the lakehouse and changes none of its files.
 | How much memory? | Peak client RSS **690 MiB at 5M orders** (container), 685 MiB host; about 310 MiB at 1M |
 | Does it catch bad data? | **66 of 66 gate verdicts correct** over 7 defect types × 3 rates (0.1 %, 1 %, 10 %) plus a clean control; check-level precision and recall **1.0**; reported failing-row counts equal the injected counts |
 | Where does it break? | **Trino with the lakehouse's default 1 GiB heap fails at 5M orders** (`EXCEEDED_LOCAL_MEMORY_LIMIT`; the gate fails *closed*). With `make trino-heap` (4 GiB) it passes, taking 29.79 s for the three gates |
-| How does Soda compare? | Same six checks at 1M rows: Soda 0.44 s / 204 MiB, Pointblank 0.47 s / 389 MiB, datacontract-cli 1.08 s / 286 MiB, Pandera 2.83 s / 1.5 GiB, GX Core 11.5 s / 723 MiB. All five got every verdict right |
+| How does Soda compare? | Six scored rules at 1M orders, median of three runs: Soda 0.389 s / 204 MiB, Pointblank 0.441 s / 390 MiB, datacontract-cli 0.888 s / 286 MiB, Pandera 3.340 s / 1,527 MiB, GX Core 11.400 s / 728 MiB. All scored verdicts matched; selected backends and diagnostic-count semantics differ |
 
 **Decision.** Keep Soda Core v4 (Elastic License 2.0, internal use is allowed) as the gate engine, with Iceberg
-**write-audit-publish** on Spark ([section 13](#13-write-audit-publish)). This closes the one real correctness gap of
+**write-audit-publish** on Spark ([section 13](#13-write-audit-publish)). This closes the visibility gap of
 the gate-after-write DAG, where a gate stopped *promotion* but could not hide a bad layer that Spark had already
 written with `CREATE OR REPLACE`. The fully OSI-licensed fallback is ODCS v3.2 + datacontract-cli + Pointblank ([section 4](#4-background-and-tool-selection)).
 
@@ -129,7 +129,7 @@ snapshots carry the problem.
 | N5 | Availability | A gate that cannot run **blocks** (fail closed); no silent pass | By design: execution errors and NOT_EVALUATED block |
 | N6 | Security | No long-lived storage keys; non-root, read-only container; secrets never logged | [Security](architecture/security.md) |
 | N7 | Portability | One contract set for every engine; Python 3.12; macOS and Linux | CI on Ubuntu, live runs on macOS |
-| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 216 tests at 97% coverage |
+| N8 | Maintainability | `ruff`, `mypy --strict`, ≥ 95% line coverage | 359 tests at 97% coverage |
 
 ## 4. Background and tool selection
 
@@ -368,7 +368,7 @@ sequence, Airflow DAG) and the [configuration reference](guides/configuration.md
 
 The design conclusions: host DuckDB or the container are the right default engines up to at least 5M orders per
 batch; the gate is a small fraction of a Spark pipeline; detection is exact for the defects the contracts encode,
-so contract *coverage*, not accuracy, is the risk (failure mode 5 in [section 9](#9-reliability-and-failure-modes)).
+so missing rules remain a risk (failure mode 5 in [section 9](#9-reliability-and-failure-modes)).
 
 ## 9. Reliability and failure modes
 
@@ -381,7 +381,7 @@ so contract *coverage*, not accuracy, is the risk (failure mode 5 in [section 9]
 | 2 | Contract references a dropped column | Schema check fails | block with schema details | 3 | 3 | Contract change in the same PR as the producer change |
 | 3 | Soda raises inside a check | `ContractResult.errors` | block | 3 | 2 | Fail closed; error text in reasons |
 | 4 | Metric cannot be computed | NOT_EVALUATED | block (default) | 3 | 2 | `DQ_ALLOW_NOT_EVALUATED` only as a deliberate override |
-| 5 | Gate passes but data is bad (missing check) | Bad data promoted | Downstream checks (gold reconciliation), consumers | 5 | 2 | Contract review, [accuracy suite](benchmarks/results.md#detection-accuracy), WAP |
+| 5 | Gate passes but data is bad (missing check) | Bad data promoted | Downstream checks (gold reconciliation), consumers | 5 | 2 | Contract review, producer/consumer quality agreement, [accuracy suite](benchmarks/results.md#detection-accuracy) |
 | 6 | Bad layer visible before the gate runs | Readers see unaudited data for the gate's duration | Gate-after-write DAG only | 4 | 1 | Resolved by WAP ([section 13](#13-write-audit-publish)): the batch stays on an audit branch |
 | 7 | Slack down | No alert | `dq.notify.failed` log | 2 | 2 | Gate result unaffected; Airflow failure alerts |
 | 8 | Container killed (OOM) | Task fails | Airflow, exit code ≠ 0/1 | 3 | 1 | Measured RSS headroom ([resources](benchmarks/results.md#memory-vs-batch-size)); spill dir on tmpfs |
@@ -415,7 +415,7 @@ first), are in [capacity planning](benchmarks/analysis.md#scaling).
 ## 12. Known limitations and risks
 
 > [!NOTE]
-> **At a glance.** L1, `CREATE OR REPLACE` before the gate, was the one real correctness gap; write-audit-publish resolves it (v1.0.0).
+> **At a glance.** WAP resolves the pre-gate visibility window. Publication remains per table, and external writer coordination is a deployment responsibility.
 
 | # | Limitation / risk | Impact | Plan |
 |---|---|---|---|
@@ -437,10 +437,10 @@ first), are in [capacity planning](benchmarks/analysis.md#scaling).
 Readers of `main` never see a batch that has not passed its gate, which resolves L1. The Spark job lives in this
 repository (`wap/wap_job.py`, mounted into `ldl-spark` by a compose overlay) and reuses the lakehouse's SQL files
 read-only, so no lakehouse file changes. The gate reads the branch through DuckDB views pinned to each table's branch
-snapshot (`AT (VERSION => id)`), so contracts are unchanged. Publishing runs on Spark because OSS Trino 483 cannot
+snapshot (`AT (VERSION => id)`), and declared reference dependencies, including custom SQL reads. Publishing runs on Spark because OSS Trino 483 cannot
 fast-forward branches (L7). Proof, with snapshot ids before and after a good and a bad batch, is in the
 [WAP run](results/runs/2026-10-14-wap/README.md); the sequence, components and rollback are in
-[write-audit-publish](architecture/write-audit-publish.md) and the decision in [ADR 0006](adr/0006-write-audit-publish.md).
+[write-audit-publish](architecture/write-audit-publish.md) and the decision in [ADR 0006](adr/0006-write-audit-publish.md). Quality ownership, evidence protection, deployment access, and recovery requirements are in the [enterprise operating model](guides/enterprise-readiness.md).
 
 ## 14. Testing strategy
 
@@ -452,7 +452,7 @@ fast-forward branches (L7). Proof, with snapshot ids before and after a good and
 | T3 | `full` | Spark pipeline, Trino gates, the `ldl-soda` container, Airflow good and bad runs; scale and accuracy benchmarks | `make e2e-full`, `make bench*`, `tests/live/test_full_stack.py` | Manual, Docker |
 
 `make test-all` runs T0 and T1. Commands, expected output and pass criteria for every tier:
-[running and testing](guides/running-and-testing.md). Coverage: 216 tests in T0 and T1 plus 8 live and full tests,
+[running and testing](guides/running-and-testing.md). Coverage: 359 tests in T0 and T1 plus 9 live and full tests,
 97% line coverage of `soda_lakehouse_dq`. CI also builds the image and runs the demo gates inside it.
 
 ## 15. References

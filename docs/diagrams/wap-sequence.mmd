@@ -13,14 +13,17 @@ sequenceDiagram
   SP->>LK: CREATE BRANCH audit_RUN from main, then DELETE + INSERT on t.branch_audit_RUN
   Note over LK: main is unchanged: readers still<br/>see the last published snapshot
   AF->>DQ: soda-dq wap verify LAYER --branch audit_RUN
-  DQ->>LK: PyIceberg: snapshot id of audit_RUN per table
+  DQ->>LK: Resolve candidate and reference snapshot IDs
   DQ->>LK: views in dq_audit read t AT (VERSION => snapshot id)
-  DQ-->>AF: GateReport (same contracts, same policy)
+  DQ-->>AF: GateReport + atomically saved snapshot manifest
   alt passed or passed with warnings
-    AF->>SP: publish LAYER --branch audit_RUN
-    SP->>LK: CALL system.fast_forward(t, 'main', 'audit_RUN')
-    SP->>LK: DROP BRANCH audit_RUN
-    Note over LK: main now points at the audited snapshot
+    AF->>SP: publish LAYER with passing manifest
+    SP->>LK: Validate primary pins and CREATE private refs AT saved snapshot IDs
+    loop Each primary table, resume skips already published pins
+      SP->>LK: fast_forward(t, main, private publish ref)
+    end
+    SP->>LK: DROP private publication refs
+    Note over LK: Each main points at its audited snapshot<br/>Source branch retained<br/>Publication is per table
   else blocked
     DQ-->>AF: exit 1, dq task fails, publish and later layers never run
     Note over LK: main keeps the previous good snapshot,<br/>audit_RUN is kept with the bad rows for triage

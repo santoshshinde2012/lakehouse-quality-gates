@@ -80,10 +80,27 @@ def bench_headline(key: str) -> Callable[[], str]:
 
 def e2e_steps(mode: str) -> Callable[[], str]:
     def count() -> str:
-        steps = len(list((LATEST / f"e2e-{mode}").glob("*.log")))
-        return f"{steps}/{steps}"
+        return e2e_result(LATEST, mode)
 
     return count
+
+
+def e2e_result(run: Path, mode: str) -> str:
+    """Use recorded outcomes and require the corresponding numbered step attachments."""
+    summary = run / f"e2e-{mode}.log"
+    if not summary.is_file():
+        return "missing summary"
+    output = summary.read_text(encoding="utf-8")
+    steps = re.findall(r"^(PASS|FAIL)\s+\|", output, re.M)
+    attachments = sorted((run / f"e2e-{mode}").glob("[0-9][0-9]-*.log"))
+    expected = list(range(1, len(steps) + 1))
+    numbers = [int(path.name[:2]) for path in attachments]
+    if not steps or numbers != expected:
+        return "incomplete step attachments"
+    outcomes = re.findall(r"^RESULT: (PASS|FAIL)\s*$", output, re.M)
+    if not outcomes or outcomes[-1] != "PASS":
+        return "workflow failed"
+    return f"{steps.count('PASS')}/{len(steps)}"
 
 
 @dataclass(frozen=True)

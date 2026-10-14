@@ -1,0 +1,118 @@
+trim trailing whitespace.................................................Failed
+- hook id: trailing-whitespace
+- files were modified by this hook
+fix end of files.........................................................Failed
+- hook id: end-of-file-fixer
+- files were modified by this hook
+check yaml...............................................................Failed
+- hook id: check-yaml
+- files were modified by this hook
+check toml...............................................................Failed
+- hook id: check-toml
+- files were modified by this hook
+check for added large files..............................................Failed
+- hook id: check-added-large-files
+- files were modified by this hook
+detect private key.......................................................Failed
+- hook id: detect-private-key
+- files were modified by this hook
+markdownlint-cli2........................................................Failed
+- hook id: markdownlint-cli2
+- files were modified by this hook
+
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: CONTRIBUTING.md docs/benchmarks/results.md docs/architecture/observability.md docs/architecture/data-flow.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/README.md docs/architecture/design-principles.md docs/overview/glossary.md docs/adr/0005-ports-and-adapters.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: CHANGELOG.md docs/adr/0001-soda-core-v4-proprietary-licence.md benchmarks/README.md docs/guides/running-and-testing.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: fixtures/bad_batch/README.md docs/adr/0003-dataset-root-token.md docs/benchmarks/methodology.md docs/architecture/security.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 39 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/architecture/overview.md docs/adr/README.md docs/guides/configuration.md docs/adr/0006-write-audit-publish.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/architecture/README.md docs/guides/troubleshooting.md docs/diagrams/README.md docs/adr/0002-duckdb-existing-cursor.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/guides/contracts.md docs/diagrams/THEME.md README.md docs/benchmarks/analysis.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: fixtures/good_batch/README.md docs/overview/use-case.md docs/guides/enterprise-readiness.md docs/adr/0004-separate-gated-dag.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 39 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/architecture/deployment.md docs/guides/runbook.md docs/benchmarks/README.md docs/architecture/write-audit-publish.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+Finding: docs/architecture/components.md docs/guides/quickstart.md docs/system-design.md README.md CHANGELOG.md CONTRIBUTING.md benchmarks/README.md docs/**/*.md !docs/results/** !docs/research/benchmark-tiny/** !docs/research/quality-gates-landscape.md !**/.venv/** !**/node_modules/**
+Linting: 38 files
+Summary: 0 issues in 0 files
+
+ruff format..............................................................Failed
+- hook id: ruff-format
+- files were modified by this hook
+
+10 files left unchanged
+10 files left unchanged
+11 files left unchanged
+10 files left unchanged
+10 files left unchanged
+11 files left unchanged
+11 files left unchanged
+11 files left unchanged
+10 files left unchanged
+5 files left unchanged
+
+ruff check...............................................................Failed
+- hook id: ruff
+- files were modified by this hook
+
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+All checks passed!
+
+mypy --strict............................................................Failed
+- hook id: mypy
+- files were modified by this hook
+
+Success: no issues found in 57 source files
+
+soda contract syntax.....................................................Failed
+- hook id: soda-contracts
+- files were modified by this hook
+
+ok   retail.bronze.customers_raw
+ok   retail.bronze.orders_raw
+ok   retail.silver.customers
+ok   retail.silver.orders
+ok   retail.gold.daily_order_metrics
+
+docs links and anchors...................................................Failed
+- hook id: docs-links
+- files were modified by this hook
+
+checked 162 Markdown files: 0 broken links
+
+docs snippets in sync, no prose written twice............................Failed
+- hook id: docs-snippets
+- files were modified by this hook

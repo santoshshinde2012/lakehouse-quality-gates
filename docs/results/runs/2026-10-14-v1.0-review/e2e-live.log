@@ -1,0 +1,32 @@
+scripts/e2e.sh live
+==> uv sync
+==> lakehouse up (light profile)
+==> seed good batch (DuckDB)
+==> gates on good batch, duckdb (expect pass)
+==> seed bad batch
+==> gates on bad batch, duckdb (expect 3 blocks)
+==> restore good batch
+==> gates after restore (expect pass)
+==> pytest -m live
+==> stopping ldl-lakehouse-init
+==> removing ldl-lakehouse-init (volumes kept)
+==> stopping ldl-lakekeeper
+==> removing ldl-lakekeeper (volumes kept)
+==> removing ldl-lakekeeper-migrate (volumes kept)
+==> stopping ldl-objectstore
+==> removing ldl-objectstore (volumes kept)
+==> stopping ldl-postgres
+==> removing ldl-postgres (volumes kept)
+
+e2e-live summary (logs in reports/e2e-live/run-hMq2r7af/)
+      | step                                           | result
+PASS  | uv sync                                        | exit 0 (expected 0), 0s
+PASS  | lakehouse up (light profile)                   | exit 0 (expected 0), 10s
+PASS  | seed good batch (DuckDB)                       | exit 0 (expected 0), 3s
+PASS  | gates on good batch, duckdb (expect pass)      | exit 0 (expected 0), 2s
+PASS  | seed bad batch                                 | exit 0 (expected 0), 1s
+PASS  | gates on bad batch, duckdb (expect 3 blocks)   | exit 0 (expected 0), 2s
+PASS  | restore good batch                             | exit 0 (expected 0), 2s
+PASS  | gates after restore (expect pass)              | exit 0 (expected 0), 1s
+PASS  | pytest -m live                                 | exit 0 (expected 0), 10s
+RESULT: PASS

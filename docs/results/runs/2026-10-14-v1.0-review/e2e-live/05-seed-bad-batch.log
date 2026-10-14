@@ -1,0 +1,5 @@
+bronze.customers_raw             12 rows
+bronze.orders_raw                29 rows
+silver.customers                 12 rows
+silver.orders                    24 rows
+gold.daily_order_metrics          4 rows

@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 import types
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import duckdb
 import pytest
 
 from soda_lakehouse_dq.adapters.datasources.duckdb_provider import DuckDBProvider
-from soda_lakehouse_dq.adapters.wap.audit_json import JsonBranchAuditSink, load_audit
+from soda_lakehouse_dq.adapters.wap.audit_json import JsonBranchAuditSink, audit_to_dict, load_audit
 from soda_lakehouse_dq.adapters.wap.pinned_gate import PinnedSnapshotGate
 from soda_lakehouse_dq.adapters.wap.pyiceberg_refs import PyIcebergSnapshotReader
 from soda_lakehouse_dq.adapters.wap.spark_wap import SparkSubmitWap, parse_wap_json, subprocess_runner
@@ -19,9 +20,23 @@ from soda_lakehouse_dq.application.quality_gate import GatePolicy
 from soda_lakehouse_dq.application.verify_layer import VerifyLayerUseCase
 from soda_lakehouse_dq.application.wap import RunWapMedallionUseCase, VerifyBranchUseCase, dataset_table
 from soda_lakehouse_dq.domain.errors import DataQualityError, DataSourceError
-from soda_lakehouse_dq.domain.models import GateReport, GateStatus, Layer, Outcome
+from soda_lakehouse_dq.domain.models import (
+    CheckResult,
+    ContractResult,
+    GateReport,
+    GateStatus,
+    Layer,
+    Outcome,
+)
 from soda_lakehouse_dq.domain.ports import AuditWriter, BranchGate, BranchPublisher, SnapshotReader
-from soda_lakehouse_dq.domain.wap import BranchState, TableState, WapOutcome, branch_name, validate_branch
+from soda_lakehouse_dq.domain.wap import (
+    BranchAudit,
+    BranchState,
+    TableState,
+    WapOutcome,
+    branch_name,
+    validate_branch,
+)
 from tests.conftest import FIXED_NOW, FakeRepository, FakeVerifier, make_spec
 
 TABLES = {Layer.BRONZE: "bronze.orders", Layer.SILVER: "silver.orders", Layer.GOLD: "gold.orders"}
@@ -74,7 +89,13 @@ class FakeGate:
         self.calls.append((layer, dict(pins), run_id))
         status = GateStatus.BLOCKED if layer in self.blocked else GateStatus.PASSED
         reasons = ("x",) if status is GateStatus.BLOCKED else ()
-        return GateReport(run_id, pipeline, layer, "fake", status, (), reasons, FIXED_NOW)
+        contract = replace(
+            make_spec("orders", layer),
+            references=tuple(f"ds/{table.replace('.', '/')}" for table in pins if table != TABLES[layer]),
+        )
+        outcome = Outcome.FAILED if status is GateStatus.BLOCKED else Outcome.PASSED
+        result = ContractResult(contract, (CheckResult("fake check", "missing", outcome),))
+        return GateReport(run_id, pipeline, layer, "fake", status, (result,), reasons, FIXED_NOW)
 
 
 def _repo() -> FakeRepository:
@@ -95,7 +116,7 @@ def test_fakes_satisfy_ports():
 def test_branch_names_are_safe():
     assert branch_name("20261014T105200Z-ab12CD") == "audit_20261014t105200z_ab12cd"
     assert len(branch_name("x" * 200)) == 64
-    for bad in ("main", "publish_deadbeef", "publish_", "Audit", "a-b", "a;drop", ""):
+    for bad in ("main", "publish_deadbeef", "publish_", "Audit", "a-b", "a;drop", "audit_x\n", ""):
         with pytest.raises(DataQualityError):
             validate_branch(bad)
 
@@ -184,7 +205,16 @@ def test_parse_wap_json():
 
 def test_spark_adapter_commands():
     seen: list[list[str]] = []
-    spark = SparkSubmitWap(runner=lambda args: seen.append(list(args)) or OUT)
+
+    def run(args):
+        seen.append(list(args))
+        payload = json.loads(OUT.split("WAP_JSON ")[1])
+        payload["action"] = args[args.index("/opt/soda-wap/wap_job.py") + 1]
+        payload["layer"] = args[args.index("--layer") + 1]
+        payload["branch"] = args[args.index("--branch") + 1] if "--branch" in args else None
+        return "WAP_JSON " + json.dumps(payload)
+
+    spark = SparkSubmitWap(runner=run)
     spark.write(Layer.BRONZE, "audit_x", "/opt/data/sample")
     spark.publish(Layer.SILVER, "audit_x", {"silver.orders": 123}, main_before={"silver.orders": 1})
     spark.drop(Layer.GOLD, "audit_x")
@@ -287,15 +317,55 @@ def test_missing_primary_branch_fails_even_when_another_primary_exists():
     assert not gate.calls
 
 
-def test_reference_branch_can_fall_back_to_main():
+def test_reference_branch_can_fall_back_to_a_pinned_main_snapshot(tmp_path):
     from dataclasses import replace
 
     contract = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
     repo = FakeRepository({Layer.SILVER: [contract]})
-    spark = FakeSpark(branches={("silver.orders", "audit_x"): 101})
+    spark = FakeSpark(
+        main={"silver.orders": 1, "bronze.orders_raw": 7},
+        branches={("silver.orders", "audit_x"): 101},
+    )
+
+    class MovingReferenceGate(FakeGate):
+        def verify(self, pipeline, layer, pins, run_id):
+            spark.main["bronze.orders_raw"] = 999
+            return super().verify(pipeline, layer, pins, run_id)
+
+    gate = MovingReferenceGate()
+    audit = VerifyBranchUseCase(repo, spark, gate, JsonBranchAuditSink(tmp_path)).audit(
+        "retail", Layer.SILVER, "audit_x", "r"
+    )
+    expected = {"silver.orders": 101, "bronze.orders_raw": 7}
+    assert gate.calls[0][1] == expected
+    assert audit.pins == expected
+    assert load_audit(tmp_path / "wap/audit_x/silver.audit.json").pins == expected
+    assert spark.main["bronze.orders_raw"] == 999
+
+
+def test_reference_candidate_branch_is_used_instead_of_main():
+    from dataclasses import replace
+
+    contract = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
+    repo = FakeRepository({Layer.SILVER: [contract]})
+    spark = FakeSpark(
+        main={"silver.orders": 1, "bronze.orders_raw": 7},
+        branches={("silver.orders", "audit_x"): 101, ("bronze.orders_raw", "audit_x"): 88},
+    )
     gate = FakeGate()
     VerifyBranchUseCase(repo, spark, gate).execute("retail", Layer.SILVER, "audit_x", "r")
-    assert gate.calls[0][1] == {"silver.orders": 101}
+    assert gate.calls[0][1] == {"silver.orders": 101, "bronze.orders_raw": 88}
+
+
+def test_reference_without_candidate_or_main_snapshot_fails_before_gate():
+    from dataclasses import replace
+
+    contract = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
+    repo = FakeRepository({Layer.SILVER: [contract]})
+    spark, gate = FakeSpark(branches={("silver.orders", "audit_x"): 101}), FakeGate()
+    with pytest.raises(DataQualityError, match=r"reference table 'bronze\.orders_raw' has no main snapshot"):
+        VerifyBranchUseCase(repo, spark, gate).execute("retail", Layer.SILVER, "audit_x", "r")
+    assert not gate.calls
 
 
 def test_missing_primary_cannot_be_hidden_by_a_reference_branch():
@@ -342,3 +412,116 @@ def test_failed_audit_persistence_prevents_publication(clock):
         RunWapMedallionUseCase(spark, spark, verify, clock).execute("retail", [Layer.BRONZE])
     assert spark.main["bronze.orders"] == 1
     assert all(action != "publish" for action, _, _ in spark.calls)
+
+
+@pytest.mark.parametrize("change", ["added", "removed", "replaced"])
+def test_changed_contract_dependencies_cannot_save_approval_or_publish(clock, tmp_path, change):
+    original = replace(make_spec("orders"), references=("ds/bronze/orders_raw",))
+    updated = {
+        "added": replace(original, references=(*original.references, "ds/gold/orders")),
+        "removed": replace(original, references=()),
+        "replaced": replace(original, dataset="ds/silver/customers"),
+    }[change]
+
+    class ChangingRepository:
+        calls = 0
+
+        def list_contracts(self, pipeline, layer):
+            self.calls += 1
+            return [original if self.calls == 1 else updated]
+
+    repository = ChangingRepository()
+    spark = FakeSpark()
+    spark.main["bronze.orders_raw"] = 7
+    before = dict(spark.main)
+    gate = PinnedSnapshotGate(
+        lambda pins: VerifyLayerUseCase(repository, FakeVerifier(), GatePolicy(), clock)
+    )
+    verify = VerifyBranchUseCase(repository, spark, gate, JsonBranchAuditSink(tmp_path))
+    with pytest.raises(DataQualityError, match="contract read dependencies changed during audit"):
+        RunWapMedallionUseCase(spark, spark, verify, clock).execute(
+            "retail", [Layer.SILVER], branch="audit_x"
+        )
+    assert repository.calls == 2
+    assert spark.main == before
+    assert not (tmp_path / "wap/audit_x/silver.audit.json").exists()
+    assert all(action != "publish" for action, _, _ in spark.calls)
+
+
+def _manifest():
+    report = FakeGate().verify("retail", Layer.SILVER, {"silver.orders": 101}, "r")
+    return audit_to_dict(BranchAudit("audit_x", report, {"silver.orders": 101}))
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"version": True},
+        {"version": 1.0},
+        {"branch": "audit_x\n"},
+        {"pipeline": []},
+        {"pipeline": " "},
+        {"run_id": {}},
+        {"engine": None},
+        {"reasons": "bad rows"},
+        {"reasons": [None]},
+        {"created_at": "2026-10-14"},
+        {"created_at": None},
+        {"pins": {"silver.orders": True}},
+        {"pins": {"silver.orders": 0}},
+        {"main_before": {"silver.orders": False}},
+    ],
+)
+def test_malformed_saved_audit_is_an_operational_error(tmp_path, changes):
+    path = tmp_path / "audit.json"
+    path.write_text(json.dumps(_manifest() | changes))
+    with pytest.raises(DataQualityError):
+        load_audit(path)
+
+
+@pytest.mark.parametrize("field", ["gate", "pins"])
+def test_saved_audit_rejects_ambiguous_duplicate_fields(tmp_path, field):
+    text = json.dumps(_manifest())
+    if field == "gate":
+        text = text.replace('"gate": "passed"', '"gate": "blocked", "gate": "passed"')
+    else:
+        text = text.replace('"silver.orders": 101', '"silver.orders": 999, "silver.orders": 101')
+    path = tmp_path / "audit.json"
+    path.write_text(text)
+    with pytest.raises(DataQualityError, match="duplicate manifest field"):
+        load_audit(path)
+
+
+def _response(changes):
+    return "WAP_JSON " + json.dumps(json.loads(OUT.split("WAP_JSON ")[1]) | changes)
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        "WAP_JSON {",
+        "WAP_JSON []",
+        "WAP_JSON {}",
+        _response({"action": []}),
+        _response({"branch": "audit_x\n"}),
+        _response({"seconds": True}),
+        _response({"seconds": -1}),
+        _response({"seconds": float("nan")}),
+        _response({"tables": []}),
+        _response({"tables": {"silver.orders": None}}),
+        _response({"tables": {"silver.orders": {"main_snapshot": True}}}),
+        _response({"tables": {"silver.orders": {"main_snapshot": 1.5}}}),
+        _response({"tables": {"silver.orders": {"branch_rows": -1}}}),
+        _response({"tables": {"silver.orders": {"refs": {"main": False}}}}),
+    ],
+)
+def test_malformed_spark_response_is_an_operational_error(output):
+    with pytest.raises(DataSourceError, match="invalid WAP_JSON response"):
+        parse_wap_json(output)
+
+
+@pytest.mark.parametrize("changes", [{"action": "write"}, {"layer": "bronze"}, {"branch": "audit_other"}])
+def test_spark_adapter_rejects_response_for_a_different_step(changes):
+    spark = SparkSubmitWap(runner=lambda args: _response(changes))
+    with pytest.raises(DataSourceError, match="does not match the requested step"):
+        spark.publish(Layer.SILVER, "audit_x", {"silver.orders": 2})

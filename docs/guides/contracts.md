@@ -80,3 +80,24 @@ Why bronze **warns** where silver **fails**: [use case](../overview/use-case.md#
 `schema, missing, invalid, duplicate, row_count, aggregate, metric, freshness, failed_rows` (as listed by
 Soda's own validator). `reconciliation` and `group_by` need a licence. The silver↔gold reconciliation
 here is therefore written as a `metric` query.
+
+## Declare SQL read dependencies
+
+`valid_reference_data` datasets are discovered automatically. A custom `metric` or `failed_rows` SQL query
+that reads another table must also list it in `attributes.read_dependencies`. The gold reconciliation uses:
+
+```yaml
+attributes:
+  layer: gold
+  pipeline: retail
+  read_dependencies:
+    - "{{ dataset_root }}/silver/orders"
+```
+
+The repository renders and validates these dataset names in the same datasource/catalog as the contract.
+WAP records immutable snapshots for the declared datasets, including references that fall back to `main`,
+and promotes only the layer's primary tables. Custom SQL must address them as `schema.table` so DuckDB
+resolves the pinned `dq_audit` views. A catalog-qualified name such as `lakehouse.silver.orders` bypasses
+those views and reads live `main`, even when the dependency is declared. External table readers also fall
+outside this boundary. The repository does not parse or enforce these SQL conventions; review query paths
+and declarations together whenever SQL changes. A missing declaration can also leave a read unpinned.

@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 import structlog
 
 from soda_lakehouse_dq.application.quality_gate import GatePolicy
-from soda_lakehouse_dq.domain.errors import GateBlockedError
+from soda_lakehouse_dq.domain.errors import DataQualityError, GateBlockedError
 from soda_lakehouse_dq.domain.models import GateReport, Layer, VariableValue
 from soda_lakehouse_dq.domain.ports import (
     Clock,
@@ -65,7 +65,15 @@ class VerifyLayerUseCase:
             created_at=self._clock.now(),
         )
         for sink in self._sinks:
-            sink.write(report)
+            try:
+                sink.write(report)
+            except DataQualityError:
+                raise
+            except Exception as exc:
+                raise DataQualityError(
+                    f"cannot persist run {report.run_id!r} (gate status {report.status.value}) "
+                    f"through {type(sink).__name__}: {exc}"
+                ) from exc
         for notifier in self._notifiers:
             try:
                 notifier.notify(report)

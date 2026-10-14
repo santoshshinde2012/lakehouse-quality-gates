@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "branch": "audit_20261014t143355z_9e74887b",
+  "pipeline": "retail",
+  "layer": "bronze",
+  "run_id": "20261014T143355Z-9e74887b",
+  "gate": "blocked",
+  "engine": "duckdb",
+  "created_at": "2026-10-14T14:34:18.625359+00:00",
+  "reasons": [
+    "retail.bronze.orders_raw: failed: No order duplicated inside one source file",
+    "retail.bronze.orders_raw: failed: customer_id: Every order has a customer",
+    "retail.bronze.orders_raw: warned: status: Status is a known value (case-insensitive)",
+    "retail.bronze.orders_raw: warned: amount: Amount is not negative (enforced in silver)"
+  ],
+  "pins": {
+    "bronze.customers_raw": 228900679422413439,
+    "bronze.orders_raw": 3730060568747580496
+  },
+  "main_before": {
+    "bronze.customers_raw": 921535027530336369,
+    "bronze.orders_raw": 3029273953392603093
+  }
+}

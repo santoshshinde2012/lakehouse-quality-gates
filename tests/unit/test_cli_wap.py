@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field, replace
+from pathlib import Path
 
 import pytest
+from click import unstyle
 from typer.testing import CliRunner
 
 from soda_lakehouse_dq import cli
@@ -126,6 +128,50 @@ def test_wap_run_bad_batch_blocks(wap):
 def test_wap_run_usage_errors(wap):
     assert runner.invoke(cli.app, ["wap", "run"]).exit_code == 2
     assert runner.invoke(cli.app, ["wap", "run", "--all", "--batch", "ugly"]).exit_code == 2
+
+
+@pytest.mark.parametrize("source", ["", "  "])
+def test_wap_run_rejects_empty_source_before_writing(wap, source):
+    result = runner.invoke(cli.app, ["wap", "run", "--all", "--source", source, "--batch", "unknown"])
+    assert result.exit_code == 2
+    assert "--source must be a nonempty" in unstyle(result.output)
+    assert not wap.run_wap.calls
+
+
+@pytest.mark.parametrize("destination_is_directory", [False, True])
+def test_wap_run_rejects_unusable_evidence_path_before_writing(wap, tmp_path, destination_is_directory):
+    if destination_is_directory:
+        path = tmp_path / "directory"
+        path.mkdir()
+    else:
+        parent = tmp_path / "file"
+        parent.write_text("existing file\n")
+        path = parent / "evidence.json"
+    result = runner.invoke(cli.app, ["wap", "run", "--all", "--evidence", str(path)])
+    assert result.exit_code == 2, result.output
+    assert "cannot write WAP evidence" in result.output
+    assert "Traceback" not in result.output
+    assert not wap.run_wap.calls
+
+
+def test_wap_evidence_replacement_failure_preserves_previous_attachment(wap, tmp_path, monkeypatch):
+    path = tmp_path / "evidence.json"
+    path.write_text("previous attachment\n")
+    original_replace = Path.replace
+
+    def fail_replace(source, target):
+        if target == path:
+            raise PermissionError("destination became unavailable")
+        return original_replace(source, target)
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+    result = runner.invoke(cli.app, ["wap", "run", "--all", "--evidence", str(path)])
+    assert result.exit_code == 2, result.output
+    assert "published bronze.t" in result.output
+    assert "cannot persist WAP evidence" in result.output
+    assert "Traceback" not in result.output
+    assert path.read_text() == "previous attachment\n"
+    assert list(tmp_path.iterdir()) == [path]
 
 
 def test_wap_verify_exit_codes(wap):

@@ -1,10 +1,11 @@
 """Write-audit-publish Spark job for the retail medallion (runs inside ldl-spark).
 
 Mounted at /opt/soda-wap by docker/docker-compose.wap.yml. Reuses the lakehouse's own SQL files
-(/opt/sql/retail, read-only) and writes every table of a layer to an Iceberg audit branch, never to main.
+(/opt/sql/retail, read-only). Normal WAP writes stay on audit branches; the direct action writes main
+only for the explicit benchmark baseline.
 
     spark-submit /opt/soda-wap/wap_job.py write   --layer bronze --branch audit_x [--source DIR]
-    spark-submit /opt/soda-wap/wap_job.py publish --layer bronze --branch audit_x
+    spark-submit /opt/soda-wap/wap_job.py publish --layer bronze --branch audit_x --audit-file AUDIT_JSON
     spark-submit /opt/soda-wap/wap_job.py drop    --layer bronze --branch audit_x
     spark-submit /opt/soda-wap/wap_job.py status  --layer bronze [--branch audit_x]
 
@@ -40,9 +41,16 @@ SAFE = re.compile(r"^[a-z0-9_]{1,64}$")
 
 
 def safe(name: str) -> str:
-    if not SAFE.match(name):
+    if not SAFE.fullmatch(name):
         raise SystemExit(f"unsafe identifier {name!r}")
     return name
+
+
+def safe_argument(name: str) -> str:
+    try:
+        return safe(name)
+    except SystemExit as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
 def statements(path: str) -> list[str]:
@@ -169,17 +177,38 @@ def validated_pins(layer: str, pins: Any) -> dict[str, int]:
     return pins
 
 
+def unique_manifest_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate manifest field {key!r}")
+        result[key] = value
+    return result
+
+
 def read_audit(path: str, layer: str, branch: str) -> tuple[dict[str, int], dict[str, int | None]]:
     with open(path, encoding="utf-8") as fh:
-        data = json.load(fh)
-    if not isinstance(data, dict) or data.get("version") != 1:
+        data = json.load(fh, object_pairs_hook=unique_manifest_object)
+    if not isinstance(data, dict) or type(data.get("version")) is not int or data["version"] != 1:
         raise ValueError("expected a version 1 WAP audit manifest")
     if data.get("layer") != layer or data.get("branch") != branch:
         raise ValueError("audit manifest layer/branch does not match this publication")
-    if data.get("gate") not in {"passed", "passed_with_warnings"}:
+    if not isinstance(data.get("gate"), str) or data["gate"] not in {"passed", "passed_with_warnings"}:
         raise ValueError("a passing audit manifest is required for publication")
-    if not data.get("pipeline") or not data.get("run_id"):
-        raise ValueError("audit manifest pipeline and run_id are required")
+    if any(
+        not isinstance(data.get(key), str) or not data[key].strip()
+        for key in ("pipeline", "run_id", "engine")
+    ):
+        raise ValueError("audit manifest pipeline, run_id and engine are required")
+    reasons = data.get("reasons", [])
+    if not isinstance(reasons, list) or any(not isinstance(reason, str) for reason in reasons):
+        raise ValueError("audit manifest reasons must be a list of strings")
+    created_at = data.get("created_at")
+    if (
+        not isinstance(created_at, str)
+        or datetime.fromisoformat(created_at.replace("Z", "+00:00")).tzinfo is None
+    ):
+        raise ValueError("audit manifest created_at must include a timezone")
     pins = validated_pins(layer, data.get("pins"))
     before = validated_before(pins, data.get("main_before", {}))
     return pins, before
@@ -267,14 +296,14 @@ def main() -> None:
     # direct: the same build written straight to main, without a branch (WAP overhead baseline only)
     parser.add_argument("action", choices=["write", "direct", "publish", "drop", "status"])
     parser.add_argument("--layer", required=True, choices=sorted(TABLES))
-    parser.add_argument("--branch", default=None)
+    parser.add_argument("--branch", type=safe_argument, default=None)
     parser.add_argument("--source", default=SAMPLE_DIR)
     audit = parser.add_mutually_exclusive_group()
     audit.add_argument("--audit-file", help="Passing audit manifest written by soda-dq wap verify")
     audit.add_argument("--pins", help="Internal adapter: exact audited schema.table -> snapshot JSON")
     parser.add_argument("--main-before", default="{}", help="Internal adapter: pre-publication snapshot JSON")
     args = parser.parse_args()
-    branch = safe(args.branch) if args.branch else None
+    branch = args.branch
     if args.action not in {"status", "direct"} and not branch:
         raise SystemExit("--branch is required")
     if args.action in {"write", "publish", "drop"} and (
@@ -293,23 +322,25 @@ def main() -> None:
         except (OSError, ValueError, TypeError) as exc:
             parser.error(str(exc))
     spark = SparkSession.builder.appName(f"wap_{args.action}_{args.layer}").getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
-    started = datetime.now(timezone.utc)
-    if args.action == "write":
-        tables = write(spark, args.layer, str(branch), args.source)
-    elif args.action == "direct":
-        tables = write(spark, args.layer, "main", args.source)
-    elif args.action == "publish":
-        tables = publish(spark, args.layer, str(branch), pins, before)
-    elif args.action == "drop":
-        tables = drop(spark, args.layer, str(branch))
-    else:
-        tables = {t: state(spark, t, branch) for t in TABLES[args.layer]}
-    seconds = (datetime.now(timezone.utc) - started).total_seconds()
-    payload = {"action": args.action, "layer": args.layer, "branch": branch, "seconds": round(seconds, 3),
-               "tables": tables}  # fmt: skip
-    print("WAP_JSON " + json.dumps(payload, sort_keys=True), flush=True)
-    spark.stop()
+    try:
+        spark.sparkContext.setLogLevel("WARN")
+        started = datetime.now(timezone.utc)
+        if args.action == "write":
+            tables = write(spark, args.layer, str(branch), args.source)
+        elif args.action == "direct":
+            tables = write(spark, args.layer, "main", args.source)
+        elif args.action == "publish":
+            tables = publish(spark, args.layer, str(branch), pins, before)
+        elif args.action == "drop":
+            tables = drop(spark, args.layer, str(branch))
+        else:
+            tables = {t: state(spark, t, branch) for t in TABLES[args.layer]}
+        seconds = (datetime.now(timezone.utc) - started).total_seconds()
+        payload = {"action": args.action, "layer": args.layer, "branch": branch, "seconds": round(seconds, 3),
+                   "tables": tables}  # fmt: skip
+        print("WAP_JSON " + json.dumps(payload, sort_keys=True), flush=True)
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":

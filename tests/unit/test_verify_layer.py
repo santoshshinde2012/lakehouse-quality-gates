@@ -8,7 +8,7 @@ from soda_lakehouse_dq.application.verify_layer import (
     VerifyLayerUseCase,
     raise_if_blocked,
 )
-from soda_lakehouse_dq.domain.errors import GateBlockedError
+from soda_lakehouse_dq.domain.errors import DataQualityError, DataSourceError, GateBlockedError
 from soda_lakehouse_dq.domain.models import GateStatus, Layer, Outcome
 from soda_lakehouse_dq.domain.ports import ContractRepository, ContractVerifier, Notifier, ResultSink
 from tests.conftest import FIXED_NOW, FakeRepository, FakeVerifier, RecordingNotifier, RecordingSink
@@ -43,6 +43,28 @@ def test_broken_notifier_does_not_hide_result(clock):
     good = RecordingNotifier()
     report = _use_case(clock, notifiers=[RecordingNotifier(explode=True), good]).execute("retail", Layer.GOLD)
     assert good.reports == [report]
+
+
+@pytest.mark.parametrize("error", [OSError("report disk is full"), DataSourceError("catalog unavailable")])
+def test_failed_report_persistence_prevents_a_successful_return_or_notification(clock, error):
+    class FailingSink:
+        def write(self, report):
+            assert report.status is GateStatus.PASSED
+            raise error
+
+    later_sink, notifier = RecordingSink(), RecordingNotifier()
+    use_case = _use_case(clock, sinks=[FailingSink(), later_sink], notifiers=[notifier])
+    with pytest.raises(DataQualityError) as info:
+        use_case.execute("retail", Layer.SILVER, run_id="audit-run")
+    if isinstance(error, DataQualityError):
+        assert info.value is error
+    else:
+        assert info.value.__cause__ is error
+        assert "audit-run" in str(info.value)
+        assert "gate status passed" in str(info.value)
+        assert "FailingSink" in str(info.value)
+    assert later_sink.reports == []
+    assert notifier.reports == []
 
 
 def test_explicit_run_id_is_kept(clock):

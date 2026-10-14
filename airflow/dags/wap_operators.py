@@ -24,7 +24,10 @@ LAYERS = ("bronze", "silver", "gold")
 # (Airflow 3 manual runs have no logical date, so ts_nodash is undefined there.)
 BRANCH = "audit_{{ dag_run.run_after.strftime('%Y%m%dt%H%M%S%f') }}"
 # conf {"bad_batch": true} writes fixtures/bad_batch to the bronze branch instead of the lakehouse sample.
-SOURCE = "{{ '/opt/soda-wap-fixtures/bad_batch' if dag_run.conf.get('bad_batch') else '/opt/data/sample' }}"
+SOURCE = (
+    "{{ '/opt/soda-wap-fixtures/bad_batch' "
+    "if dag_run.conf.get('bad_batch') is sameas true else '/opt/data/sample' }}"
+)
 
 
 def audit_path(layer: str, *, spark: bool) -> str:

@@ -1,0 +1,20 @@
+{
+  "run_id": "history_probe_39b84e2416294eb8ad252dcf4d6cd317",
+  "pipeline": "retail",
+  "layer": "bronze",
+  "engine": "duckdb",
+  "status": "blocked",
+  "created_at": "2026-10-14T14:26:56.011431+00:00",
+  "summary": {
+    "passed": 0,
+    "warned": 0,
+    "failed": 0,
+    "not_evaluated": 0,
+    "excluded": 0,
+    "total": 0
+  },
+  "reasons": [
+    "Synthetic blocked attempt for history verification"
+  ],
+  "contracts": []
+}

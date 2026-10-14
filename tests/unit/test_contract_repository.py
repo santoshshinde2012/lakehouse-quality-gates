@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 from soda_lakehouse_dq.adapters.contracts import FileContractRepository
-from soda_lakehouse_dq.domain.errors import ContractNotFoundError, ContractRenderError
+from soda_lakehouse_dq.domain.errors import ContractNotFoundError, ContractRenderError, DataQualityError
 from soda_lakehouse_dq.domain.models import Layer
 from tests.conftest import PROJECT_ROOT
 
@@ -117,6 +117,66 @@ def test_reference_datasets_are_collected(tmp_path):
     assert spec.datasets == ("ds/silver/orders", "ds/silver/customers")
 
 
+@pytest.mark.parametrize("root", ["lakehouse_duckdb", "lakehouse_trino/lakehouse"])
+def test_sql_read_dependencies_are_rendered_and_merged_with_reference_checks(tmp_path, root):
+    text = (
+        'dataset: "{{ dataset_root }}/silver/orders"\n'
+        'attributes:\n  read_dependencies:\n    - "{{ dataset_root }}/bronze/orders"\n'
+        '    - "{{ dataset_root }}/silver/customers"\n'
+        '    - "{{ dataset_root }}/bronze/orders"\n'
+        "columns:\n  - name: customer_id\n    checks:\n      - invalid:\n"
+        "          valid_reference_data:\n"
+        '            dataset: "{{ dataset_root }}/silver/customers"\n            column: id\n'
+    )
+    _write(tmp_path, text)
+    repo = FileContractRepository(tmp_path / "contracts", tmp_path / "rendered", {"dataset_root": root})
+    [spec] = repo.list_contracts("retail", Layer.SILVER)
+    assert spec.references == (f"{root}/silver/customers", f"{root}/bronze/orders")
+    assert spec.datasets == (f"{root}/silver/orders", *spec.references)
+    assert yaml.safe_load(spec.rendered_path.read_text())["attributes"]["read_dependencies"] == [
+        f"{root}/bronze/orders",
+        f"{root}/silver/customers",
+        f"{root}/bronze/orders",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("declaration", "message"),
+    [
+        (None, "must be a list"),
+        ("ds/silver/orders", "must be a list"),
+        ({"dataset": "ds/silver/orders"}, "must be a list"),
+        ([1], "must be dataset strings"),
+        ([""], "same dataset root"),
+        (["other/silver/orders"], "same dataset root"),
+        (["ds/other_catalog/silver/orders"], "same dataset root"),
+        (["ds/silver"], "same dataset root"),
+        (["ds/../orders"], "invalid schema or table"),
+        (["ds/silver/orders; DROP TABLE orders"], "invalid schema or table"),
+    ],
+)
+def test_invalid_sql_read_dependencies_fail_before_rendering(tmp_path, declaration, message):
+    text = yaml.safe_dump(
+        {"dataset": "ds/silver/orders", "columns": [], "attributes": {"read_dependencies": declaration}}
+    )
+    repo = _write(tmp_path, text)
+    with pytest.raises(ContractRenderError, match=message):
+        repo.list_contracts("retail", Layer.SILVER)
+    assert not (tmp_path / "rendered").exists()
+
+
+def test_sql_read_dependency_cannot_escape_the_trino_catalog(tmp_path):
+    text = yaml.safe_dump(
+        {
+            "dataset": "ds/lakehouse/gold/metrics",
+            "columns": [],
+            "attributes": {"read_dependencies": ["ds/other_catalog/silver/orders"]},
+        }
+    )
+    with pytest.raises(ContractRenderError, match="same dataset root"):
+        _write(tmp_path, text).list_contracts("retail", Layer.SILVER)
+
+
 def test_soda_variables_are_left_alone(tmp_path):
     repo = _write(tmp_path, 'dataset: "{{dataset_root}}/s/t"\nfilter: "x > ${var.X}"\ncolumns: []\n')
     [spec] = repo.list_contracts("retail", Layer.SILVER)
@@ -127,6 +187,25 @@ def test_missing_folder_raises(tmp_path):
     repo = FileContractRepository(tmp_path, tmp_path / "r", {})
     with pytest.raises(ContractNotFoundError):
         repo.list_contracts("retail", Layer.GOLD)
+
+
+@pytest.mark.parametrize("pipeline", ["../external", "..\\external", "..", ".", ""])
+def test_pipeline_must_not_escape_the_contract_or_render_roots(tmp_path, pipeline):
+    repo = _write(tmp_path, "dataset: ds/silver/orders\ncolumns: []\n")
+    with pytest.raises(DataQualityError, match="pipeline must be a single non-empty path component"):
+        repo.list_contracts(pipeline, Layer.SILVER)
+    assert not (tmp_path / "rendered").exists()
+
+
+def test_absolute_pipeline_is_rejected_before_reading_or_rendering_external_contracts(tmp_path):
+    outside = tmp_path / "external" / "silver"
+    outside.mkdir(parents=True)
+    (outside / "orders.yml").write_text("dataset: ds/silver/orders\ncolumns: []\n")
+    repo = FileContractRepository(tmp_path / "contracts", tmp_path / "rendered", {})
+    with pytest.raises(DataQualityError, match="pipeline must be a single non-empty path component"):
+        repo.list_contracts(str(outside.parent), Layer.SILVER)
+    assert [path.name for path in outside.iterdir()] == ["orders.yml"]
+    assert not (tmp_path / "rendered").exists()
 
 
 @pytest.mark.parametrize(
@@ -153,3 +232,5 @@ def test_shipped_contracts_render_for_every_engine(tmp_path, root):
             assert document["dataset"].startswith(f"{root}/{layer.value}/")
             assert document["columns"], spec.name
             assert "{{" not in spec.rendered_path.read_text()
+            if layer is Layer.GOLD:
+                assert spec.references == (f"{root}/silver/orders",)

@@ -22,6 +22,7 @@ with DAG(
     start_date=datetime(2024, 3, 1),
     schedule=None,  # manual trigger for local demos, like the original DAG
     catchup=False,
+    max_active_runs=1,  # direct writes and gates share main; overlapping runs would audit each other's data
     tags=["lakehouse", "retail", "medallion", "soda", "data-quality"],
 ) as dag:
     smoke = spark_submit_task("land_smoke", "retail/01_smoke_test.py")

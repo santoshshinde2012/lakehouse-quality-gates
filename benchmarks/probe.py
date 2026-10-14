@@ -18,7 +18,9 @@ import sys
 import time
 
 _T0 = time.perf_counter()
-os.environ.setdefault("DQ_SINKS", "[]")
+os.environ["DQ_SINKS"] = "[]"
+os.environ["DQ_ICEBERG_SINK"] = "false"
+os.environ["DQ_SLACK_WEBHOOK_URL"] = ""
 os.environ.setdefault("SODA_CORE_TELEMETRY_ENABLED", "false")
 
 

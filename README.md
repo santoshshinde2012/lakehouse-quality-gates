@@ -2,7 +2,7 @@
 
 # lakehouse-quality-gates
 
-**Soda data contracts as quality gates between bronze, silver and gold: bad data never reaches gold.**
+**Soda data contracts for bronze, silver and gold, with audited snapshot publication.**
 
 [![CI](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/santoshshinde2012/lakehouse-quality-gates/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/badge/release-v1.0.0-2563eb)](https://github.com/santoshshinde2012/lakehouse-quality-gates/releases/tag/v1.0.0)
@@ -19,7 +19,8 @@ Each layer of the [local-data-lakehouse](https://github.com/santoshshinde2012/lo
 declarative [Soda Core v4](https://docs.soda.io/) contract (53 checks in total). A gate verifies the contract right after
 the layer is built, on DuckDB or Trino over Apache Iceberg. If it fails, the Airflow task fails and nothing downstream
 is built from bad data. With **write-audit-publish**, each layer is first written to an Iceberg audit branch and only
-fast-forwarded to `main` when its gate passes, so readers of `main` never see a bad batch.
+fast-forwarded to `main` when its gate passes. Publication uses the exact audited snapshots; each table
+advances separately. Quality guarantees cover the checks declared in the contracts.
 
 ## Architecture
 
@@ -246,8 +247,8 @@ the performance benchmarks have not been rerun for this change.
 
 | Measure | Result | Source |
 |---|---|---|
-| Tests and coverage | 216 passed, 97% line coverage | [PR validation](docs/results/runs/2026-10-14-v1.0-pr-checks/test-all.log) |
-| End-to-end | `e2e-live` 9/9, `e2e-full` 15/15 and `e2e-wap` 11/11 steps passed | [hardening runs](docs/results/README.md#runs-newest-first) |
+| Tests and coverage | 359 passed, 97% line coverage | [source review](docs/results/runs/2026-10-14-v1.0-review/test-all.log) |
+| End-to-end | `e2e-live` 9/9, `e2e-full` 15/15 and `e2e-wap` 11/11 steps passed | [source review](docs/results/runs/2026-10-14-v1.0-review/README.md) |
 | Gate time, host DuckDB, warm p50 per layer | 0.42–0.68 s up to 1M orders | [benchmarks](docs/benchmarks/results.md) |
 | All three gates at 5M orders, warm p50 | 3.09 s host DuckDB · 29.79 s Trino (4 GiB heap) | [benchmarks](docs/benchmarks/results.md) |
 | Gate time as a share of its Spark job | 2.3–4.9 % per layer | [analysis](docs/benchmarks/analysis.md) |
@@ -281,6 +282,7 @@ All evidence: [docs/results](docs/results/README.md).
 | [Contracts](docs/guides/contracts.md) | read or add a check |
 | [System design](docs/system-design.md) | understand the requirements and decisions |
 | [Runbook](docs/guides/runbook.md) | operate it and triage a blocked gate |
+| [Enterprise operating model](docs/guides/enterprise-readiness.md) | agree ownership, publication safety, access, evidence retention, and recovery |
 
 ## Contributing
 

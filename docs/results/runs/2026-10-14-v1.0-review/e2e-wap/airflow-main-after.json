@@ -1,0 +1,84 @@
+{
+  "bronze": {
+    "action": "status",
+    "seconds": 5.19,
+    "tables": {
+      "bronze.customers_raw": {
+        "main_before": null,
+        "main_snapshot": 2139224203896423916,
+        "main_rows": 10,
+        "branch_snapshot": null,
+        "branch_rows": null,
+        "refs": {
+          "audit_20261014t143139z_208e5e09": 921535027530336369,
+          "audit_20261014t143355z_9e74887b": 228900679422413439,
+          "audit_20261014t143610870016": 2139224203896423916,
+          "audit_20261014t144154145940": 7213828015459227114,
+          "main": 2139224203896423916
+        }
+      },
+      "bronze.orders_raw": {
+        "main_before": null,
+        "main_snapshot": 5868609425351548468,
+        "main_rows": 22,
+        "branch_snapshot": null,
+        "branch_rows": null,
+        "refs": {
+          "audit_20261014t143139z_208e5e09": 3029273953392603093,
+          "audit_20261014t143355z_9e74887b": 3730060568747580496,
+          "audit_20261014t143610870016": 5868609425351548468,
+          "audit_20261014t144154145940": 3864027377205035351,
+          "main": 5868609425351548468
+        }
+      }
+    }
+  },
+  "silver": {
+    "action": "status",
+    "seconds": 5.059,
+    "tables": {
+      "silver.customers": {
+        "main_before": null,
+        "main_snapshot": 2756671711169908356,
+        "main_rows": 10,
+        "branch_snapshot": null,
+        "branch_rows": null,
+        "refs": {
+          "audit_20261014t143139z_208e5e09": 4135930894643206204,
+          "audit_20261014t143610870016": 2756671711169908356,
+          "main": 2756671711169908356
+        }
+      },
+      "silver.orders": {
+        "main_before": null,
+        "main_snapshot": 6507899490893683708,
+        "main_rows": 19,
+        "branch_snapshot": null,
+        "branch_rows": null,
+        "refs": {
+          "audit_20261014t143139z_208e5e09": 4155234546920654405,
+          "audit_20261014t143610870016": 6507899490893683708,
+          "main": 6507899490893683708
+        }
+      }
+    }
+  },
+  "gold": {
+    "action": "status",
+    "seconds": 4.336,
+    "tables": {
+      "gold.daily_order_metrics": {
+        "main_before": null,
+        "main_snapshot": 8095104358670142978,
+        "main_rows": 2,
+        "branch_snapshot": null,
+        "branch_rows": null,
+        "refs": {
+          "audit_20261014t143139z_208e5e09": 4313534113463293617,
+          "audit_20261014t143610870016": 8095104358670142978,
+          "main": 8095104358670142978
+        }
+      }
+    }
+  }
+}

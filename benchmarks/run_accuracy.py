@@ -42,7 +42,7 @@ def reported_count(checks: list[dict[str, Any]], names: list[str]) -> str:
     return ";".join(counts)
 
 
-def evaluate(rows: int, defect: str | None, rate: float) -> None:
+def evaluate(rows: int, defect: str | None, rate: float) -> bool:
     with tempfile.TemporaryDirectory(prefix="lqg-acc-") as tmp:
         gen = [sys.executable, "scripts/gen_scale_data.py", "--rows", str(rows), "--out", tmp]
         if defect:
@@ -52,6 +52,7 @@ def evaluate(rows: int, defect: str | None, rate: float) -> None:
         subprocess.run(
             [sys.executable, "-m", "benchmarks.seed_timed", tmp], cwd=ROOT, check=True, capture_output=True
         )
+    matched = True
     for layer in LAYERS:
         payload = run_probe("duckdb", layer).payload
         checks: list[dict[str, Any]] = payload["checks"]
@@ -60,6 +61,7 @@ def evaluate(rows: int, defect: str | None, rate: float) -> None:
         exp_f = sorted(truth["expected_fails"].get(layer, []))
         exp_w = sorted(truth["expected_warns"].get(layer, []))
         want = expected_status(exp_f, exp_w)
+        matched = matched and want == payload["status"] and failed == exp_f and warned == exp_w
         flagged, expected = set(failed) | set(warned), set(exp_f) | set(exp_w)
         row = {
             "rows": rows, "defect": defect or "none", "rate": rate if defect else 0.0,
@@ -74,6 +76,7 @@ def evaluate(rows: int, defect: str | None, rate: float) -> None:
         append_jsonl(RESULTS / "accuracy.jsonl", {**row, "checks": checks})
         print(f"{defect or 'clean':18} {rate:<6} {layer:6} want={want:8} got={payload['status']:8} "
               f"count={row['reported_count']} injected={truth['injected']}")  # fmt: skip
+    return matched
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -82,11 +85,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rates", type=float, nargs="+", default=[0.001, 0.01, 0.1])
     parser.add_argument("--defects", nargs="+", default=sorted(DEFECTS), choices=sorted(DEFECTS))
     args = parser.parse_args(argv)
-    evaluate(args.rows, None, 0.0)
+    matched = evaluate(args.rows, None, 0.0)
     for defect in args.defects:
         for rate in args.rates:
-            evaluate(args.rows, defect, rate)
-    return 0
+            verdicts_match = evaluate(args.rows, defect, rate)
+            matched = matched and verdicts_match
+    return 0 if matched else 1
 
 
 if __name__ == "__main__":

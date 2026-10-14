@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites name="soda-dq retail/bronze">
+  <testsuite name="retail.bronze.customers_raw" tests="4" failures="0" errors="0" skipped="0">
+    <testcase classname="lakehouse_duckdb/bronze/customers_raw" name="Bronze customers schema is unchanged" />
+    <testcase classname="lakehouse_duckdb/bronze/customers_raw" name="Customer batch is not empty" />
+    <testcase classname="lakehouse_duckdb/bronze/customers_raw" name="customer_id: Every customer has an id" />
+    <testcase classname="lakehouse_duckdb/bronze/customers_raw" name="email: Email is present" />
+  </testsuite>
+  <testsuite name="retail.bronze.orders_raw" tests="10" failures="0" errors="0" skipped="0">
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="Bronze orders schema is unchanged" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="Batch is not empty" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="Bronze was ingested recently" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="No order duplicated inside one source file" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="order_id: Every order has an id" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="customer_id: Every order has a customer" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="order_ts: Every order has a timestamp" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="status: Status is a known value (case-insensitive)" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="amount: Every order has an amount" />
+    <testcase classname="lakehouse_duckdb/bronze/orders_raw" name="amount: Amount is not negative (enforced in silver)" />
+  </testsuite>
+</testsuites>

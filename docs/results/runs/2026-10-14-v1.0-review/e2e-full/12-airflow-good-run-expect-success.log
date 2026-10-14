@@ -1,0 +1,7 @@
+cd "/Users/santosh/Documents/workspace/local-data-lakehouse" && ./pipelines/airflow_trigger.sh lakehouse_retail_medallion_dq
+==> Waiting for lakehouse_retail_medallion_dq to be parsed…
+==> Triggering lakehouse_retail_medallion_dq (manual__ldl_20261014T141155)
+  [5s] state=running
+  [35s] state=running
+  [65s] state=running
+==> lakehouse_retail_medallion_dq succeeded
