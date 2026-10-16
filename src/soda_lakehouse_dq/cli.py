@@ -2,27 +2,20 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
-import tempfile
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated
 
 import typer
 from pydantic import ValidationError
 
-from soda_lakehouse_dq.adapters.datasources.duckdb_provider import (
-    apply_session_settings,
-    lakehouse_connection_factory,
-)
-from soda_lakehouse_dq.adapters.local_medallion import load_medallion
 from soda_lakehouse_dq.adapters.wap.audit_json import load_audit, write_audit
-from soda_lakehouse_dq.container import build_container, build_wap
-from soda_lakehouse_dq.domain.errors import DataQualityError, DataSourceError
+from soda_lakehouse_dq.adapters.wap.evidence_json import state_json
+from soda_lakehouse_dq.container import build_container, build_wap, evidence_writer, seed_lakehouse
+from soda_lakehouse_dq.domain.errors import DataQualityError
 from soda_lakehouse_dq.domain.models import GateReport, Layer, VariableValue, coerce_variable
-from soda_lakehouse_dq.domain.wap import BranchState, WapLayerResult, WapOutcome
+from soda_lakehouse_dq.domain.wap import WapOutcome
 from soda_lakehouse_dq.logging_config import configure_logging
 from soda_lakehouse_dq.settings import Engine, Settings
 
@@ -133,21 +126,7 @@ def seed(
         raise typer.Exit(2)
     settings = _settings(None)
     try:
-        con = lakehouse_connection_factory(
-            settings.ldl_repo_path,
-            settings.lakekeeper_url,
-            settings.lakekeeper_warehouse,
-            settings.catalog_alias,
-        )()
-        try:
-            apply_session_settings(con, settings.duckdb_httpfs_client, settings.duckdb_temp_directory)
-            # DuckDB's Iceberg writer creates a scratch ./data directory; keep it out of the project
-            # (and off a read-only container root filesystem).
-            source = sample_dir.resolve()  # before chdir: a relative path is relative to the caller
-            with tempfile.TemporaryDirectory() as scratch, contextlib.chdir(scratch):
-                counts = load_medallion(con, source)
-        finally:
-            con.close()
+        counts = seed_lakehouse(settings, sample_dir)
     except DataQualityError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
@@ -197,73 +176,7 @@ def validate(pipeline: PipelineOpt = "retail", engine: EngineOpt = None) -> None
     raise typer.Exit(1 if bad else 0)
 
 
-STATE_FIELDS = ("main_before", "main_snapshot", "main_rows", "branch_snapshot", "branch_rows", "refs")
-
-
-def _state_json(state: BranchState | None) -> object:
-    if state is None:
-        return None
-    return {
-        "action": state.action,
-        "seconds": state.seconds,
-        "tables": {
-            name: {k: (dict(v) if isinstance(v := getattr(s, k), Mapping) else v) for k in STATE_FIELDS}
-            for name, s in state.tables.items()
-        },
-    }  # fmt: skip
-
-
-def wap_evidence(results: list[WapLayerResult]) -> list[dict[str, object]]:
-    """Per layer: outcome, gate status and the snapshot ids/row counts before and after."""
-    return [
-        {
-            "layer": r.layer.value,
-            "branch": r.branch,
-            "outcome": r.outcome.value,
-            "gate": r.report.status.value,
-            "run_id": r.report.run_id,
-            "reasons": list(r.report.reasons[:10]),
-            "written": _state_json(r.written),
-            "published": _state_json(r.published),
-            "audited_pins": dict(r.audited_pins),
-        }
-        for r in results
-    ]
-
-
 LayerOpt = Annotated[list[Layer] | None, typer.Option("--layer", "-l", help="Layer(s); default with --all")]
-
-
-def _check_wap_evidence_path(path: Path) -> None:
-    """Reject unusable output paths before a WAP run can write or publish data."""
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if path.exists() and not path.is_file():
-            raise DataSourceError(f"cannot write WAP evidence at {path}: destination is not a regular file")
-        with tempfile.TemporaryFile(dir=path.parent):
-            pass
-    except OSError as exc:
-        raise DataSourceError(f"cannot write WAP evidence at {path}: {exc}") from exc
-
-
-def _write_wap_evidence(path: Path, results: list[WapLayerResult]) -> None:
-    """Keep previous evidence intact if the final write or replacement fails."""
-    temporary: Path | None = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as fh:
-            temporary = Path(fh.name)
-            os.fchmod(fh.fileno(), 0o644)
-            json.dump(wap_evidence(results), fh, indent=2)
-            fh.write("\n")
-            fh.flush()
-            os.fsync(fh.fileno())
-        temporary.replace(path)
-    except OSError as exc:
-        raise DataSourceError(f"cannot persist WAP evidence at {path}: {exc}") from exc
-    finally:
-        if temporary is not None:
-            with contextlib.suppress(OSError):
-                temporary.unlink(missing_ok=True)
 
 
 @wap_app.command("run")
@@ -286,8 +199,9 @@ def wap_run(  # noqa: PLR0917 (typer options)
     layers = Layer.ordered() if all_layers else tuple(sorted(set(layer or []), key=Layer.ordered().index))
     try:
         settings = _settings(Engine.DUCKDB)
-        if evidence is not None:
-            _check_wap_evidence_path(evidence)
+        writer = evidence_writer(evidence) if evidence is not None else None
+        if writer is not None:
+            writer.check()
         wap = build_wap(settings)
         results = wap.run_wap.execute(pipeline, layers, source=source or WAP_BATCHES[batch], branch=branch)
     except DataQualityError as exc:
@@ -310,9 +224,9 @@ def wap_run(  # noqa: PLR0917 (typer options)
                 typer.echo(
                     f"  blocked   {name}: main stays {s.main_snapshot} ({s.main_rows} rows); {branch_status}"
                 )
-    if evidence is not None:
+    if writer is not None:
         try:
-            _write_wap_evidence(evidence, results)
+            writer.write(results)
         except DataQualityError as exc:
             typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
             raise typer.Exit(2) from exc
@@ -367,7 +281,7 @@ def wap_publish(
     except DataQualityError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
-    typer.echo(json.dumps(_state_json(state), indent=2))
+    typer.echo(json.dumps(state_json(state), indent=2))
 
 
 @wap_app.command("status")
@@ -381,7 +295,7 @@ def wap_status(
     except DataQualityError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2) from exc
-    typer.echo(json.dumps(_state_json(state), indent=2))
+    typer.echo(json.dumps(state_json(state), indent=2))
 
 
 @wap_app.command("drop")

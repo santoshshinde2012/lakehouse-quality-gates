@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
+import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from soda_lakehouse_dq.adapters.clock import SystemClock
@@ -11,11 +14,12 @@ from soda_lakehouse_dq.adapters.contracts import FileContractRepository
 from soda_lakehouse_dq.adapters.datasources.base import DataSourceProvider
 from soda_lakehouse_dq.adapters.datasources.duckdb_provider import (
     DuckDBProvider,
+    apply_session_settings,
     lakehouse_connection_factory,
 )
 from soda_lakehouse_dq.adapters.datasources.trino_provider import TrinoProvider
 from soda_lakehouse_dq.adapters.lakehouse_repo import import_lakehouse_client
-from soda_lakehouse_dq.adapters.local_medallion import LocalMedallionBuilder
+from soda_lakehouse_dq.adapters.local_medallion import LocalMedallionBuilder, load_medallion
 from soda_lakehouse_dq.adapters.notifiers.console import ConsoleNotifier
 from soda_lakehouse_dq.adapters.notifiers.slack import SlackWebhookNotifier
 from soda_lakehouse_dq.adapters.sinks.iceberg_sink import IcebergSink
@@ -24,6 +28,7 @@ from soda_lakehouse_dq.adapters.sinks.junit_sink import JUnitXmlSink
 from soda_lakehouse_dq.adapters.sinks.markdown_sink import MarkdownSink
 from soda_lakehouse_dq.adapters.soda_verifier import SodaContractVerifier
 from soda_lakehouse_dq.adapters.wap.audit_json import JsonBranchAuditSink
+from soda_lakehouse_dq.adapters.wap.evidence_json import JsonWapEvidenceWriter
 from soda_lakehouse_dq.adapters.wap.pinned_gate import PinnedSnapshotGate
 from soda_lakehouse_dq.adapters.wap.pyiceberg_refs import PyIcebergSnapshotReader
 from soda_lakehouse_dq.adapters.wap.spark_wap import SparkSubmitWap, subprocess_runner
@@ -31,7 +36,7 @@ from soda_lakehouse_dq.application.quality_gate import GatePolicy
 from soda_lakehouse_dq.application.verify_layer import RunMedallionUseCase, VerifyLayerUseCase
 from soda_lakehouse_dq.application.wap import RunWapMedallionUseCase, VerifyBranchUseCase
 from soda_lakehouse_dq.domain.errors import DataQualityError
-from soda_lakehouse_dq.domain.ports import Notifier, ResultSink
+from soda_lakehouse_dq.domain.ports import Notifier, ResultSink, WapEvidenceWriter
 from soda_lakehouse_dq.settings import Engine, Settings
 
 
@@ -52,36 +57,46 @@ class WapServices:
     run_wap: RunWapMedallionUseCase
 
 
+def _duckdb_provider(settings: Settings, pins: Mapping[str, int] | None) -> DataSourceProvider:
+    factory = lakehouse_connection_factory(
+        settings.ldl_repo_path, settings.lakekeeper_url, settings.lakekeeper_warehouse, settings.catalog_alias
+    )
+    return DuckDBProvider(
+        factory,
+        settings.duckdb_datasource_name,
+        settings.catalog_alias,
+        httpfs_client=settings.duckdb_httpfs_client,
+        temp_directory=settings.duckdb_temp_directory,
+        pins=pins,
+    )
+
+
+def _duckdb_local_provider(settings: Settings, _pins: Mapping[str, int] | None) -> DataSourceProvider:
+    return DuckDBProvider(
+        LocalMedallionBuilder(settings.sample_dir), settings.duckdb_datasource_name, "lakehouse"
+    )
+
+
+def _trino_provider(settings: Settings, _pins: Mapping[str, int] | None) -> DataSourceProvider:
+    return TrinoProvider(
+        settings.datasources_dir / "trino.yml",
+        settings.trino_datasource_name,
+        {"DQ_TRINO_HOST": settings.trino_host, "DQ_TRINO_PORT": str(settings.trino_port)},
+    )
+
+
+# One builder per engine: a new engine is a new entry here, not an edit to build_provider.
+PROVIDERS: dict[Engine, Callable[[Settings, Mapping[str, int] | None], DataSourceProvider]] = {
+    Engine.DUCKDB: _duckdb_provider,
+    Engine.DUCKDB_LOCAL: _duckdb_local_provider,
+    Engine.TRINO: _trino_provider,
+}
+
+
 def build_provider(settings: Settings, pins: Mapping[str, int] | None = None) -> DataSourceProvider:
     if pins and settings.engine is not Engine.DUCKDB:
         raise DataQualityError(f"auditing a branch needs DQ_ENGINE=duckdb, not {settings.engine.value}")
-    match settings.engine:
-        case Engine.DUCKDB:
-            factory = lakehouse_connection_factory(
-                settings.ldl_repo_path,
-                settings.lakekeeper_url,
-                settings.lakekeeper_warehouse,
-                settings.catalog_alias,
-            )
-            return DuckDBProvider(
-                factory,
-                settings.duckdb_datasource_name,
-                settings.catalog_alias,
-                httpfs_client=settings.duckdb_httpfs_client,
-                temp_directory=settings.duckdb_temp_directory,
-                pins=pins,
-            )
-        case Engine.DUCKDB_LOCAL:
-            return DuckDBProvider(
-                LocalMedallionBuilder(settings.sample_dir), settings.duckdb_datasource_name, "lakehouse"
-            )
-        case Engine.TRINO:
-            return TrinoProvider(
-                settings.datasources_dir / "trino.yml",
-                settings.trino_datasource_name,
-                {"DQ_TRINO_HOST": settings.trino_host, "DQ_TRINO_PORT": str(settings.trino_port)},
-            )
-    raise DataQualityError(f"unsupported engine {settings.engine}")  # pragma: no cover
+    return PROVIDERS[settings.engine](settings, pins)
 
 
 def _iceberg_catalog_factory(settings: Settings) -> Callable[[], Any]:
@@ -138,6 +153,26 @@ def _verify_layer(
         sinks=build_sinks(settings),
         notifiers=build_notifiers(settings),
     )
+
+
+def seed_lakehouse(settings: Settings, sample_dir: Path) -> dict[str, int]:
+    """Rebuild the live retail tables from a CSV batch; returns rows per table."""
+    con = lakehouse_connection_factory(
+        settings.ldl_repo_path, settings.lakekeeper_url, settings.lakekeeper_warehouse, settings.catalog_alias
+    )()
+    try:
+        apply_session_settings(con, settings.duckdb_httpfs_client, settings.duckdb_temp_directory)
+        # DuckDB's Iceberg writer creates a scratch ./data directory; keep it out of the project
+        # (and off a read-only container root filesystem).
+        source = sample_dir.resolve()  # before chdir: a relative path is relative to the caller
+        with tempfile.TemporaryDirectory() as scratch, contextlib.chdir(scratch):
+            return load_medallion(con, source)
+    finally:
+        con.close()
+
+
+def evidence_writer(path: Path) -> WapEvidenceWriter:
+    return JsonWapEvidenceWriter(path)
 
 
 def build_container(settings: Settings | None = None) -> Container:
