@@ -2,8 +2,9 @@
 
 One ordered path from a clean machine to every running service, the quality gates, write-audit-publish (WAP),
 Airflow, the benchmarks and the charts, then teardown. Each step names the `make` target it runs; the
-[quickstart](quickstart.md) explains the individual steps in more detail. The whole path was last run on
-macOS (Apple M1 Pro) and on a Linux x86_64 VM (Debian 13, 4 vCPU, 8 GiB RAM), where the screenshots below were taken.
+[quickstart](quickstart.md) explains the individual steps in more detail. The stack, the gates, WAP and the
+Airflow WAP run were run this way on a Linux x86_64 VM (Debian 13, 4 vCPU, 8 GiB RAM), where the screenshots below
+were taken; the same targets are covered on macOS by the runs in [docs/results](../results/README.md).
 
 ## 1. Prerequisites
 
