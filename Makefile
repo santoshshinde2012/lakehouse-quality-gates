@@ -17,7 +17,7 @@ LDL_COMPOSE := docker compose -f docker-compose.yml -f docker-compose.airflow.ym
 # The lakehouse's own `make up-full`, with our WAP overlay (mounts wap/ and fixtures/ into ldl-spark).
 LDL_WAP_FILES := -f docker-compose.yml -f $(SODA_HOME)/docker/docker-compose.wap.yml
 
-.PHONY: wap-up wap-demo-good wap-demo-bad e2e-wap airflow-wap-trigger airflow-wap-trigger-bad bench-wap test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench-airflow bench-charts trino-heap trino-heap-reset bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
+.PHONY: reports-dir wap-up wap-demo-good wap-demo-bad e2e-wap airflow-wap-trigger airflow-wap-trigger-bad bench-wap test-all test-live test-full e2e-live e2e-full bench-tiny tools-venv bench-airflow bench-charts trino-heap trino-heap-reset bench bench-accuracy bench-spark bench-tools bench-report bench-all help env venv lock fmt lint typecheck test test-unit test-integration check validate list \
 	demo demo-good demo-bad verify run pre-commit dq-build dq-up dq-down dq-shell \
 	airflow-dq-up airflow-dq-trigger airflow-dq-trigger-bad airflow-dq-down diagrams diagrams-check docs docs-check clean dist
 
@@ -50,6 +50,7 @@ help:
 	@echo "  make verify LAYER=silver [ENGINE=duckdb|duckdb-local|trino]   one gate"
 	@echo "  make run [ENGINE=...]   bronze -> silver -> gold, stop at the first blocked layer"
 	@echo "  make dq-build | dq-up | dq-down | dq-shell   runner container ldl-soda on ldl-net"
+	@echo "  make reports-dir        reports/ writable by the runner (uid 10001) on Linux; run by dq-up"
 	@echo "  make airflow-dq-up      lakehouse Airflow + the Soda-gated DAG"
 	@echo "  make airflow-dq-trigger trigger lakehouse_retail_medallion_dq and wait"
 	@echo "  make airflow-dq-trigger-bad  same, bad batch injected (dq_bronze must fail; exits non-zero)"
@@ -180,7 +181,17 @@ run:
 dq-build:
 	docker compose -f docker/docker-compose.dq.yml build
 
-dq-up:
+# The runner image writes reports/ as uid 10001. A bind mount keeps the host owner, which Docker Desktop
+# maps away on macOS but Linux does not. On Linux, grant uid 10001 access with an inherited (default) ACL so
+# folders the host creates later stay writable too; without setfacl, fall back to opening the folder up.
+reports-dir:
+	mkdir -p reports
+	@if [ "$$(uname -s)" = Linux ]; then \
+	  if command -v setfacl >/dev/null; then setfacl -R -m u:10001:rwX -m d:u:10001:rwX reports; \
+	  else chmod -R a+rwX reports; echo "reports-dir: setfacl not found (apt install acl); used chmod, rerun after host runs"; fi; \
+	fi
+
+dq-up: reports-dir
 	docker compose -f docker/docker-compose.dq.yml up -d --build --wait
 
 dq-down:

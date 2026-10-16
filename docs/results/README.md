@@ -13,6 +13,8 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 | [Hardening checks](runs/2026-10-14-v1.0-hardening/test-all.log) | 2026-10-14 | `2200222` + working tree | 214 tests, 97% coverage, 53 contract checks; [live 9/9](runs/2026-10-14-v1.0-hardening/e2e-live.log), [full 15/15](runs/2026-10-14-v1.0-hardening/e2e-full.log), [WAP 11/11](runs/2026-10-14-v1.0-hardening/e2e-wap.log); failure and concurrency regressions | `make test-all e2e-live e2e-full e2e-wap` |
 | [Write-audit-publish](runs/2026-10-14-wap/README.md) | 2026-10-14 | v1.0.0 (pre-release tree) | Good batch published to `main` (snapshot ids before and after), bad batch blocked with `main` unchanged and the branch kept; CLI, Airflow and the live test | `make e2e-wap` |
 | [v1.0 fresh-clone run](runs/2026-10-14-v1.0-fresh-clone/README.md) | 2026-10-14 | `30d7962` (v1.0.0) | test-all, e2e-live 9/9, e2e-full 15/15, e2e-wap 11/11, docs, diagrams and pre-commit from a fresh clone |
+| [Second environment](benchmarks/2026-10-16-instabox/README.md) | 2026-10-16 | `d04c8cd` | The five-tool comparison and gate latency (10k–1M, DuckDB, Trino, container) rerun on a Linux x86_64 VM (AMD EPYC, 4 vCPU, 7.8 GiB) | `make bench-tools TOOL_SIZES='100000 1000000' REPEATS=5`, `make bench SIZES='10000 100000 1000000' WARM=5` |
+| [Tool comparison rerun](benchmarks/2026-10-14-tool-rerun/README.md) | 2026-10-14 | corrected harness (PR #3/#4) | Five tools at 100k and 1M orders, 5 repeats, with hashed raw data and harness copy; source of the tool chart in [docs/figures](../figures/README.md) | `make bench-tools TOOL_SIZES='100000 1000000' REPEATS=5` |
 | [WAP overhead](benchmarks/2026-10-14-wap/wap_overhead.csv) | 2026-10-14 | v1.0.0 (pre-release tree) | Direct write against audit branch + gate + fast-forward at 100k and 1M orders, charted in [results](../benchmarks/results.md#write-audit-publish-overhead) | `make bench-wap` |
 | [v0.5.0 benchmarks](benchmarks/2026-10-14-v0.4.1/specs.json) | 2026-10-14 | `e39dc18` (v0.4.1) | Own end-to-end benchmarks charted in [results](../benchmarks/results.md): latency 10k–5M on DuckDB, Trino (4 GiB heap) and the container, memory, seed-to-gold pipeline, Spark overhead, Airflow good/bad runs, accuracy, five-tool comparison | `make bench-all` |
 | [v0.4.1 checks](runs/2026-10-14-v0.4.1-checks/README.md) | 2026-10-14 | v0.4.1 | `make test-all` after the documentation tidy: 110 tests, 99% coverage, demo | `make test-all` |
@@ -21,7 +23,7 @@ files, and `make docs-check` fails if a quoted headline number no longer matches
 | [Component verification](runs/2026-10-13-v0.2-verification/README.md) | 2026-10-13 | `39b76a4` (v0.2.1) | Each component on its own: lint, types, tests, demo, live DuckDB and Trino, the runner image, Airflow good and bad runs, with every gate report | the manual walkthrough in the [runbook](../guides/runbook.md#manual-walkthrough) |
 | [Archive](archive/README.md) | 2026-10-13 | | Superseded artefacts kept for the record (early Airflow debugging runs) | |
 
-All runs used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Docker Desktop 29.8 with 10 CPUs and
+All runs except the second environment used the same machine: Apple M1 Pro (10 cores, 16 GiB), macOS 26.6, Docker Desktop 29.8 with 10 CPUs and
 8 GB, Python 3.12, local-data-lakehouse `main` (Lakekeeper, RustFS, Spark 4.1.3, Trino 483, Airflow 3). Gate and live-stack runs used Soda Core 4.26.0;
 the five-tool benchmark used its separate pinned environment, including Soda 4.27.0 (see `tools_versions.json`).
 
@@ -34,6 +36,8 @@ the five-tool benchmark used its separate pinned environment, including Soda 4.2
 | `runs/2026-10-14-v0.4.1-checks/` | `test-all.log` |
 | `runs/2026-10-13-fresh-clone/` | `test-all.log` (tests and coverage), `e2e-live/` and `e2e-full/` (one log per step), benchmark CSV/JSON and the generated `summary.md` |
 | `runs/2026-10-14-wap/` | Evidence JSON of the CLI runs, Airflow task states, `main` refs before and after the bad run |
+| `benchmarks/2026-10-16-instabox/` | Second environment: tool and gate raw data, generated `summary.md`, machine `specs/` (lscpu, free, df, OS, Docker) |
+| `benchmarks/2026-10-14-tool-rerun/` | Five-tool comparison: `tools.csv`, raw JSON lines, metadata with hashes, per-process logs and the harness copy |
 | `benchmarks/2026-10-14-wap/` | `wap_overhead.csv` |
 | `benchmarks/2026-10-14-v0.4.1/` | Current benchmark data: `perf_raw`, `pipeline_raw`, `spark_reference`, `airflow_runs`, `airflow_tasks`, `accuracy`, `tools` (CSV; JSON lines gzipped), `specs.json`, `tools_versions.json` |
 | `benchmarks/` (top level) | Superseded v0.3.0 benchmark data: raw CSV and JSON lines, machine `specs.json`, `tools_versions.json`, generated `summary.md` |

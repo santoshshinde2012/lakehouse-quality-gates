@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-10-16T05:44:52.167411+00:00",
+  "git_commit": "d04c8cdaf4ae775af44b7f3ec4183911e97fdd11",
+  "tracked_worktree_dirty": false,
+  "harness_sha256": "59a7cbc37cab266524b09b5439c8629c4d04e5b535d7f392cdeacacdd8d59a67",
+  "harness_snapshot": "<results>/tools_logs/run_tools.py",
+  "versions": {
+    "soda-core": "4.27.0",
+    "soda-duckdb": "4.27.0",
+    "datacontract-cli": "1.2.5",
+    "great-expectations": "1.24.0",
+    "pointblank": "1.0.1",
+    "pandera": "0.34.1",
+    "duckdb": "1.5.6",
+    "pandas": "3.0.6",
+    "polars": "2.0.0",
+    "pyarrow": "26.0.0",
+    "python": "3.12.15"
+  },
+  "executable": "<repo>/benchmarks/tools/.venv/bin/python",
+  "system": {
+    "platform": "Linux-6.18.54-instabox-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "processor": "",
+    "logical_cpu_count": 4
+  },
+  "thread_environment": {
+    "OMP_NUM_THREADS": null,
+    "OPENBLAS_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null,
+    "POLARS_MAX_THREADS": null,
+    "VECLIB_MAXIMUM_THREADS": null,
+    "NUMEXPR_NUM_THREADS": null
+  },
+  "sizes": [
+    100000,
+    1000000
+  ],
+  "repeats": 5,
+  "tools": [
+    "soda",
+    "datacontract",
+    "gx",
+    "pointblank",
+    "pandera"
+  ],
+  "fixtures": [
+    {
+      "rows": 100000,
+      "k": 100,
+      "customers": 10000,
+      "ground_truth": {
+        "order_id_missing": 0,
+        "customer_id_missing": 100,
+        "order_id_unique": 100,
+        "status_valid": 100,
+        "amount_min": 100,
+        "customer_ref": 100
+      },
+      "duplicate_group_rows": 200,
+      "files": {
+        "orders.parquet": {
+          "sha256": "7e50080f96ddd0d175e882120d9c82ea6dfa0d1f663bd8574dc2ff82692b8077",
+          "bytes": 1254255
+        },
+        "customers.parquet": {
+          "sha256": "a854590e74cdd6295562807d7af322c7c7fece8a42aa32ab0b9c5914af2e6e50",
+          "bytes": 49680
+        }
+      }
+    },
+    {
+      "rows": 1000000,
+      "k": 1000,
+      "customers": 100000,
+      "ground_truth": {
+        "order_id_missing": 0,
+        "customer_id_missing": 1000,
+        "order_id_unique": 1000,
+        "status_valid": 1000,
+        "amount_min": 1000,
+        "customer_ref": 1000
+      },
+      "duplicate_group_rows": 2000,
+      "files": {
+        "orders.parquet": {
+          "sha256": "dd4800b3212d3b8f98b349642f115d539417c2fd7f743a23e2dbad9c0d25d61c",
+          "bytes": 15756952
+        },
+        "customers.parquet": {
+          "sha256": "a663e75e7aa716fc5d69ca2f6fc623b2093a57f359adfea759d362a6f526e8c2",
+          "bytes": 490895
+        }
+      }
+    }
+  ],
+  "execution_order": [
+    {
+      "rows": 100000,
+      "repeat": 0,
+      "tool": "soda"
+    },
+    {
+      "rows": 100000,
+      "repeat": 0,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 100000,
+      "repeat": 0,
+      "tool": "gx"
+    },
+    {
+      "rows": 100000,
+      "repeat": 0,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 100000,
+      "repeat": 0,
+      "tool": "pandera"
+    },
+    {
+      "rows": 100000,
+      "repeat": 1,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 100000,
+      "repeat": 1,
+      "tool": "gx"
+    },
+    {
+      "rows": 100000,
+      "repeat": 1,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 100000,
+      "repeat": 1,
+      "tool": "pandera"
+    },
+    {
+      "rows": 100000,
+      "repeat": 1,
+      "tool": "soda"
+    },
+    {
+      "rows": 100000,
+      "repeat": 2,
+      "tool": "gx"
+    },
+    {
+      "rows": 100000,
+      "repeat": 2,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 100000,
+      "repeat": 2,
+      "tool": "pandera"
+    },
+    {
+      "rows": 100000,
+      "repeat": 2,
+      "tool": "soda"
+    },
+    {
+      "rows": 100000,
+      "repeat": 2,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 100000,
+      "repeat": 3,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 100000,
+      "repeat": 3,
+      "tool": "pandera"
+    },
+    {
+      "rows": 100000,
+      "repeat": 3,
+      "tool": "soda"
+    },
+    {
+      "rows": 100000,
+      "repeat": 3,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 100000,
+      "repeat": 3,
+      "tool": "gx"
+    },
+    {
+      "rows": 100000,
+      "repeat": 4,
+      "tool": "pandera"
+    },
+    {
+      "rows": 100000,
+      "repeat": 4,
+      "tool": "soda"
+    },
+    {
+      "rows": 100000,
+      "repeat": 4,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 100000,
+      "repeat": 4,
+      "tool": "gx"
+    },
+    {
+      "rows": 100000,
+      "repeat": 4,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 0,
+      "tool": "soda"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 0,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 0,
+      "tool": "gx"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 0,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 0,
+      "tool": "pandera"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 1,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 1,
+      "tool": "gx"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 1,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 1,
+      "tool": "pandera"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 1,
+      "tool": "soda"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 2,
+      "tool": "gx"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 2,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 2,
+      "tool": "pandera"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 2,
+      "tool": "soda"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 2,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 3,
+      "tool": "pointblank"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 3,
+      "tool": "pandera"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 3,
+      "tool": "soda"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 3,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 3,
+      "tool": "gx"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 4,
+      "tool": "pandera"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 4,
+      "tool": "soda"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 4,
+      "tool": "datacontract"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 4,
+      "tool": "gx"
+    },
+    {
+      "rows": 1000000,
+      "repeat": 4,
+      "tool": "pointblank"
+    }
+  ],
+  "scheduling": "Within each size, tools are interleaved per repeat; starting tool rotates by repeat. No caches are forcibly cleared.",
+  "timing": {
+    "run_s": "Tool imports, Parquet loading, setup, validation and diagnostic mapping; excludes interpreter startup",
+    "process_s": "Parent-observed child wall time including interpreter startup and shutdown",
+    "cpu_s": "Whole child user + system CPU from getrusage(RUSAGE_SELF)",
+    "max_rss_bytes": "Whole child peak RSS from getrusage(RUSAGE_SELF), platform-normalized to bytes"
+  },
+  "scoring": "Six identified pass/fail decisions; diagnostic counts are recorded, not normalized or scored",
+  "count_semantics": "Ground-truth uniqueness counts extra occurrences; some tools count all duplicate-group rows. Null treatment in reference checks also differs.",
+  "completed_at": "2026-10-16T05:46:21.169911+00:00",
+  "all_verdicts_match": true,
+  "csv_sha256": "9763d4b2ed8af14d29408077eaea86543774c7cd7918ac65c3bef08865feb375",
+  "raw_sha256": "39668543f6fe02b4e3f67a0d01feef006b97a3dc70e446409b9a3702dc1262fe"
+}

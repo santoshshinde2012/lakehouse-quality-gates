@@ -1,0 +1,13 @@
+
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   0%|          | 0/37 [00:00<?, ?it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 1171.59it/s]
+Calculating Metrics:   5%|▌         | 2/37 [00:00<00:00, 1043.88it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 1519.68it/s]
+Calculating Metrics:   8%|▊         | 3/37 [00:00<00:00, 1433.95it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 200.48it/s]
+Calculating Metrics:  30%|██▉       | 11/37 [00:00<00:00, 199.87it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 526.83it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 526.09it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 525.88it/s]
+Calculating Metrics: 100%|██████████| 37/37 [00:00<00:00, 525.45it/s]

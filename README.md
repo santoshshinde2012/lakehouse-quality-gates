@@ -278,6 +278,7 @@ All evidence: [docs/results](docs/results/README.md).
 |---|---|
 | [Documentation hub](docs/README.md) | find the right page and a reading path |
 | [Quickstart](docs/guides/quickstart.md) | set up and run the demo |
+| [End-to-end setup](docs/guides/end-to-end.md) | go from a clean Mac or Linux machine to every service, with screenshots |
 | [Running and testing](docs/guides/running-and-testing.md) | run every test tier and benchmark |
 | [Contracts](docs/guides/contracts.md) | read or add a check |
 | [System design](docs/system-design.md) | understand the requirements and decisions |

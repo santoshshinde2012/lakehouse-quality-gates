@@ -1,0 +1,5 @@
+label,source,value_pct,previous_pct,claim,publisher,sample,url
+Stakeholders find issues first,Monte Carlo,74,,"Business stakeholders identify data issues first all or most of the time",Monte Carlo with Wakefield Research (State of Data Quality survey),200 data professionals,https://tdwi.org/articles/2023/05/04/data-downtime-nearly-doubled-survey.aspx
+Don’t fully trust data,Precisely,67,55,"Do not completely trust their organization's data for decision-making (previous edition: 55%)",Precisely with Drexel LeBow (Data Integrity Trends and Insights outlook),565+ data and analytics professionals,https://www.precisely.com/press-release/new-global-research-points-to-lack-of-data-quality-and-governance-as-major-obstacles-to-ai-readiness/
+Don’t measure quality,Gartner,59,,"Organizations that do not measure data quality",Gartner (data quality topic page),not stated,https://www.gartner.com/en/data-analytics/topics/data-quality
+Top team challenge,dbt Labs,56,,"Poor data quality is the challenge reported most often",dbt Labs (State of Analytics Engineering report),not stated,https://www.getdbt.com/resources/state-of-analytics-engineering-2025

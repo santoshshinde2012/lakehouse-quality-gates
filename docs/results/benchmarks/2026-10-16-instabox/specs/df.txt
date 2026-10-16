@@ -1,0 +1,11 @@
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        16G  9.5G  5.4G  65% /
+devtmpfs        3.9G     0  3.9G   0% /dev
+tmpfs           3.9G     0  3.9G   0% /dev/shm
+tmpfs           1.6G  876K  1.6G   1% /run
+tmpfs           3.9G     0  3.9G   0% /tmp
+tmpfs           5.0M     0  5.0M   0% /run/lock
+/dev/vdb         20G  624M   19G   4% /data
+tmpfs           1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+tmpfs           1.0M     0  1.0M   0% /run/credentials/serial-getty@ttyS0.service
+tmpfs           797M  4.0K  797M   1% /run/user/1000

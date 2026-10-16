@@ -1,0 +1,6 @@
+captured_utc=20261016T054449Z
+host=<redacted>
+repo_commit=d04c8cdaf4ae775af44b7f3ec4183911e97fdd11
+repo_dirty=0
+lakehouse_commit=49d1c3ab901f258b389c4fa7c58f5dd27944547e
+sizes=10000 100000 1000000 warm=5 repeats=5 tool_sizes=100000 1000000
