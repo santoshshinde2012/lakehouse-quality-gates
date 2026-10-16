@@ -1,53 +1,52 @@
 """Survey signals chart (seaborn, same style as the tool benchmark chart).
 
-Data and public sources: survey_sources.csv next to this script.
+Data and public sources: survey_sources.csv, loaded by survey_data.py.
 Run: uv run --no-project --with matplotlib --with seaborn python docs/figures/generate_survey_chart.py [OUT.png]
 """
 
-import csv
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
-import matplotlib
+from survey_data import SurveySignal, load_signals
+from theme import BAR, CHART_DPI, CHART_SIZE, GRID, INK, MUTED
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.patches import Rectangle
-
-INK, MUTED, BAR, GRID = "#172033", "#536176", "#4b6edb", "#e9edf4"
-SIZE = (24, 12)
-DPI = 3200 / SIZE[0]
 HERE = Path(__file__).resolve().parent
 
 
-def load(path=HERE / "survey_sources.csv"):
-    with open(path, encoding="utf-8", newline="") as fh:
-        return [
-            (
-                r["label"],
-                r["source"],
-                int(r["value_pct"]),
-                int(r["previous_pct"]) if r["previous_pct"] else None,
-            )
-            for r in csv.DictReader(fh)
-        ]
+def text_layout_problems(fig) -> tuple[int, int]:
+    """(texts outside the figure, overlapping text pairs) after drawing."""
+    import matplotlib
+
+    r = fig.canvas.get_renderer()
+    width, height = fig.bbox.width, fig.bbox.height
+    boxes = [
+        t.get_window_extent(r) for t in fig.findobj(matplotlib.text.Text) if t.get_text() and t.get_visible()
+    ]
+    outside = sum(1 for b in boxes if b.x0 < 0 or b.y0 < 0 or b.x1 > width or b.y1 > height)
+    overlaps = sum(1 for i, a in enumerate(boxes) for b in boxes[i + 1 :] if a.overlaps(b))
+    return outside, overlaps
 
 
-data = load()
+def render(data: list[SurveySignal], out: Path) -> tuple[int, int]:
+    import matplotlib
 
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from matplotlib.patches import Rectangle
 
-def main(out):
-    labels = [d[0] for d in data]
+    labels = [d.label for d in data]
     with (
         sns.axes_style("whitegrid"),
         sns.plotting_context("talk"),
         plt.rc_context({"font.family": "DejaVu Sans", "svg.fonttype": "none"}),
     ):
-        fig, ax = plt.subplots(figsize=SIZE, dpi=DPI, facecolor="white")
+        fig, ax = plt.subplots(figsize=CHART_SIZE, dpi=CHART_DPI, facecolor="white")
         fig.subplots_adjust(left=0.30, right=0.93, top=0.95, bottom=0.14)
         sns.barplot(
-            x=[d[2] for d in data],
+            x=[d.value_pct for d in data],
             y=labels,
             orient="h",
             color=BAR,
@@ -56,7 +55,8 @@ def main(out):
             width=0.52,
             ax=ax,
         )
-        for bar, (lab, src, v, prev) in zip(ax.patches, data, strict=True):
+        for bar, signal in zip(ax.patches, data, strict=True):
+            v, prev = signal.value_pct, signal.previous_pct
             assert abs(bar.get_width() - v) < 1e-9
             y, h = bar.get_y(), bar.get_height()
             if prev:
@@ -103,7 +103,7 @@ def main(out):
             tl.set_verticalalignment("bottom")
             x, y = tl.get_position()
             ax.annotate(
-                d[1],
+                d.source,
                 (0, y),
                 xytext=(-20, -8),
                 textcoords="offset points",
@@ -116,24 +116,23 @@ def main(out):
             )
         fig.text(0.30, 0.04, "Separate self-reported surveys", fontsize=24, color=MUTED, ha="left")
         fig.savefig(
-            out, dpi=DPI, facecolor="white", metadata={"Title": "Survey signals on data quality and trust"}
+            out,
+            dpi=CHART_DPI,
+            facecolor="white",
+            metadata={"Title": "Survey signals on data quality and trust"},
         )
-        # QA: text in figure bounds and no overlaps
-        r = fig.canvas.get_renderer()
-        W, H = fig.bbox.width, fig.bbox.height
-        boxes = [
-            t.get_window_extent(r)
-            for t in fig.findobj(matplotlib.text.Text)
-            if t.get_text() and t.get_visible()
-        ]
-        fails = [b for b in boxes if b.x0 < 0 or b.y0 < 0 or b.x1 > W or b.y1 > H]
-        ov = sum(1 for i, a in enumerate(boxes) for b in boxes[i + 1 :] if a.overlaps(b))
-        print("out-of-bounds", len(fails), "overlaps", ov, "size", W, H)
+        problems = text_layout_problems(fig)
         plt.close(fig)
+    return problems
+
+
+def main(argv: list[str]) -> int:
+    target = Path(argv[0]) if argv else HERE / "build" / "agree-before-enforce-survey-signals.png"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    outside, overlaps = render(load_signals(), target)
+    print(target, "out-of-bounds", outside, "overlaps", overlaps)
+    return 1 if outside or overlaps else 0
 
 
 if __name__ == "__main__":
-    default = HERE / "build" / "agree-before-enforce-survey-signals.png"
-    target = Path(sys.argv[1]) if len(sys.argv) > 1 else default
-    target.parent.mkdir(parents=True, exist_ok=True)
-    main(target)
+    raise SystemExit(main(sys.argv[1:]))

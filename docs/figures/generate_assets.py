@@ -16,20 +16,15 @@ from pathlib import Path
 from typing import Any
 
 from diagram_icons import icon_svg
+from theme import BAR, BLUE, CHART_DPI, CHART_SIZE, GREEN, GRID, INK, LINE, MUTED, RED
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "build"
 ROOT = HERE.parents[1]
 TOOL_DATA = ROOT / "docs/results/benchmarks/2026-10-14-tool-rerun"
-INK = "#172033"
-MUTED = "#536176"
-LINE = "#d8e0eb"
-BLUE = "#4658c9"
-GREEN = "#19734a"
-RED = "#b83d43"
 BENCHMARK_LARGE_ROWS = 1_000_000
-BENCHMARK_FIGURE_SIZE = (24, 12)
-BENCHMARK_EXPORT_DPI = 3200 / BENCHMARK_FIGURE_SIZE[0]
+BENCHMARK_FIGURE_SIZE = CHART_SIZE
+BENCHMARK_EXPORT_DPI = CHART_DPI
 SCORED_CHECKS = (
     "order_id_missing",
     "customer_id_missing",
@@ -513,7 +508,7 @@ def benchmark() -> None:
             y="run_s",
             order=labels,
             estimator="median",
-            color="#4b6edb",
+            color=BAR,
             saturation=1,
             errorbar=None,
             width=0.52,
@@ -524,7 +519,7 @@ def benchmark() -> None:
         ax.set_xlabel("")
         ax.set_ylabel("Runtime (seconds)", fontsize=20, color=MUTED, labelpad=18)
         ax.grid(axis="x", visible=False)
-        ax.grid(axis="y", color="#e9edf4", linewidth=1)
+        ax.grid(axis="y", color=GRID, linewidth=1)
         ax.set_axisbelow(True)
         ax.tick_params(axis="both", length=0, pad=12, labelsize=20, colors=MUTED)
         ax.tick_params(axis="x", labelsize=23, colors=INK)
