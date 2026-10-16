@@ -54,6 +54,7 @@ Terms are defined once in the [glossary](overview/glossary.md); measured evidenc
 | Document | What it covers |
 |---|---|
 | [Quickstart](guides/quickstart.md) | The canonical setup: numbered steps for the local demo, the live stack and the full stack |
+| [End-to-end setup](guides/end-to-end.md) | One ordered path on macOS or Linux: services, gates, WAP, Airflow, benchmarks, charts, teardown, with service screenshots |
 | [Running and testing](guides/running-and-testing.md) | Prerequisites, setup, the four test tiers, every make target, benchmarks, regenerating docs |
 | [Contracts](guides/contracts.md) | Contract conventions, every check per layer, and how to add one |
 | [Configuration](guides/configuration.md) | CLI commands, exit codes and every `DQ_*` setting |

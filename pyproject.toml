@@ -46,7 +46,7 @@ packages = ["src/soda_lakehouse_dq"]
 line-length = 110
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["docs/research", "benchmarks/tools/tiny/scripts"]  # research scripts kept as run
+extend-exclude = ["docs/research", "docs/results", "benchmarks/tools/tiny/scripts"]  # research scripts kept as run; recorded results (harness copies are hashed)
 force-exclude = true
 
 [tool.ruff.lint]
@@ -63,6 +63,8 @@ ignore = ["PLR0913", "S101", "ANN401", "S603", "S607", "PLC0415"]
 "wap/**" = ["N812", "S608", "E501", "UP017"]  # runs on the Spark image Python 3.10
 "scripts/bench_charts.py" = ["E501", "PLR2004", "PLR0917", "RUF001", "RUF046", "PLC0206"]
 "scripts/check_numbers.py" = ["RUF001"]
+# Figure scripts: plotting code with layout constants and wide labels.
+"docs/figures/**" = ["E501", "PLR2004", "PLR0917", "PLR0912", "PLR0915", "ANN", "N806", "B007", "B905", "RUF059"]
 "scripts/gen_scale_data.py" = ["S311", "PLR0913", "PLR0917", "PLR2004"]
 
 [tool.mypy]

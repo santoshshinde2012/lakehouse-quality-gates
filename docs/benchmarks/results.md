@@ -269,3 +269,29 @@ xychart-beta
   line [1.597, 1.730, 1.978, 5.304]
 ```
 <!-- /region -->
+
+## Second environment
+
+The tool comparison and the gate latency runs were repeated on a Linux x86_64 cloud VM (AMD EPYC, 4 vCPU,
+7.8 GiB RAM, Debian 13, Docker 29.8.2) at `d04c8cd`. The machines differ in architecture, cores, memory and Docker
+setup, so read this as a check that the pattern holds, not as a speed comparison. Data and machine specs:
+[`2026-10-16-instabox`](../results/benchmarks/2026-10-16-instabox/README.md).
+
+| Tool (median of 5 runs, s) | 100k orders | 1M orders | 1M peak RSS (MiB) |
+|---|---:|---:|---:|
+| Soda | 0.283 | 0.334 | 217 |
+| Pointblank | 0.249 | 0.343 | 451 |
+| datacontract-cli | 0.644 | 0.702 | 318 |
+| Pandera | 0.358 | 2.376 | 1,624 |
+| GX Core | 1.932 | 7.486 | 766 |
+
+All 50 tool runs returned the expected verdicts, and the order at 1M orders matches the reference machine.
+
+| Gate warm p50 at 1M orders (s) | bronze | silver | gold |
+|---|---:|---:|---:|
+| host DuckDB | 0.51 | 0.50 | 0.36 |
+| Trino (1 GiB heap) | 1.08 | 1.11 | 0.36 |
+| container | 0.54 | 0.58 | 0.42 |
+
+All 162 gate runs (10k, 100k and 1M orders; 1 cold and 5 warm per layer and engine) passed. 5M orders and Airflow
+were not run on this 8 GiB machine.
