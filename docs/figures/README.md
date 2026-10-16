@@ -25,3 +25,6 @@ uv run --no-project --with matplotlib --with pyyaml python docs/figures/generate
 
 The survey figures come from separate self-reported surveys with different populations and questions; read them as
 signals, not one comparable measure. `diagram_icons.py` holds the outline icons the diagrams use.
+`theme.py` holds the shared colours and chart size. `survey_data.py` and `lifecycle_data.py` load and
+validate the inputs without matplotlib, so `tests/unit/test_figure_data.py` can test them; the
+`generate_*.py` scripts only render.

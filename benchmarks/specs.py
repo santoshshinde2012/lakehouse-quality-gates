@@ -7,8 +7,10 @@ import os
 import platform
 import subprocess
 import urllib.request
+from collections.abc import Callable
+from dataclasses import dataclass
 from importlib.metadata import version
-from typing import Any
+from typing import Any, Protocol
 
 from benchmarks.common import RESULTS, TRINO_URL, now_utc
 
@@ -30,7 +32,11 @@ def _read(path: str) -> str:
         return ""
 
 
-def _linux_cpu(cpuinfo: str, lscpu: str) -> str:
+# ---- pure parsers (no I/O) ----
+
+
+def parse_cpu_model(lscpu: str, cpuinfo: str) -> str:
+    """CPU model from `lscpu` output, else from /proc/cpuinfo; "" when neither names it."""
     for text, key in ((lscpu, "Model name"), (cpuinfo, "model name")):
         for line in text.splitlines():
             name, _, value = line.partition(":")
@@ -39,31 +45,78 @@ def _linux_cpu(cpuinfo: str, lscpu: str) -> str:
     return ""
 
 
-def _linux_memory_bytes(meminfo: str) -> str:
+def parse_meminfo_bytes(meminfo: str) -> str:
+    """Total RAM in bytes from /proc/meminfo (reported in KiB); "" when absent."""
     for line in meminfo.splitlines():
         if line.startswith("MemTotal:"):
             return str(int(line.split()[1]) * 1024)
     return ""
 
 
-def machine() -> dict[str, str]:
-    """CPU model, logical cores and RAM: sysctl on macOS, lscpu or /proc on Linux, stdlib otherwise."""
-    system = platform.system()
-    if system == "Darwin":
-        cpu = _cmd("sysctl", "-n", "machdep.cpu.brand_string")
-        cores = _cmd("sysctl", "-n", "hw.ncpu")
-        memory = _cmd("sysctl", "-n", "hw.memsize")
-    elif system == "Linux":
-        cpu = _linux_cpu(_read("/proc/cpuinfo"), _cmd("lscpu"))
-        cores = ""
-        memory = _linux_memory_bytes(_read("/proc/meminfo"))
-    else:
-        cpu = cores = memory = ""
+# ---- per-platform collectors ----
+
+Run = Callable[..., str]
+Read = Callable[[str], str]
+
+
+class MachineCollector(Protocol):
+    """Reads CPU model, logical cores and RAM in bytes; any field may be "" when unknown."""
+
+    def collect(self) -> dict[str, str]: ...
+
+
+@dataclass(frozen=True)
+class DarwinCollector:
+    run: Run = _cmd
+
+    def collect(self) -> dict[str, str]:
+        return {
+            "cpu": self.run("sysctl", "-n", "machdep.cpu.brand_string"),
+            "cpu_cores": self.run("sysctl", "-n", "hw.ncpu"),
+            "memory_bytes": self.run("sysctl", "-n", "hw.memsize"),
+        }
+
+
+@dataclass(frozen=True)
+class LinuxCollector:
+    run: Run = _cmd
+    read: Read = _read
+
+    def collect(self) -> dict[str, str]:
+        return {
+            "cpu": parse_cpu_model(self.run("lscpu"), self.read("/proc/cpuinfo")),
+            "cpu_cores": "",
+            "memory_bytes": parse_meminfo_bytes(self.read("/proc/meminfo")),
+        }
+
+
+@dataclass(frozen=True)
+class GenericCollector:
+    def collect(self) -> dict[str, str]:
+        return {"cpu": "", "cpu_cores": "", "memory_bytes": ""}
+
+
+COLLECTORS: dict[str, Callable[[], MachineCollector]] = {"Darwin": DarwinCollector, "Linux": LinuxCollector}
+
+
+def collector_for(system: str) -> MachineCollector:
+    """The collector for a `platform.system()` name; a new platform is one more entry in COLLECTORS."""
+    return COLLECTORS.get(system, GenericCollector)()
+
+
+def with_fallbacks(found: dict[str, str], processor: str, arch: str, cpu_count: int | None) -> dict[str, str]:
+    """Fill empty fields from the stdlib so every platform reports something."""
     return {
-        "cpu": cpu or platform.processor() or platform.machine(),
-        "cpu_cores": cores or str(os.cpu_count() or ""),
-        "memory_bytes": memory,
+        "cpu": found["cpu"] or processor or arch,
+        "cpu_cores": found["cpu_cores"] or str(cpu_count or ""),
+        "memory_bytes": found["memory_bytes"],
     }
+
+
+def machine(collector: MachineCollector | None = None) -> dict[str, str]:
+    """CPU model, logical cores and RAM for this machine (or for the collector given)."""
+    found = (collector or collector_for(platform.system())).collect()
+    return with_fallbacks(found, platform.processor(), platform.machine(), os.cpu_count())
 
 
 def collect() -> dict[str, Any]:

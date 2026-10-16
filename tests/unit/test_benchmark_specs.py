@@ -16,39 +16,58 @@ def test_cmd_returns_empty_for_a_missing_command() -> None:
     assert specs._cmd("definitely-not-a-command-lqg") == ""
 
 
-def test_linux_cpu_prefers_lscpu_then_proc() -> None:
-    assert specs._linux_cpu(CPUINFO, LSCPU) == "AMD EPYC"
-    assert specs._linux_cpu(CPUINFO, "") == "Intel(R) Xeon(R) CPU"
-    assert specs._linux_cpu("", "") == ""
+def test_parse_cpu_model_prefers_lscpu_then_proc() -> None:
+    assert specs.parse_cpu_model(LSCPU, CPUINFO) == "AMD EPYC"
+    assert specs.parse_cpu_model("", CPUINFO) == "Intel(R) Xeon(R) CPU"
+    assert specs.parse_cpu_model("", "") == ""
 
 
-def test_linux_memory_reads_meminfo_kib() -> None:
-    assert specs._linux_memory_bytes(MEMINFO) == str(8155564 * 1024)
-    assert specs._linux_memory_bytes("") == ""
+def test_parse_meminfo_reads_kib() -> None:
+    assert specs.parse_meminfo_bytes(MEMINFO) == str(8155564 * 1024)
+    assert specs.parse_meminfo_bytes("") == ""
 
 
-def test_machine_on_linux_needs_no_sysctl(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_linux_collector_needs_no_sysctl() -> None:
     calls: list[tuple[str, ...]] = []
 
-    def cmd(*args: str) -> str:
+    def run(*args: str) -> str:
         calls.append(args)
         return LSCPU if args == ("lscpu",) else ""
 
     files = {"/proc/cpuinfo": CPUINFO, "/proc/meminfo": MEMINFO}
-    monkeypatch.setattr(specs.platform, "system", lambda: "Linux")
-    monkeypatch.setattr(specs, "_cmd", cmd)
-    monkeypatch.setattr(specs, "_read", lambda path: files.get(path, ""))
-    monkeypatch.setattr(specs.os, "cpu_count", lambda: 4)
-    assert specs.machine() == {"cpu": "AMD EPYC", "cpu_cores": "4", "memory_bytes": str(8155564 * 1024)}
+    found = specs.LinuxCollector(run=run, read=lambda path: files.get(path, "")).collect()
+    assert found == {"cpu": "AMD EPYC", "cpu_cores": "", "memory_bytes": str(8155564 * 1024)}
     assert all(c[0] != "sysctl" for c in calls)
 
 
-def test_machine_on_macos_uses_sysctl(monkeypatch: pytest.MonkeyPatch) -> None:
-    values = {
-        "machdep.cpu.brand_string": "Apple M1 Pro",
-        "hw.ncpu": "10",
-        "hw.memsize": "17179869184",
+def test_darwin_collector_uses_sysctl() -> None:
+    values = {"machdep.cpu.brand_string": "Apple M1 Pro", "hw.ncpu": "10", "hw.memsize": "17179869184"}
+    found = specs.DarwinCollector(run=lambda *args: values.get(args[-1], "")).collect()
+    assert found == {"cpu": "Apple M1 Pro", "cpu_cores": "10", "memory_bytes": "17179869184"}
+
+
+@pytest.mark.parametrize(
+    ("system", "kind"),
+    [("Darwin", specs.DarwinCollector), ("Linux", specs.LinuxCollector), ("Windows", specs.GenericCollector)],
+)
+def test_collector_for_each_platform(system: str, kind: type) -> None:
+    assert isinstance(specs.collector_for(system), kind)
+
+
+def test_fallbacks_fill_only_empty_fields() -> None:
+    empty = {"cpu": "", "cpu_cores": "", "memory_bytes": ""}
+    assert specs.with_fallbacks(empty, "", "x86_64", 4) == {
+        "cpu": "x86_64",
+        "cpu_cores": "4",
+        "memory_bytes": "",
     }
-    monkeypatch.setattr(specs.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(specs, "_cmd", lambda *args: values.get(args[-1], ""))
-    assert specs.machine() == {"cpu": "Apple M1 Pro", "cpu_cores": "10", "memory_bytes": "17179869184"}
+    full = {"cpu": "M1", "cpu_cores": "10", "memory_bytes": "1"}
+    assert specs.with_fallbacks(full, "arm", "arm64", 8) == full
+
+
+def test_machine_uses_the_collector_given() -> None:
+    class Fixed:
+        def collect(self) -> dict[str, str]:
+            return {"cpu": "Fake CPU", "cpu_cores": "2", "memory_bytes": "1024"}
+
+    assert specs.machine(Fixed()) == {"cpu": "Fake CPU", "cpu_cores": "2", "memory_bytes": "1024"}
