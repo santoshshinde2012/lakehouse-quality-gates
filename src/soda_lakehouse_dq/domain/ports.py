@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 from soda_lakehouse_dq.domain.models import ContractResult, ContractSpec, GateReport, Layer, VariableValue
-from soda_lakehouse_dq.domain.wap import BranchAudit, BranchState
+from soda_lakehouse_dq.domain.wap import BranchAudit, BranchState, WapLayerResult
 
 
 @runtime_checkable
@@ -97,3 +97,14 @@ class BranchAuditSink(Protocol):
     """Durably records the snapshots and decision before any publication."""
 
     def write(self, audit: BranchAudit) -> None: ...
+
+
+@runtime_checkable
+class WapEvidenceWriter(Protocol):
+    """Records what a WAP run wrote and published, per layer."""
+
+    def check(self) -> None:
+        """Fail before any data is written when the destination is unusable."""
+        ...
+
+    def write(self, results: Sequence[WapLayerResult]) -> None: ...

@@ -9,47 +9,21 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import matplotlib
-import yaml
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, FancyBboxPatch, Polygon, Rectangle, Wedge
+from lifecycle_data import LAYERS, load_layer_counts
+from theme import ACCENT as BLUE
+from theme import BLACK as BLK
+from theme import MEDALLION as MED
+from theme import SLATE_INK as INK
+from theme import SLATE_MUTED as MUT
+from theme import SLATE_RULE as RULE
+from theme import SLATE_SECONDARY as SEC
+from theme import SLATE_TRACK as TRACK
+from theme import WHITE
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-CONTRACTS = ROOT / "contracts" / "retail"
-LAYERS = ("bronze", "silver", "gold")
-
-INK, SEC, MUT, RULE, TRACK = "#0F172A", "#475569", "#64748B", "#CBD5E1", "#F1F5F9"
-BLUE, WHITE, BLK = "#1D4ED8", "#FFFFFF", "#000000"
-MED = {"bronze": ("#9A5B26", "#FBF3EC"), "silver": ("#5B6B80", "#F1F5F9"), "gold": ("#8B6508", "#FBF6E6")}
 W, H = 1600, 900
 STEPS = ("Agree", "Encode", "Review", "Observe", "Enforce")
 ROLES = ("Producer", "Steward / Consumer", "Platform", "Owner")
-
-
-def _checks(contract: dict) -> list[dict]:
-    found = list(contract.get("checks") or [])
-    for column in contract.get("columns") or []:
-        found += column.get("checks") or []
-    return found
-
-
-def count_levels(folder: Path = CONTRACTS) -> dict[str, tuple[int, int]]:
-    """(fail, warn) checks per layer; a check warns when its threshold says level: warn."""
-    counts = {}
-    for layer in LAYERS:
-        fail = warn = 0
-        for path in sorted((folder / layer).glob("*.yml")):
-            for check in _checks(yaml.safe_load(path.read_text(encoding="utf-8"))):
-                body = next(iter(check.values())) or {}
-                if (body.get("threshold") or {}).get("level") == "warn":
-                    warn += 1
-                else:
-                    fail += 1
-        counts[layer] = (fail, warn)
-    return counts
 
 
 def text(ax, x, y, s, size, color=INK, weight="normal", ha="left", va="center"):
@@ -58,6 +32,8 @@ def text(ax, x, y, s, size, color=INK, weight="normal", ha="left", va="center"):
 
 def icon(ax, kind, x, y, color):
     """Simple outline icons built from shapes (about 40 units wide)."""
+    from matplotlib.patches import Circle, FancyBboxPatch, Polygon, Wedge
+
     lw = 4
     if kind == "Agree":  # two people
         for dx, r in ((-9, 1.0), (11, 0.85)):
@@ -123,8 +99,13 @@ def icon(ax, kind, x, y, color):
         )
 
 
-def draw(out: Path) -> None:
-    counts = count_levels()
+def render(counts: dict[str, tuple[int, int]], out: Path) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle, Polygon, Rectangle
+
     total_fail = sum(f for f, _ in counts.values())
     total_warn = sum(w for _, w in counts.values())
     fig = plt.figure(figsize=(16, 9), dpi=200, facecolor="white")
@@ -178,8 +159,15 @@ def draw(out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=200, facecolor="white", metadata={"Title": "Agree before enforce lifecycle"})
     plt.close(fig)
-    print(out, counts)
+
+
+def main(argv: list[str]) -> int:
+    target = Path(argv[0]) if argv else HERE / "build" / "agree-before-enforce-lifecycle.png"
+    counts = load_layer_counts()
+    render(counts, target)
+    print(target, counts)
+    return 0
 
 
 if __name__ == "__main__":
-    draw(Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "build" / "agree-before-enforce-lifecycle.png")
+    raise SystemExit(main(sys.argv[1:]))
