@@ -10,6 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 [![Coverage 97%](https://img.shields.io/badge/coverage-97%25-16a34a)](docs/results/README.md)
 [![Soda Core 4.26](https://img.shields.io/badge/Soda%20Core-4.26-00B388)](https://docs.soda.io/)
+[![Article on Medium](https://img.shields.io/badge/article-Medium-000000?logo=medium&logoColor=white)](https://medium.com/data-engineer-things/data-quality-before-publication-building-gates-for-a-lakehouse-4d57dabd8fa7)
 
 </div>
 
